@@ -1,6 +1,6 @@
 {
-  "version": 4,
+  "version": 5,
   "name": "Soak It",
   "file": "index.html",
-  "notes": "Real fire, 10 levels, drag to aim, sound, menus"
+  "notes": "Start screen now shows both the game and app version"
 }

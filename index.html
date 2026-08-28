@@ -627,7 +627,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 4;
+var GAME_VERSION = 5;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -1665,7 +1665,18 @@ $("retryBtn").addEventListener("click",function(){ Snd.tap(); startLevel(level);
 $("nextBtn").addEventListener("click",function(){ Snd.tap(); startLevel(Math.min(10,level+1)); });
 $("endMenu").addEventListener("click",function(){ Snd.tap(); goStart(); });
 
-$("verLabel").textContent="v"+GAME_VERSION;
+/* Two separate things carry versions: the game (this file, updated silently)
+   and the Android app around it (updated with one tap). Showing only one of
+   them made an up-to-date phone look stale. The app passes its own version in
+   on the end of the address; in a browser there is no app, so only the game
+   number is shown. */
+(function showVersions(){
+  var m=/(?:^|[#&])app=([^&]*)/.exec(location.hash||"");
+  var appVer=m?decodeURIComponent(m[1]):null;
+  $("verLabel").textContent = appVer
+    ? ("game v"+GAME_VERSION+"  ·  app "+appVer)
+    : ("game v"+GAME_VERSION);
+})();
 
 /* pause automatically if the player leaves the app mid-level */
 document.addEventListener("visibilitychange",function(){
