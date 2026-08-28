@@ -244,11 +244,15 @@
     font-family:var(--cond);font-size:10.5px;font-weight:700;letter-spacing:.06em;
     color:rgba(207,233,255,.6);white-space:nowrap;
   }
+  /* the place name sits beside its circle, on whichever side has room */
   .nodeFires{
-    position:absolute;left:50%;top:-16px;transform:translateX(-50%);
-    font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:.14em;
-    color:rgba(255,122,46,.62);white-space:nowrap;text-transform:uppercase;
+    position:absolute;top:50%;transform:translateY(-50%);
+    font-family:var(--cond);font-size:13px;font-weight:800;letter-spacing:.10em;
+    color:var(--brass-hi);white-space:nowrap;text-transform:uppercase;
   }
+  .nodeFires.right{left:36px;}
+  .nodeFires.left {right:36px;}
+  .node.locked ~ .nodeFires{color:rgba(233,241,246,.28);}
 
   /* ============ settings / pause sheets ============ */
   .sheetCard{
@@ -404,6 +408,28 @@
     0%{opacity:0;}12%{opacity:1;}70%{opacity:1;}100%{opacity:0;}
   }
 
+  /* told off for blasting a ground-floor fire at full power */
+  #warn{
+    position:fixed;left:50%;top:31%;transform:translate(-50%,0);
+    display:flex;align-items:center;gap:9px;
+    font-family:var(--cond);font-weight:800;font-size:15px;
+    letter-spacing:.16em;text-transform:uppercase;
+    color:#FFD9C0;
+    background:rgba(120,26,10,.72);
+    border:1px solid rgba(255,122,46,.65);
+    border-radius:3px;padding:9px 16px;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    opacity:0;pointer-events:none;z-index:4;white-space:nowrap;
+  }
+  #warn b{color:var(--ember-hi);font-size:17px;}
+  #warn.show{animation:warnPulse 1.4s ease forwards;}
+  @keyframes warnPulse{
+    0%{opacity:0;transform:translate(-50%,6px) scale(.96);}
+    14%{opacity:1;transform:translate(-50%,0) scale(1.02);}
+    76%{opacity:1;transform:translate(-50%,0) scale(1);}
+    100%{opacity:0;transform:translate(-50%,-8px) scale(1);}
+  }
+
   #toast{
     position:fixed;left:50%;top:16%;transform:translate(-50%,-6px);
     font-family:var(--cond);font-weight:800;font-size:29px;letter-spacing:.09em;
@@ -483,6 +509,7 @@
 </div>
 
 <div id="dragHint">Drag anywhere to aim the hose<br>Slide the bar to set pressure</div>
+<div id="warn">Too much pressure &mdash; drop below <b>40%</b></div>
 <div id="toast"></div>
 
 <!-- ===================== start ===================== -->
@@ -692,7 +719,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 7;
+var GAME_VERSION = 8;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -731,7 +758,10 @@ var TUNE = {
   spreadCap: 2,
   eyeY: 1.70,
   // the hose fights back: the harder you open it up, the less steady your aim
-  shake: 0.012
+  shake: 0.012,
+  // a fire in the bottom 40% of a wall must be fought at 40% pressure or less
+  lowFrac: 0.40,
+  lowMaxPressure: 0.40
 };
 
 var WIN_W=1.5, WIN_H=2.0, WIN_HW=WIN_W/2, WIN_HH=WIN_H/2;
@@ -744,44 +774,44 @@ var MAX_DROPS=1100, MAX_STEAM=380, MAX_FLAME=900, MAX_SMOKE=260, MAX_WINDOWS=80;
    the wall, `rows` are floor heights.
    ============================================================ */
 var LAYOUTS=[
-  { name:"Courtyard", fires:5, lives:1, faces:[
+  { name:"Courtyard", env:"city", fires:5, lives:1, faces:[
     {ax:"z", v:-16, lo:-9,  hi:9,  top:13.5, cols:[-7.2,-4.32,-1.44,1.44,4.32,7.2], rows:[2.8,5.4,8.0,10.6]},
     {ax:"x", v:-9,  lo:-11, hi:3,  top:13.5, cols:[-2.5,-6.5,-10.5],                rows:[2.8,5.4,8.0,10.6]},
     {ax:"x", v:9,   lo:-11, hi:3,  top:13.5, cols:[-2.5,-6.5,-10.5],                rows:[2.8,5.4,8.0,10.6]}
   ]},
-  { name:"The Tower", fires:6, lives:1, faces:[
+  { name:"The Tower", env:"city", fires:6, lives:1, faces:[
     {ax:"z", v:-11, lo:-5, hi:5, top:19, cols:[-3.2,0,3.2], rows:[2.8,5.6,8.4,11.2,14.0]}
   ]},
-  { name:"Wide Block", fires:8, lives:2, faces:[
+  { name:"Wide Block", env:"villa", fires:8, lives:2, faces:[
     {ax:"z", v:-16, lo:-13, hi:13, top:9.6,
      cols:[-11.5,-8.2,-4.9,-1.6,1.7,5.0,8.3,11.6], rows:[2.8,5.4,8.0]}
   ]},
-  { name:"The Corner", fires:9, lives:2, faces:[
+  { name:"The Corner", env:"jungle", fires:9, lives:2, faces:[
     {ax:"z", v:-14, lo:-11, hi:5,  top:12, cols:[-9,-6,-3,0,3],   rows:[2.8,5.4,8.0,10.6]},
     {ax:"x", v:5,   lo:-14, hi:-3, top:12, cols:[-5,-8,-11.5],    rows:[2.8,5.4,8.0,10.6]}
   ]},
-  { name:"Twin Towers", fires:11, lives:3, faces:[
+  { name:"Twin Towers", env:"airport", fires:11, lives:3, faces:[
     {ax:"z", v:-15, lo:-12, hi:-3, top:16, cols:[-10.5,-7.5,-4.5], rows:[3,6,9,12]},
     {ax:"z", v:-15, lo:3,   hi:12, top:16, cols:[4.5,7.5,10.5],    rows:[3,6,9,12]}
   ]},
-  { name:"The Alley", fires:12, lives:3, faces:[
+  { name:"The Alley", env:"city", fires:12, lives:3, faces:[
     {ax:"x", v:-6, lo:-20, hi:1, top:11, cols:[-2,-6,-10,-14,-18], rows:[2.8,5.4,8.0]},
     {ax:"x", v:6,  lo:-20, hi:1, top:11, cols:[-2,-6,-10,-14,-18], rows:[2.8,5.4,8.0]}
   ]},
-  { name:"Stepped", fires:14, lives:4, faces:[
+  { name:"Stepped", env:"villa", fires:14, lives:4, faces:[
     {ax:"z", v:-15, lo:-8,  hi:8, top:11, cols:[-6,-3,0,3,6],   rows:[2.8,5.4,8.0]},
     {ax:"x", v:-8,  lo:-15, hi:1, top:17, cols:[-2,-6,-10,-13.5], rows:[2.8,5.4,8.0,10.6,13.2]}
   ]},
-  { name:"Long Facade", fires:15, lives:4, faces:[
+  { name:"Long Facade", env:"airport", fires:15, lives:4, faces:[
     {ax:"z", v:-17, lo:-12, hi:12, top:14,
      cols:[-11,-8.25,-5.5,-2.75,0,2.75,5.5,8.25,11], rows:[3,5.9,8.8,11.7]}
   ]},
-  { name:"Horseshoe", fires:17, lives:5, faces:[
+  { name:"Horseshoe", env:"jungle", fires:17, lives:5, faces:[
     {ax:"z", v:-11, lo:-7,  hi:7, top:14, cols:[-5.2,-2.6,0,2.6,5.2], rows:[2.8,5.4,8.0,10.6]},
     {ax:"x", v:-7,  lo:-11, hi:1, top:14, cols:[-2,-5.5,-9],          rows:[2.8,5.4,8.0,10.6]},
     {ax:"x", v:7,   lo:-11, hi:1, top:14, cols:[-2,-5.5,-9],          rows:[2.8,5.4,8.0,10.6]}
   ]},
-  { name:"The Block", fires:18, lives:5, faces:[
+  { name:"The Block", env:"beach", fires:18, lives:5, faces:[
     {ax:"z", v:-17, lo:-11, hi:11, top:17, cols:[-9,-5.4,-1.8,1.8,5.4,9], rows:[3,5.8,8.6,11.4,14.2]},
     {ax:"x", v:-11, lo:-14, hi:2,  top:17, cols:[-2,-6,-10,-13],          rows:[3,5.8,8.6,11.4,14.2]},
     {ax:"x", v:11,  lo:-14, hi:2,  top:17, cols:[-2,-6,-10,-13],          rows:[3,5.8,8.6,11.4,14.2]}
@@ -789,7 +819,7 @@ var LAYOUTS=[
 ];
 var LEVELS=LAYOUTS.map(function(L,i){
   return {
-    n:i+1, name:L.name, faces:L.faces,
+    n:i+1, name:L.name, env:L.env, faces:L.faces,
     fires:L.fires,
     lives:L.lives,
     loseAt:L.fires+12,
@@ -982,40 +1012,244 @@ function windowTexture(){
   return t;
 }
 var WIN_TEX=windowTexture();
-[[-6,-40,13,34],[9,-44,15,44],[-24,-46,14,27],[22,-39,11,24],
- [-34,-58,17,52],[12,-62,19,38],[-2,-70,15,30],[30,-56,14,46],
- [-30,-18,12,30],[-34,4,13,22],[-44,-34,15,40],
- [30,-18,12,26],[35,5,13,24],[46,-32,16,36],
- [-56,-66,18,58],[52,-68,17,50],[68,-44,15,42],[-68,-42,14,34]
-].forEach(function(t){
-  var w=t[2],h=t[3],tex=WIN_TEX.clone();
-  tex.needsUpdate=true;
+
+function clearGroup(g){
+  for(var i=g.children.length-1;i>=0;i--){
+    var c=g.children[i];
+    g.remove(c);
+    if(c.geometry) c.geometry.dispose();
+  }
+}
+
+/* ============================================================
+   THE FIVE WORLDS
+   The burning building never changes shape here — only what stands
+   around it. Everything is a dark silhouette with lights on it,
+   because that is what is cheap to draw and what looks right at night.
+   ============================================================ */
+var envGroup=new THREE.Group(); scene.add(envGroup);
+var planes=[], blinkers=[], swayers=[];
+
+var litMat=function(c,o){ return new THREE.MeshBasicMaterial({color:c,transparent:o!==undefined,opacity:o===undefined?1:o}); };
+function glowSprite(col,size,op){
+  var s=new THREE.Sprite(new THREE.SpriteMaterial({color:col,transparent:true,opacity:op===undefined?0.8:op,
+    blending:THREE.AdditiveBlending,depthWrite:false}));
+  s.scale.set(size,size,1);
+  return s;
+}
+function tower(x,z,w,h){
+  var tex=WIN_TEX.clone(); tex.needsUpdate=true;
   tex.repeat.set(Math.max(1,Math.round(w/3.2)),Math.max(1,Math.round(h/3.4)));
   var m=new THREE.Mesh(new THREE.BoxGeometry(w,h,w*0.85),new THREE.MeshBasicMaterial({map:tex}));
-  m.position.set(t[0],h/2,t[1]); scene.add(m);
+  m.position.set(x,h/2,z); envGroup.add(m);
   var cap=new THREE.Mesh(new THREE.BoxGeometry(w+0.6,0.6,w*0.85+0.6),trimMat);
-  cap.position.set(t[0],h+0.3,t[1]); scene.add(cap);
-});
-
-var ROAD_Z=-24, ROAD_W=4.6;
-var road=new THREE.Mesh(new THREE.PlaneGeometry(160,ROAD_W),
-  new THREE.MeshPhongMaterial({color:0x0C1015,shininess:64,specular:0x3A4756}));
-road.rotation.x=-Math.PI/2; road.position.set(0,0.02,ROAD_Z); scene.add(road);
-(function(){
-  var dash=new THREE.PlaneGeometry(1.7,0.14);
-  var dm=new THREE.MeshBasicMaterial({color:0xC9B87A});
-  for(var x=-75;x<75;x+=6){
-    var d=new THREE.Mesh(dash,dm); d.rotation.x=-Math.PI/2;
-    d.position.set(x,0.035,ROAD_Z); scene.add(d);
+  cap.position.set(x,h+0.3,z); envGroup.add(cap);
+}
+function palm(x,z,scale){
+  var s=scale||1;
+  var trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.12*s,0.20*s,4.6*s,6),
+    new THREE.MeshPhongMaterial({color:0x3A2E22,shininess:2}));
+  trunk.position.set(x,2.3*s,z); trunk.rotation.z=(Math.random()-0.5)*0.22;
+  envGroup.add(trunk);
+  var frondMat=new THREE.MeshPhongMaterial({color:0x1E3A22,shininess:3,side:THREE.DoubleSide});
+  for(var i=0;i<6;i++){
+    var f=new THREE.Mesh(new THREE.ConeGeometry(0.42*s,2.5*s,4),frondMat);
+    var a=i/6*Math.PI*2;
+    f.position.set(x+Math.cos(a)*1.0*s, 4.5*s, z+Math.sin(a)*1.0*s);
+    f.rotation.set(Math.PI/2.3,0,a);
+    envGroup.add(f);
+    swayers.push({m:f,base:f.rotation.x,amp:0.05+Math.random()*0.05,seed:Math.random()*6.28});
   }
-})();
-[-40,-24,24,40].forEach(function(x){
-  var pole=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.12,6.4,7),trimMat);
-  pole.position.set(x,3.2,ROAD_Z+3); scene.add(pole);
-  var lamp=new THREE.Sprite(new THREE.SpriteMaterial({color:0xFFD08A,transparent:true,opacity:0.8,
-    blending:THREE.AdditiveBlending,depthWrite:false}));
-  lamp.scale.set(3.2,3.2,1); lamp.position.set(x,6.3,ROAD_Z+3); scene.add(lamp);
-});
+}
+function road(z,width,dashes){
+  var r=new THREE.Mesh(new THREE.PlaneGeometry(170,width),
+    new THREE.MeshPhongMaterial({color:0x0C1015,shininess:64,specular:0x3A4756}));
+  r.rotation.x=-Math.PI/2; r.position.set(0,0.02,z); envGroup.add(r);
+  if(dashes){
+    var dg=new THREE.PlaneGeometry(1.7,0.14), dm=litMat(0xC9B87A);
+    for(var x=-80;x<80;x+=6){
+      var d=new THREE.Mesh(dg,dm); d.rotation.x=-Math.PI/2;
+      d.position.set(x,0.035,z); envGroup.add(d);
+    }
+  }
+}
+function streetlights(z,xs){
+  xs.forEach(function(x){
+    var pole=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.12,6.4,7),trimMat);
+    pole.position.set(x,3.2,z); envGroup.add(pole);
+    var lamp=glowSprite(0xFFD08A,3.2,0.8);
+    lamp.position.set(x,6.3,z); envGroup.add(lamp);
+  });
+}
+
+var ENVS={
+  city:function(){
+    ground.material.color.setHex(0x11161C);
+    [[-6,-40,13,34],[9,-44,15,44],[-24,-46,14,27],[22,-39,11,24],
+     [-34,-58,17,52],[12,-62,19,38],[-2,-70,15,30],[30,-56,14,46],
+     [-30,-18,12,30],[-34,4,13,22],[-44,-34,15,40],
+     [30,-18,12,26],[35,5,13,24],[46,-32,16,36],
+     [-56,-66,18,58],[52,-68,17,50],[68,-44,15,42],[-68,-42,14,34]
+    ].forEach(function(t){ tower(t[0],t[1],t[2],t[3]); });
+    road(-26,4.6,true);
+    streetlights(-23,[-40,-24,24,40]);
+  },
+
+  /* low white villas behind garden walls, warm light in the windows */
+  villa:function(){
+    ground.material.color.setHex(0x161C18);
+    var wallM=new THREE.MeshPhongMaterial({color:0x6E6A5E,shininess:6});
+    var roofM=new THREE.MeshPhongMaterial({color:0x7A3428,shininess:8});
+    [[-26,-34,1.0],[-8,-42,1.25],[14,-38,1.0],[32,-30,1.15],
+     [-40,-20,0.9],[38,-14,1.0],[-30,6,0.95],[34,8,1.05]].forEach(function(v){
+      var x=v[0],z=v[1],s=v[2];
+      var body=new THREE.Mesh(new THREE.BoxGeometry(9*s,4.4*s,7*s),wallM);
+      body.position.set(x,2.2*s,z); envGroup.add(body);
+      var roof=new THREE.Mesh(new THREE.ConeGeometry(7.2*s,2.6*s,4),roofM);
+      roof.position.set(x,5.6*s,z); roof.rotation.y=Math.PI/4; envGroup.add(roof);
+      // warm windows, a couple lit
+      for(var w2=0;w2<3;w2++){
+        var lit=Math.random()<0.7;
+        var win=new THREE.Mesh(new THREE.PlaneGeometry(1.1*s,1.4*s),
+          litMat(lit?0xFFD79A:0x1A1E22, lit?0.95:1));
+        win.position.set(x-3+w2*3*s, 2.3*s, z+3.55*s); envGroup.add(win);
+        if(lit){ var gl=glowSprite(0xFFC98A,3.0*s,0.20); gl.position.copy(win.position); envGroup.add(gl); }
+      }
+      var gate=new THREE.Mesh(new THREE.BoxGeometry(11*s,1.5,0.35),
+        new THREE.MeshPhongMaterial({color:0x585449,shininess:4}));
+      gate.position.set(x,0.75,z+6.2*s); envGroup.add(gate);
+      palm(x-6.5*s,z+5*s,0.85*s);
+    });
+    road(-22,4.2,false);
+    streetlights(-19,[-34,-14,14,34]);
+  },
+
+  /* an apron, runway lights running to the horizon, and traffic overhead */
+  airport:function(){
+    ground.material.color.setHex(0x14171B);
+    var apron=new THREE.Mesh(new THREE.PlaneGeometry(180,60),
+      new THREE.MeshPhongMaterial({color:0x0E1216,shininess:40,specular:0x2A3440}));
+    apron.rotation.x=-Math.PI/2; apron.position.set(0,0.015,-52); envGroup.add(apron);
+    // runway centre line
+    var dg=new THREE.PlaneGeometry(5,0.3), dm=litMat(0xE8E2C8);
+    for(var x=-80;x<80;x+=11){
+      var d=new THREE.Mesh(dg,dm); d.rotation.x=-Math.PI/2;
+      d.position.set(x,0.03,-52); envGroup.add(d);
+    }
+    // edge lights: blue on the taxiway, amber down the runway
+    for(var i=-8;i<=8;i++){
+      var b=glowSprite(0x5AA8FF,1.5,0.85); b.position.set(i*10,0.5,-40); envGroup.add(b);
+      var a2=glowSprite(0xFFC061,1.4,0.8); a2.position.set(i*10,0.4,-64); envGroup.add(a2);
+    }
+    // control tower
+    var shaft=new THREE.Mesh(new THREE.CylinderGeometry(2.0,2.6,20,10),
+      new THREE.MeshPhongMaterial({color:0x2B333C,shininess:10}));
+    shaft.position.set(-34,10,-58); envGroup.add(shaft);
+    var cab=new THREE.Mesh(new THREE.CylinderGeometry(4.0,3.2,4.2,10),
+      litMat(0x9FD8F0,0.92));
+    cab.position.set(-34,22,-58); envGroup.add(cab);
+    var beaconTop=glowSprite(0xFF5A4A,5,0.9);
+    beaconTop.position.set(-34,25,-58); envGroup.add(beaconTop);
+    blinkers.push({s:beaconTop,rate:1.1,phase:0});
+    // hangars
+    [[26,-58,22],[54,-54,18]].forEach(function(h){
+      var g=new THREE.Mesh(new THREE.CylinderGeometry(h[2]*0.5,h[2]*0.5,h[2]*1.3,10,1,false,0,Math.PI),
+        new THREE.MeshPhongMaterial({color:0x333B44,shininess:8}));
+      g.rotation.z=Math.PI/2; g.rotation.y=Math.PI/2;
+      g.position.set(h[0],0,h[1]); envGroup.add(g);
+    });
+    // aircraft crossing the sky
+    [[-1,34,-70,7.5],[1,46,-88,5.5]].forEach(function(p){
+      var dir=p[0], y=p[1], z=p[2], speed=p[3];
+      var body=new THREE.Group();
+      var fus=new THREE.Mesh(new THREE.CapsuleGeometry(0.9,7,4,7),litMat(0xB9C4CE));
+      fus.rotation.z=Math.PI/2; body.add(fus);
+      var wing=new THREE.Mesh(new THREE.BoxGeometry(2.4,0.22,11),litMat(0x9AA6B2));
+      body.add(wing);
+      var tail=new THREE.Mesh(new THREE.BoxGeometry(1.6,2.4,0.22),litMat(0x9AA6B2));
+      tail.position.set(-4,1.1,0); body.add(tail);
+      var red=glowSprite(0xFF3A32,2.6,0.9); red.position.set(0,0,-5.6); body.add(red);
+      var grn=glowSprite(0x46FF7A,2.6,0.9); grn.position.set(0,0,5.6); body.add(grn);
+      var strobe=glowSprite(0xFFFFFF,3.4,1.0); strobe.position.set(-4,2.4,0); body.add(strobe);
+      blinkers.push({s:red,rate:1.6,phase:0}); blinkers.push({s:grn,rate:1.6,phase:0.5});
+      blinkers.push({s:strobe,rate:0.9,phase:0.25});
+      body.position.set(dir>0?-110:110,y,z);
+      body.rotation.y=dir>0?0:Math.PI;
+      envGroup.add(body);
+      planes.push({m:body,dir:dir,speed:speed,y:y});
+    });
+    road(-20,4.2,true);
+  },
+
+  /* deep planting, a low mist, and things blinking in the dark */
+  jungle:function(){
+    ground.material.color.setHex(0x121B14);
+    var trunkM=new THREE.MeshPhongMaterial({color:0x2A2118,shininess:2});
+    var leafM=[0x16301C,0x1D3D22,0x122A18].map(function(c){
+      return new THREE.MeshPhongMaterial({color:c,shininess:2,flatShading:true});
+    });
+    for(var i=0;i<52;i++){
+      var a=Math.random()*Math.PI*2;
+      var r=24+Math.random()*46;
+      var x=Math.cos(a)*r, z=-Math.abs(Math.sin(a)*r)-6;
+      if(Math.abs(x)<14&&z>-26) continue;         // keep the courtyard clear
+      var h=7+Math.random()*13;
+      var t=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.55,h,6),trunkM);
+      t.position.set(x,h/2,z); envGroup.add(t);
+      var canopy=new THREE.Mesh(new THREE.IcosahedronGeometry(3.2+Math.random()*2.6,0),
+        leafM[i%3]);
+      canopy.position.set(x,h+1.4,z); canopy.scale.y=0.7;
+      envGroup.add(canopy);
+      swayers.push({m:canopy,base:0,amp:0.03+Math.random()*0.03,seed:Math.random()*6.28,rot:"z"});
+    }
+    for(var p2=0;p2<7;p2++) palm(-40+p2*13,-16-Math.random()*8,0.9+Math.random()*0.4);
+    // ground mist
+    var mist=new THREE.Mesh(new THREE.PlaneGeometry(150,110),
+      new THREE.MeshBasicMaterial({color:0x2E4438,transparent:true,opacity:0.16,depthWrite:false}));
+    mist.rotation.x=-Math.PI/2; mist.position.set(0,0.9,-40); envGroup.add(mist);
+  },
+
+  /* sand, a dark sea, and surf catching the light */
+  beach:function(){
+    ground.material.color.setHex(0x2E2A20);
+    var sea=new THREE.Mesh(new THREE.PlaneGeometry(240,150),
+      new THREE.MeshPhongMaterial({color:0x0A1C2E,shininess:120,specular:0x4A7FA8}));
+    sea.rotation.x=-Math.PI/2; sea.position.set(0,0.05,-96); envGroup.add(sea);
+    // surf line, glowing faintly where it breaks
+    for(var i=0;i<5;i++){
+      var surf=new THREE.Mesh(new THREE.PlaneGeometry(230,1.5+i*0.5),
+        new THREE.MeshBasicMaterial({color:0xBFE3F5,transparent:true,opacity:0.14-i*0.02,depthWrite:false}));
+      surf.rotation.x=-Math.PI/2;
+      surf.position.set(0,0.07,-24-i*5);
+      envGroup.add(surf);
+      swayers.push({m:surf,base:-24-i*5,amp:1.2,seed:i*0.8,axis:"z"});
+    }
+    for(var p3=0;p3<10;p3++){
+      var px=-52+p3*11.5+(Math.random()-0.5)*4;
+      if(Math.abs(px)<13) continue;
+      palm(px,-16-Math.random()*7,0.95+Math.random()*0.5);
+    }
+    // a few boats out on the water
+    for(var b=0;b<5;b++){
+      var lit2=glowSprite(b%2?0xFFD08A:0x8AC6FF,2.4,0.75);
+      lit2.position.set(-70+b*32+Math.random()*10,1.4,-70-Math.random()*30);
+      envGroup.add(lit2);
+      blinkers.push({s:lit2,rate:0.5+Math.random()*0.6,phase:Math.random()});
+    }
+    var hut=new THREE.Mesh(new THREE.BoxGeometry(6,3,5),
+      new THREE.MeshPhongMaterial({color:0x4A3A28,shininess:4}));
+    hut.position.set(-30,1.5,-6); envGroup.add(hut);
+    var hutRoof=new THREE.Mesh(new THREE.ConeGeometry(5.4,2.2,4),
+      new THREE.MeshPhongMaterial({color:0x6B5636,shininess:3}));
+    hutRoof.position.set(-30,4.1,-6); hutRoof.rotation.y=Math.PI/4; envGroup.add(hutRoof);
+  }
+};
+
+function buildEnv(name){
+  clearGroup(envGroup);
+  planes.length=0; blinkers.length=0; swayers.length=0;
+  (ENVS[name]||ENVS.city)();
+}
 
 /* ============================================================
    LEVEL GEOMETRY — rebuilt for each place
@@ -1033,14 +1267,6 @@ var glowMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(WIN_W*3.4,WIN_H*3.0
   MAX_WINDOWS);
 winMesh.frustumCulled=false; glowMesh.frustumCulled=false;
 scene.add(winMesh); scene.add(glowMesh);
-
-function clearGroup(g){
-  for(var i=g.children.length-1;i>=0;i--){
-    var c=g.children[i];
-    g.remove(c);
-    if(c.geometry) c.geometry.dispose();
-  }
-}
 
 /* a wall's normal always points back toward the player at the origin */
 function faceNormal(f){ return (f.v<0)?1:-1; }
@@ -1140,11 +1366,23 @@ var lifeGroup=new THREE.Group();
 scene.add(lifeGroup);
 var lives=[];
 
+/* Bigger than life and deliberately cool-coloured: orange fire fills the
+   window behind them, so warm tones vanish into it and blues jump out. */
 var LIFE_KINDS=[
-  {kind:"person", h:0.62, head:0.13, col:0xFFF0C8},
-  {kind:"kid",    h:0.40, head:0.115,col:0xC8F0FF},
-  {kind:"pet",    h:0.22, head:0.10, col:0xFFD8A0}
+  {kind:"person", h:0.95, head:0.17, col:0xEAF6FF},
+  {kind:"kid",    h:0.68, head:0.15, col:0x8FE4FF},
+  {kind:"pet",    h:0.42, head:0.14, col:0xA8FFC8}
 ];
+
+/* a downward chevron that floats over an occupied window */
+var MARKER_TEX=(function(){
+  var c=document.createElement("canvas"); c.width=c.height=64;
+  var g=c.getContext("2d");
+  g.clearRect(0,0,64,64);
+  g.strokeStyle="#FFFFFF"; g.lineWidth=9; g.lineCap="round"; g.lineJoin="round";
+  g.beginPath(); g.moveTo(14,20); g.lineTo(32,44); g.lineTo(50,20); g.stroke();
+  return new THREE.CanvasTexture(c);
+})();
 
 function makeFigure(kind){
   var g=new THREE.Group();
@@ -1167,10 +1405,10 @@ function makeFigure(kind){
     g.add(arm);
     g.userData.arm=arm;
   }
-  // a soft halo so they stay visible against the fire behind them
-  var halo=new THREE.Sprite(new THREE.SpriteMaterial({color:kind.col,transparent:true,opacity:0.32,
+  // a strong halo, so they stay readable with a wall of flame behind them
+  var halo=new THREE.Sprite(new THREE.SpriteMaterial({color:kind.col,transparent:true,opacity:0.55,
     blending:THREE.AdditiveBlending,depthWrite:false}));
-  halo.scale.set(kind.h*2.6,kind.h*2.6,1);
+  halo.scale.set(kind.h*3.4,kind.h*3.4,1);
   halo.position.y=kind.h*0.55;
   g.add(halo);
   g.userData.halo=halo;
@@ -1192,7 +1430,16 @@ function placeLives(cfg,fireIdx){
                      w.z + (w.face.ax==="z" ? 0.22*w.nrm : 0));
     fig.rotation.y=w.rotY;
     lifeGroup.add(fig);
-    var life={win:wi,fig:fig,kind:kind.kind,t:cfg.rescueTime,max:cfg.rescueTime,
+
+    // a chevron hanging over the window, so you can find them from anywhere
+    var mark=new THREE.Sprite(new THREE.SpriteMaterial({map:MARKER_TEX,color:kind.col,
+      transparent:true,opacity:0.9,depthWrite:false,depthTest:false}));
+    mark.scale.set(1.15,1.15,1);
+    mark.position.set(w.x,w.y+WIN_HH+1.05,w.z);
+    mark.renderOrder=5;
+    lifeGroup.add(mark);
+
+    var life={win:wi,fig:fig,mark:mark,kind:kind.kind,t:cfg.rescueTime,max:cfg.rescueTime,
               state:"waiting",seed:Math.random()*6.28,fade:1};
     lives.push(life);
     w.life=life;
@@ -1333,6 +1580,20 @@ function splashDrops(x,y,z,n){
   }
 }
 
+/* Thin haze drifting across the whole scene. Enough to feel like there is
+   air on fire nearby, never enough to hide a window you need to hit. */
+var haze=[];
+(function(){
+  for(var i=0;i<14;i++){
+    var s=new THREE.Sprite(new THREE.SpriteMaterial({
+      color:0x9AA8B2,transparent:true,opacity:0.05+Math.random()*0.035,depthWrite:false}));
+    s.scale.set(15+Math.random()*13,9+Math.random()*7,1);
+    s.position.set(-52+Math.random()*104, 2.5+Math.random()*11, -6-Math.random()*40);
+    scene.add(s);
+    haze.push({s:s,vx:0.30+Math.random()*0.45,seed:Math.random()*6.28});
+  }
+})();
+
 /* ============================================================
    STATE
    ============================================================ */
@@ -1448,9 +1709,27 @@ function winAt(face,along,y){
   return -1;
 }
 
+var warnEl=$("warn"), warnUntil=0;
+function warnPressure(){
+  var t=performance.now();
+  if(t<warnUntil) return;
+  warnUntil=t+1600;
+  warnEl.classList.remove("show"); void warnEl.offsetWidth; warnEl.classList.add("show");
+}
+
+/* A fire low down needs a gentle, close arc — blasting it at full power just
+   throws water over the top of it. Below this height on a wall, the pressure
+   has to come down or the water does nothing. */
+function isLowWindow(w){ return w.y < w.face.top*TUNE.lowFrac; }
+
 function hitWindow(i,x,y,z){
   var w=wins[i];
   if(w.fire<=0) return;
+  if(isLowWindow(w) && pressure>TUNE.lowMaxPressure){
+    warnPressure();
+    if(Math.random()<0.25) splashDrops(x,y,z,1);
+    return;
+  }
   var rateNow=TUNE.emitMin+(TUNE.emitMax-TUNE.emitMin)*pressure;
   w.fire-=TUNE.douse/rateNow;
   if(Math.random()<0.30) puffSteam(x,y,z,1);
@@ -1516,6 +1795,31 @@ function step(dt,noDraw){
   var nowMs=performance.now();
   beacon.color.setHex((Math.floor(nowMs/525)%2)?0x3A7BFF:0xFF3A46);
   beacon.intensity=1.25+Math.sin(nowMs/90)*0.18;
+
+  /* the world around the fire keeps moving */
+  for(var hi2=0;hi2<haze.length;hi2++){
+    var H=haze[hi2];
+    H.s.position.x+=H.vx*dt;
+    H.s.position.y+=Math.sin(now*0.5+H.seed)*0.06*dt;
+    if(H.s.position.x>58) H.s.position.x=-58;
+  }
+  for(var pl=0;pl<planes.length;pl++){
+    var P=planes[pl];
+    P.m.position.x+=P.dir*P.speed*dt;
+    P.m.position.y=P.y+Math.sin(now*0.4+pl)*0.5;
+    if(P.dir>0&&P.m.position.x>120) P.m.position.x=-120;
+    if(P.dir<0&&P.m.position.x<-120) P.m.position.x=120;
+  }
+  for(var bl=0;bl<blinkers.length;bl++){
+    var B=blinkers[bl];
+    B.s.material.opacity=(((now/B.rate+B.phase)%1)<0.42)?0.95:0.06;
+  }
+  for(var sw=0;sw<swayers.length;sw++){
+    var S=swayers[sw];
+    if(S.axis==="z") S.m.position.z=S.base+Math.sin(now*0.55+S.seed)*S.amp;
+    else if(S.rot==="z") S.m.rotation.z=Math.sin(now*0.8+S.seed)*S.amp;
+    else S.m.rotation.x=S.base+Math.sin(now*0.9+S.seed)*S.amp;
+  }
 
   /* ---- water ---- */
   if(live){
@@ -1705,8 +2009,14 @@ function step(dt,noDraw){
       var bob=Math.sin(now*(3.2*urg)+L.seed);
       L.fig.position.y = w2.y-WIN_HH+0.06+bob*0.045;
       if(L.fig.userData.arm) L.fig.userData.arm.rotation.z=-0.5+bob*0.65;
-      if(L.fig.userData.halo) L.fig.userData.halo.material.opacity=0.24+0.22*(0.5+0.5*bob)*urg*0.5;
+      if(L.fig.userData.halo) L.fig.userData.halo.material.opacity=0.42+0.30*(0.5+0.5*bob);
+      // the chevron bounces and beats faster the less time is left
+      L.mark.position.y=w2.y+WIN_HH+1.05+bob*0.16;
+      L.mark.material.opacity=0.55+0.45*(0.5+0.5*Math.sin(now*(4.0*urg)+L.seed));
+      var sc=1.15+0.12*(0.5+0.5*bob);
+      L.mark.scale.set(sc,sc,1);
     } else if(L.fade>0){
+      if(L.mark) L.mark.visible=false;
       // saved or lost: sink away and fade out. No spectacle either way.
       L.fade-=dt*(L.state==="lost"?0.9:1.6);
       var f3=Math.max(0,L.fade);
@@ -1770,6 +2080,7 @@ function startLevel(n){
   level=Math.max(1,Math.min(10,n));
   cfg=LEVELS[level-1];
   buildGeometry(cfg);
+  buildEnv(cfg.env);
   saved=0; burning=0; finished=false; paused=false;
   elapsed=0; spreadClock=cfg.spreadEvery;
   yaw=0; pitch=TUNE.pitchStart; pressure=0.40; paintGauge();
@@ -1834,7 +2145,7 @@ function buildMap(){
     }
     wrap.appendChild(b);
     var nm=document.createElement("div");
-    nm.className="nodeFires"; nm.textContent=lv.name;
+    nm.className="nodeFires "+((i%2===0)?"right":"left"); nm.textContent=lv.name;
     wrap.appendChild(nm);
     if(save.best[num]!==undefined){
       var bt=document.createElement("div");
