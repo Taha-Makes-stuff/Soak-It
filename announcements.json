@@ -1,13 +1,18 @@
 {
-  "author": {
-    "name": "Taha",
-    "initial": "T"
-  },
-  "posts": [
-    {
-      "date": "28 August 2026",
-      "title": "Announcements are here",
-      "body": "You can now read messages from me right inside the game.\n\nThis update also adds profiles, five different places to fight fires in, people and pets to rescue, and fires that go out quicker.\n\nMore coming soon."
-    }
-  ]
+    "author":  {
+                   "name":  "Taha",
+                   "initial":  "T"
+               },
+    "posts":  [
+                  {
+                      "date":  "28 August 2026",
+                      "title":  "Big update",
+                      "body":  "Ten different places to fight fires in now. One of them is an airport - look up and you\u0027ll see planes going over with their lights blinking.\n\nThere\u0027s smoke drifting through the air now too, and people, kids and pets in the windows to rescue before their time runs out.\n\nShop coming really soon."
+                  },
+                  {
+                      "date":  "28 August 2026",
+                      "title":  "Announcements are here",
+                      "body":  "You can now read messages from me right inside the game.\n\nThis update also adds profiles, five different places to fight fires in, people and pets to rescue, and fires that go out quicker.\n\nMore coming soon."
+                  }
+              ]
 }
