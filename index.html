@@ -240,13 +240,40 @@
   .post{
     background:rgba(14,22,34,.72);
     border:1px solid var(--glass-line);
-    border-left:3px solid var(--ember);
+    border-left:3px solid #8B3FE0;
     border-radius:4px;padding:13px 15px;margin-bottom:11px;
+  }
+  .post .by{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+  .post .byName{
+    font-family:var(--cond);font-size:14px;font-weight:800;letter-spacing:.12em;
+    text-transform:uppercase;color:#D9BCFF;
   }
   .post .when{
     font-family:var(--cond);font-size:10.5px;font-weight:700;letter-spacing:.2em;
-    text-transform:uppercase;color:rgba(233,241,246,.42);
+    text-transform:uppercase;color:rgba(233,241,246,.42);margin-left:auto;
   }
+
+  /* The creator's mark. It is not offered in the profile editor — it comes
+     from the announcements file, which only Taha can write. */
+  .avatar.creator{
+    background:#080310;color:#EBD9FF;position:relative;overflow:hidden;
+    box-shadow:0 0 0 1px rgba(178,107,255,.55), 0 0 14px rgba(139,63,224,.45);
+  }
+  .avatar.creator .glyph{position:relative;z-index:2;}
+  .avatar.creator::before{
+    content:"";position:absolute;inset:-40%;
+    background:conic-gradient(from 0deg,
+      transparent 0%, #6A21C4 14%, transparent 30%,
+      #B26BFF 46%, transparent 62%, #7B2FD4 80%, transparent 100%);
+    animation:swirl 3.6s linear infinite;
+  }
+  .avatar.creator::after{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(circle at 50% 50%, rgba(4,0,10,.86) 26%, rgba(4,0,10,.30) 62%, transparent 78%);
+    animation:breathe 2.4s ease-in-out infinite;
+  }
+  @keyframes swirl{to{transform:rotate(360deg);}}
+  @keyframes breathe{0%,100%{opacity:.85;}50%{opacity:.55;}}
   .post h3{
     font-family:var(--cond);font-size:19px;font-weight:800;letter-spacing:.02em;
     margin:4px 0 6px;color:var(--brass-hi);text-transform:uppercase;
@@ -876,7 +903,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 9;
+var GAME_VERSION = 10;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -1039,10 +1066,12 @@ function paintChip(){
    they still read with no signal.
    ============================================================ */
 var NEWS_URL="https://taha-makes-stuff.github.io/Soak-It/announcements.json";
-var news=[], newsSeen="";
+var news=[], newsSeen="", newsAuthor={name:"Taha",initial:"T"};
 try{
   var cached=localStorage.getItem("soakit.news");
   if(cached) news=JSON.parse(cached)||[];
+  var ca=localStorage.getItem("soakit.newsAuthor");
+  if(ca){ var a0=JSON.parse(ca); if(a0&&a0.name) newsAuthor=a0; }
   newsSeen=localStorage.getItem("soakit.newsSeen")||"";
 }catch(e){}
 
@@ -1061,10 +1090,21 @@ function renderNews(){
   news.forEach(function(p){
     var el=document.createElement("div");
     el.className="post";
-    var when=document.createElement("div"); when.className="when"; when.textContent=p.date||"";
+
+    // who posted it: the mark comes from Taha's own file, so it cannot be faked
+    var by=document.createElement("div"); by.className="by";
+    var av=document.createElement("span"); av.className="avatar creator";
+    var gl=document.createElement("span"); gl.className="glyph";
+    gl.textContent=(newsAuthor.initial||(newsAuthor.name||"T")[0]||"T").toUpperCase();
+    av.appendChild(gl);
+    var nm=document.createElement("span"); nm.className="byName";
+    nm.textContent=newsAuthor.name||"Taha";
+    var when=document.createElement("span"); when.className="when"; when.textContent=p.date||"";
+    by.appendChild(av); by.appendChild(nm); by.appendChild(when);
+
     var h=document.createElement("h3"); h.textContent=p.title||"";
     var b=document.createElement("p"); b.textContent=p.body||"";   // text only: never HTML
-    el.appendChild(when); el.appendChild(h); el.appendChild(b);
+    el.appendChild(by); el.appendChild(h); el.appendChild(b);
     list.appendChild(el);
   });
 }
@@ -1076,7 +1116,14 @@ function fetchNews(){
         news=j.posts.slice(0,30).map(function(p){
           return {date:String(p.date||""),title:String(p.title||""),body:String(p.body||"")};
         });
-        try{ localStorage.setItem("soakit.news",JSON.stringify(news)); }catch(e){}
+        if(j.author&&j.author.name){
+          newsAuthor={name:String(j.author.name).slice(0,20),
+                      initial:String(j.author.initial||j.author.name[0]||"T").slice(0,1)};
+        }
+        try{
+          localStorage.setItem("soakit.news",JSON.stringify(news));
+          localStorage.setItem("soakit.newsAuthor",JSON.stringify(newsAuthor));
+        }catch(e){}
         paintNewsDot();
       })["catch"](function(){});
   }catch(e){}
