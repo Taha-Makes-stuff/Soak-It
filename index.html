@@ -192,6 +192,115 @@
     letter-spacing:.20em;color:rgba(233,241,246,.30);
   }
 
+  /* ============ profile chip on the start screen ============ */
+  .chip{
+    position:absolute;display:flex;align-items:center;gap:9px;
+    background:var(--glass);border:1px solid var(--glass-line);
+    border-radius:999px;padding:5px 14px 5px 5px;cursor:pointer;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  }
+  .chip:active{transform:scale(.97);}
+  .chip:focus-visible{outline:3px solid var(--water);outline-offset:3px;}
+  .avatar{
+    width:34px;height:34px;border-radius:50%;flex:0 0 auto;
+    display:grid;place-items:center;overflow:hidden;
+    font-family:var(--cond);font-weight:800;font-size:16px;color:#0A1018;
+    background:var(--brass);
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+  .chip .who{
+    font-family:var(--cond);font-size:13px;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--paper);
+    max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+
+  /* an unread announcement gets a dot */
+  .dot{
+    position:absolute;top:-3px;right:-3px;
+    width:11px;height:11px;border-radius:50%;
+    background:var(--ember);border:2px solid #0D1520;
+  }
+  .btn{position:relative;}
+
+  /* ============ announcements ============ */
+  #news .wrap, #profile .wrap{
+    width:100%;max-width:460px;height:100%;
+    display:flex;flex-direction:column;
+    padding:calc(14px + env(safe-area-inset-top)) 16px calc(14px + env(safe-area-inset-bottom));
+  }
+  .sheetHead{
+    display:flex;align-items:center;justify-content:center;
+    position:relative;flex:0 0 auto;margin-bottom:14px;
+  }
+  .sheetHead h2{
+    font-family:var(--cond);font-weight:800;font-style:italic;
+    font-size:28px;letter-spacing:.03em;text-transform:uppercase;margin:0;
+  }
+  #newsList{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  .post{
+    background:rgba(14,22,34,.72);
+    border:1px solid var(--glass-line);
+    border-left:3px solid var(--ember);
+    border-radius:4px;padding:13px 15px;margin-bottom:11px;
+  }
+  .post .when{
+    font-family:var(--cond);font-size:10.5px;font-weight:700;letter-spacing:.2em;
+    text-transform:uppercase;color:rgba(233,241,246,.42);
+  }
+  .post h3{
+    font-family:var(--cond);font-size:19px;font-weight:800;letter-spacing:.02em;
+    margin:4px 0 6px;color:var(--brass-hi);text-transform:uppercase;
+  }
+  .post p{
+    font-family:var(--body);font-size:14px;line-height:1.55;
+    color:rgba(233,241,246,.78);margin:0;white-space:pre-wrap;
+  }
+  .empty{
+    font-family:var(--body);font-size:14px;color:rgba(233,241,246,.42);
+    text-align:center;padding:40px 20px;line-height:1.6;
+  }
+
+  /* ============ profile editor ============ */
+  .bigAvatar{
+    width:96px;height:96px;border-radius:50%;margin:0 auto 8px;
+    display:grid;place-items:center;overflow:hidden;position:relative;
+    font-family:var(--cond);font-weight:800;font-size:42px;color:#0A1018;
+    background:var(--brass);cursor:pointer;
+  }
+  .bigAvatar img{width:100%;height:100%;object-fit:cover;display:block;}
+  .avatarHint{
+    text-align:center;font-family:var(--cond);font-size:10.5px;font-weight:700;
+    letter-spacing:.2em;text-transform:uppercase;color:rgba(233,241,246,.42);
+    margin-bottom:16px;
+  }
+  .field{margin-bottom:15px;}
+  .field label{
+    display:block;font-family:var(--cond);font-size:11px;font-weight:700;
+    letter-spacing:.2em;text-transform:uppercase;color:rgba(233,241,246,.55);
+    margin-bottom:6px;
+  }
+  .field input[type=text], .field textarea{
+    width:100%;font-family:var(--body);font-size:15px;color:var(--paper);
+    background:rgba(8,13,20,.7);border:1px solid var(--glass-line);
+    border-radius:3px;padding:10px 12px;outline:none;resize:none;
+  }
+  .field input[type=text]:focus, .field textarea:focus{border-color:var(--brass);}
+  .field .count{
+    float:right;font-family:var(--cond);font-size:10.5px;font-weight:700;
+    color:rgba(233,241,246,.35);letter-spacing:.1em;
+  }
+  .swatches{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-bottom:4px;}
+  .swatch{
+    width:30px;height:30px;border-radius:50%;cursor:pointer;
+    border:2px solid transparent;padding:0;
+  }
+  .swatch.on{border-color:var(--paper);}
+  .swatch:focus-visible{outline:2px solid var(--water);outline-offset:2px;}
+  .privacy{
+    font-family:var(--body);font-size:12px;line-height:1.5;
+    color:rgba(233,241,246,.40);text-align:center;margin:2px 0 14px;
+  }
+
   /* ============ levels map ============ */
   #levels .wrap{
     width:100%;max-width:460px;height:100%;
@@ -509,13 +618,20 @@
 </div>
 
 <div id="dragHint">Drag anywhere to aim the hose<br>Slide the bar to set pressure</div>
-<div id="warn">Too much pressure &mdash; drop below <b>40%</b></div>
+<div id="warn">Too much pressure &mdash; drop below <b>50%</b></div>
 <div id="toast"></div>
 
 <!-- ===================== start ===================== -->
 <div class="screen on" id="start">
   <button class="icon" id="startGear" style="top:calc(14px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right));" aria-label="Settings">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.6v2.2M12 19.2v2.2M21.4 12h-2.2M4.8 12H2.6M18.6 5.4l-1.6 1.6M7 17l-1.6 1.6M18.6 18.6L17 17M7 7L5.4 5.4"/></svg>
+  </button>
+
+  <button class="chip" id="profileChip"
+          style="top:calc(14px + env(safe-area-inset-top));left:calc(14px + env(safe-area-inset-left));"
+          aria-label="Your profile">
+    <span class="avatar" id="chipAvatar">?</span>
+    <span class="who" id="chipName">Set up</span>
   </button>
 
   <div class="card">
@@ -581,6 +697,7 @@
     <div class="startBtns afterTruck">
       <button class="btn hot" id="playBtn">Play</button>
       <button class="btn ghost" id="levelsBtn">Levels</button>
+      <button class="btn ghost" id="newsBtn">Announcements<span class="dot" id="newsDot" hidden></span></button>
     </div>
 
     <p class="hint afterTruck">Drag to aim the hose. Slide the bar for pressure.</p>
@@ -609,6 +726,46 @@
       <div style="flex:1"></div>
     </div>
     <div id="map"><svg id="mapLine" preserveAspectRatio="none"></svg></div>
+  </div>
+</div>
+
+<!-- ===================== announcements ===================== -->
+<div class="screen" id="news">
+  <button class="icon" id="newsBack" style="top:calc(14px + env(safe-area-inset-top));left:calc(14px + env(safe-area-inset-left));" aria-label="Back">
+    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <div class="wrap">
+    <div class="sheetHead"><h2>Announcements</h2></div>
+    <div id="newsList"></div>
+  </div>
+</div>
+
+<!-- ===================== profile ===================== -->
+<div class="screen" id="profile">
+  <button class="icon" id="profBack" style="top:calc(14px + env(safe-area-inset-top));left:calc(14px + env(safe-area-inset-left));" aria-label="Back">
+    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <div class="wrap">
+    <div class="sheetHead"><h2>Your profile</h2></div>
+
+    <div class="bigAvatar" id="bigAvatar" role="button" tabindex="0" aria-label="Choose a picture">?</div>
+    <div class="avatarHint">Tap to choose a picture</div>
+    <input type="file" id="picInput" accept="image/*" hidden>
+
+    <div class="swatches" id="swatches"></div>
+    <p class="privacy">Your profile stays on this phone. Nothing is uploaded anywhere.</p>
+
+    <div class="field">
+      <label for="profName">Name <span class="count" id="nameCount">0/16</span></label>
+      <input type="text" id="profName" maxlength="16" placeholder="What should we call you?">
+    </div>
+    <div class="field">
+      <label for="profBio">Bio <span class="count" id="bioCount">0/90</span></label>
+      <textarea id="profBio" rows="3" maxlength="90" placeholder="Say something about yourself"></textarea>
+    </div>
+
+    <button class="btn hot wide" id="profSave">Save</button>
+    <button class="btn ghost wide" id="profClear">Remove picture</button>
   </div>
 </div>
 
@@ -719,7 +876,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 8;
+var GAME_VERSION = 9;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -752,7 +909,7 @@ var TUNE = {
   pitchMin: -0.25,
   pitchMax: 1.15,
   pitchStart: 0.72,
-  douse: 0.012,
+  douse: 0.017,        // fires give up quicker than they used to
   fireGrow: 0.035,
   spreadAt: 0.60,
   spreadCap: 2,
@@ -761,7 +918,7 @@ var TUNE = {
   shake: 0.012,
   // a fire in the bottom 40% of a wall must be fought at 40% pressure or less
   lowFrac: 0.40,
-  lowMaxPressure: 0.40
+  lowMaxPressure: 0.50
 };
 
 var WIN_W=1.5, WIN_H=2.0, WIN_HW=WIN_W/2, WIN_HH=WIN_H/2;
@@ -846,6 +1003,84 @@ try{
   }
 }catch(e){}
 function persist(){ try{ localStorage.setItem("soakit.save",JSON.stringify(save)); }catch(e){} }
+
+/* ============================================================
+   PROFILE — kept on this phone only. Nothing is ever uploaded,
+   which is why a picture of a real person is safe to allow here.
+   ============================================================ */
+var AV_COLORS=["#C9922E","#3F8FD8","#D8524A","#43A96B","#9B5FD0","#E08A2E"];
+var profile={name:"",bio:"",pic:null,color:0};
+try{
+  var pr=localStorage.getItem("soakit.profile");
+  if(pr){
+    var o=JSON.parse(pr);
+    if(o&&typeof o==="object"){
+      profile.name=(o.name||"").slice(0,16);
+      profile.bio=(o.bio||"").slice(0,90);
+      profile.pic=(typeof o.pic==="string"&&o.pic.indexOf("data:image")===0)?o.pic:null;
+      profile.color=Math.max(0,Math.min(AV_COLORS.length-1,o.color|0));
+    }
+  }
+}catch(e){}
+function saveProfile(){ try{ localStorage.setItem("soakit.profile",JSON.stringify(profile)); }catch(e){} }
+function initial(){ return (profile.name.trim()[0]||"?").toUpperCase(); }
+function paintAvatar(el){
+  if(profile.pic){ el.innerHTML=""; var im=new Image(); im.src=profile.pic; el.appendChild(im); el.style.background="#0A1018"; }
+  else { el.textContent=initial(); el.style.background=AV_COLORS[profile.color]; }
+}
+function paintChip(){
+  paintAvatar($("chipAvatar"));
+  $("chipName").textContent = profile.name.trim() || "Set up";
+}
+
+/* ============================================================
+   ANNOUNCEMENTS — a file on Taha's own site. Nobody else can push
+   to his repo, so nobody else can ever write one. Cached here so
+   they still read with no signal.
+   ============================================================ */
+var NEWS_URL="https://taha-makes-stuff.github.io/Soak-It/announcements.json";
+var news=[], newsSeen="";
+try{
+  var cached=localStorage.getItem("soakit.news");
+  if(cached) news=JSON.parse(cached)||[];
+  newsSeen=localStorage.getItem("soakit.newsSeen")||"";
+}catch(e){}
+
+function newestId(){ return news.length ? (news[0].date+"|"+news[0].title) : ""; }
+function paintNewsDot(){
+  var d=$("newsDot");
+  if(d) d.hidden = !(news.length && newestId()!==newsSeen);
+}
+function renderNews(){
+  var list=$("newsList");
+  if(!news.length){
+    list.innerHTML='<div class="empty">Nothing yet.<br>This is where Taha posts updates about the game.</div>';
+    return;
+  }
+  list.innerHTML="";
+  news.forEach(function(p){
+    var el=document.createElement("div");
+    el.className="post";
+    var when=document.createElement("div"); when.className="when"; when.textContent=p.date||"";
+    var h=document.createElement("h3"); h.textContent=p.title||"";
+    var b=document.createElement("p"); b.textContent=p.body||"";   // text only: never HTML
+    el.appendChild(when); el.appendChild(h); el.appendChild(b);
+    list.appendChild(el);
+  });
+}
+function fetchNews(){
+  try{
+    fetch(NEWS_URL,{cache:"no-cache"}).then(function(r){ return r.ok?r.json():null; })
+      .then(function(j){
+        if(!j||!j.posts||!j.posts.length) return;
+        news=j.posts.slice(0,30).map(function(p){
+          return {date:String(p.date||""),title:String(p.title||""),body:String(p.body||"")};
+        });
+        try{ localStorage.setItem("soakit.news",JSON.stringify(news)); }catch(e){}
+        paintNewsDot();
+      })["catch"](function(){});
+  }catch(e){}
+}
 
 /* ============================================================
    SOUND — all generated, no files, works offline
@@ -2065,7 +2300,7 @@ function step(dt,noDraw){
 /* ============================================================
    SCREENS
    ============================================================ */
-var SCREENS=["start","levels","pause","settings","end"];
+var SCREENS=["start","levels","news","profile","pause","settings","end"];
 function show(which){
   SCREENS.forEach(function(id){
     var el=$(id);
@@ -2107,7 +2342,10 @@ function finish(won){
     if(best===undefined||t<best){ save.best[level]=Math.round(t*10)/10; best=save.best[level]; }
     persist(); Snd.win();
   } else Snd.lose();
-  $("endTitle").textContent=won?"Fire out":"Building lost";
+  var who=profile.name.trim();
+  $("endTitle").textContent = won
+    ? (who ? "Nice one, "+who : "Fire out")
+    : "Building lost";
   $("endTime").textContent=t.toFixed(1)+"s";
   $("endBest").textContent=(won?("Best "+best.toFixed(1)+"s  ·  "):"")+cfg.name;
   var rescueLine = lives.length
@@ -2196,6 +2434,85 @@ vol.addEventListener("input",function(){ applyVol(parseInt(vol.value,10)/100); p
 vol.addEventListener("change",function(){ Snd.init(); Snd.resume(); Snd.tap(); });
 applyVol(save.vol);
 
+/* ---- announcements ---- */
+$("newsBtn").addEventListener("click",function(){
+  Snd.init(); Snd.tap();
+  renderNews();
+  newsSeen=newestId();
+  try{ localStorage.setItem("soakit.newsSeen",newsSeen); }catch(e){}
+  paintNewsDot();
+  show("news");
+});
+$("newsBack").addEventListener("click",function(){ Snd.tap(); show("start"); });
+
+/* ---- profile ---- */
+var profName=$("profName"), profBio=$("profBio");
+function openProfile(){
+  profName.value=profile.name;
+  profBio.value=profile.bio;
+  $("nameCount").textContent=profile.name.length+"/16";
+  $("bioCount").textContent=profile.bio.length+"/90";
+  paintAvatar($("bigAvatar"));
+  paintSwatches();
+  show("profile");
+}
+function paintSwatches(){
+  var box=$("swatches");
+  box.innerHTML="";
+  AV_COLORS.forEach(function(c,i){
+    var b=document.createElement("button");
+    b.className="swatch"+(i===profile.color&&!profile.pic?" on":"");
+    b.style.background=c;
+    b.setAttribute("aria-label","Colour "+(i+1));
+    b.addEventListener("click",function(){
+      profile.color=i; profile.pic=null;
+      Snd.tap(); paintAvatar($("bigAvatar")); paintSwatches();
+    });
+    box.appendChild(b);
+  });
+}
+$("profileChip").addEventListener("click",function(){ Snd.init(); Snd.tap(); openProfile(); });
+$("profBack").addEventListener("click",function(){ Snd.tap(); show("start"); });
+profName.addEventListener("input",function(){ $("nameCount").textContent=profName.value.length+"/16"; });
+profBio.addEventListener("input",function(){ $("bioCount").textContent=profBio.value.length+"/90"; });
+
+$("bigAvatar").addEventListener("click",function(){ $("picInput").click(); });
+$("bigAvatar").addEventListener("keydown",function(e){ if(e.key==="Enter"||e.key===" ") $("picInput").click(); });
+
+/* Shrink whatever they pick down to a small square before storing it —
+   a phone photo is several megabytes and would blow the storage limit. */
+$("picInput").addEventListener("change",function(e){
+  var f=e.target.files&&e.target.files[0];
+  if(!f) return;
+  var rd=new FileReader();
+  rd.onload=function(ev){
+    var img=new Image();
+    img.onload=function(){
+      var S=224, c=document.createElement("canvas");
+      c.width=c.height=S;
+      var g=c.getContext("2d");
+      var side=Math.min(img.width,img.height);
+      g.drawImage(img,(img.width-side)/2,(img.height-side)/2,side,side,0,0,S,S);
+      try{
+        profile.pic=c.toDataURL("image/jpeg",0.82);
+        paintAvatar($("bigAvatar")); paintSwatches();
+      }catch(err){}
+    };
+    img.src=ev.target.result;
+  };
+  rd.readAsDataURL(f);
+  e.target.value="";
+});
+
+$("profClear").addEventListener("click",function(){
+  Snd.tap(); profile.pic=null; paintAvatar($("bigAvatar")); paintSwatches();
+});
+$("profSave").addEventListener("click",function(){
+  profile.name=profName.value.trim().slice(0,16);
+  profile.bio=profBio.value.trim().slice(0,90);
+  saveProfile(); paintChip(); Snd.tap(); show("start");
+});
+
 $("retryBtn").addEventListener("click",function(){ Snd.tap(); startLevel(level); });
 $("nextBtn").addEventListener("click",function(){ Snd.tap(); startLevel(Math.min(10,level+1)); });
 $("endMenu").addEventListener("click",function(){ Snd.tap(); goStart(); });
@@ -2283,7 +2600,12 @@ window.__soak={
 };
 
 buildGeometry(LEVELS[0]);
+buildEnv(LEVELS[0].env);
 buildMap();
+paintChip();
+paintNewsDot();
+renderNews();
+fetchNews();
 show("start");
 tick();
 })();
