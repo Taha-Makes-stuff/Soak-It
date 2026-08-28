@@ -19,6 +19,7 @@
     --blue-hi:#7FB0FF;
     --glass:rgba(8,14,22,.62);
     --glass-line:rgba(207,233,255,.20);
+    --locked:#3A4654;
 
     --cond:"Barlow Condensed",'Arial Narrow',Impact,sans-serif;
     --body:"Barlow",system-ui,-apple-system,Segoe UI,sans-serif;
@@ -44,138 +45,66 @@
   #stage{position:fixed;inset:0;touch-action:none;}
   #stage canvas{display:block;width:100%;height:100%;}
 
-  /* ================= HUD ================= */
-  #hud{
-    position:fixed;inset:0;
-    pointer-events:none;
-    display:grid;
-    grid-template-rows:auto 1fr auto;
-    padding:calc(12px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right))
-            calc(14px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
-    font-family:var(--cond);
+  /* ============ shared bits ============ */
+  .screen{
+    position:fixed;inset:0;z-index:6;
+    display:none;
+    background:
+      radial-gradient(90% 60% at 50% 88%, rgba(200,32,44,.18), transparent 70%),
+      linear-gradient(#070B11, #0D1520 62%, #131C28);
   }
-  .topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
-  .plate{
+  .screen.on{display:grid;place-items:center;}
+  .screen.sheet{
+    background:rgba(6,10,16,.88);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  }
+
+  .btn{
+    font-family:var(--cond);font-weight:800;letter-spacing:.2em;
+    text-transform:uppercase;border:0;border-radius:3px;cursor:pointer;
+    color:#07101A;background:linear-gradient(160deg,var(--brass-hi),var(--brass) 55%,#8A6115);
+    padding:14px 38px;font-size:16px;
+    box-shadow:0 4px 18px rgba(0,0,0,.45);
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn:focus-visible{outline:3px solid var(--water);outline-offset:3px;}
+  .btn.hot{
+    color:#2A0A05;
+    background:linear-gradient(160deg,var(--ember-hi),var(--ember) 55%,#C4460F);
+    box-shadow:0 6px 24px rgba(255,122,46,.30),0 2px 8px rgba(0,0,0,.5);
+    font-size:19px;padding:16px 52px;letter-spacing:.22em;
+  }
+  .btn.ghost{
+    background:transparent;color:var(--paper);
+    border:1.5px solid rgba(201,146,46,.55);
+    box-shadow:none;
+  }
+  .btn.wide{display:block;width:100%;margin-top:11px;}
+
+  /* small round icon button, used in screen corners */
+  .icon{
+    position:absolute;
+    width:44px;height:44px;border-radius:50%;
+    display:grid;place-items:center;
     background:var(--glass);
     border:1px solid var(--glass-line);
-    border-radius:3px;
-    padding:6px 11px 5px;
-    backdrop-filter:blur(9px);
-    -webkit-backdrop-filter:blur(9px);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    cursor:pointer;padding:0;
   }
-  .plate .label{
-    font-size:10px;font-weight:700;letter-spacing:.20em;
-    text-transform:uppercase;color:rgba(233,241,246,.58);line-height:1;
-  }
-  .plate .value{
-    font-size:30px;font-weight:800;line-height:.95;
-    font-variant-numeric:tabular-nums;margin-top:3px;
-  }
-  .plate .value em{font-style:normal;font-size:17px;color:rgba(233,241,246,.42);}
-  #savedPlate .value{color:var(--water);}
-  #burnPlate .value{color:var(--ember-hi);}
-  /* the time is the score you compare with your friends, so it gets the accent */
-  #timePlate{text-align:center;}
-  #timePlate .value{color:var(--brass-hi);font-size:26px;}
-  /* the counter turns hot when the fire is winning — state you can read at a glance */
-  #burnPlate.hot{border-color:rgba(255,122,46,.65);}
-  #burnPlate.hot .value{color:var(--ember);animation:throb .85s ease-in-out infinite;}
-  @keyframes throb{0%,100%{opacity:1;}50%{opacity:.55;}}
+  .icon:active{transform:scale(.94);}
+  .icon:focus-visible{outline:3px solid var(--water);outline-offset:2px;}
+  .icon svg{width:21px;height:21px;fill:none;stroke:var(--brass-hi);stroke-width:1.9;
+            stroke-linecap:round;stroke-linejoin:round;}
 
-  .deck{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;}
-
-  /* joystick */
-  #stick{pointer-events:auto;position:relative;width:132px;height:132px;flex:0 0 auto;touch-action:none;}
-  #stickRing{
-    position:absolute;inset:0;border-radius:50%;
-    border:2px solid rgba(201,146,46,.5);
-    background:radial-gradient(circle at 50% 42%,rgba(14,22,34,.35),rgba(8,13,20,.66));
-    backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
-  }
-  #stickRing::before,#stickRing::after{content:"";position:absolute;background:rgba(201,146,46,.26);}
-  #stickRing::before{left:50%;top:9px;bottom:9px;width:1px;transform:translateX(-.5px);}
-  #stickRing::after{top:50%;left:9px;right:9px;height:1px;transform:translateY(-.5px);}
-  #stickNub{
-    position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;
-    border-radius:50%;
-    background:linear-gradient(160deg,var(--brass-hi),var(--brass) 45%,#8A6115);
-    box-shadow:0 3px 10px rgba(0,0,0,.55);
-    transition:transform .13s cubic-bezier(.2,.9,.3,1);
-    will-change:transform;
-  }
-  #stick.live #stickNub{transition:none;}
-  .cap{
-    position:absolute;left:0;right:0;bottom:-17px;text-align:center;
-    font-size:9.5px;font-weight:700;letter-spacing:.24em;color:rgba(233,241,246,.46);
-  }
-  /* how far left/right you have swung, inside the 180 you are allowed */
-  #arc{
-    position:absolute;left:50%;top:-15px;transform:translateX(-50%);
-    width:104px;height:7px;
-    border:1px solid rgba(201,146,46,.34);
-    border-radius:2px;overflow:hidden;
-  }
-  #arcMark{
-    position:absolute;top:0;bottom:0;width:3px;
-    background:var(--brass-hi);left:50%;margin-left:-1.5px;
-    will-change:left;
-  }
-
-  /* pressure gauge */
-  #gauge{
-    pointer-events:auto;position:relative;width:74px;height:min(46dvh,270px);
-    flex:0 0 auto;touch-action:none;
-    display:flex;flex-direction:column;align-items:center;gap:7px;
-  }
-  #gaugeBody{
-    position:relative;flex:1;width:52px;
-    border:1.5px solid rgba(201,146,46,.55);border-radius:2px;
-    background:linear-gradient(to top,rgba(8,13,20,.78),rgba(14,22,34,.45));
-    backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
-    overflow:hidden;
-  }
-  #gaugeFill{
-    position:absolute;left:0;right:0;bottom:0;height:40%;
-    background:linear-gradient(to top,rgba(207,233,255,.14),rgba(201,146,46,.44));
-    border-top:1.5px solid var(--brass-hi);
-    will-change:height;
-  }
-  #gaugeTicks{position:absolute;inset:0;pointer-events:none;}
-  #gaugeTicks i{position:absolute;right:0;height:1px;background:rgba(233,241,246,.26);}
-  #gaugeTicks i.major{background:rgba(233,241,246,.46);}
-  #gaugeMarker{
-    position:absolute;left:-7px;right:-7px;height:0;bottom:40%;
-    pointer-events:none;will-change:bottom;
-  }
-  #gaugeMarker::before{
-    content:"";position:absolute;left:0;right:0;top:-1.5px;height:3px;
-    background:var(--brass-hi);box-shadow:0 0 7px rgba(240,195,104,.7);
-  }
-  .gcap{font-size:9.5px;font-weight:700;letter-spacing:.22em;color:rgba(233,241,246,.46);text-align:center;}
-  #psi{font-size:23px;font-weight:800;line-height:1;color:var(--brass-hi);font-variant-numeric:tabular-nums;}
-  #psi em{font-style:normal;font-size:10px;letter-spacing:.14em;color:rgba(233,241,246,.44);}
-
-  /* ================= start screen ================= */
-  #intro{
-    position:fixed;inset:0;pointer-events:auto;z-index:6;
-    display:grid;place-items:center;
-    background:
-      radial-gradient(90% 60% at 50% 88%, rgba(200,32,44,.20), transparent 70%),
-      linear-gradient(#070B11, #0D1520 62%, #131C28);
-    transition:opacity .55s ease;
-  }
-  #intro.gone{opacity:0;pointer-events:none;}
+  /* ============ start screen ============ */
   .card{text-align:center;padding:0 22px;max-width:520px;width:100%;}
-
-  .truckWrap{position:relative;margin:0 auto 4px;max-width:430px;}
+  .truckWrap{position:relative;margin:0 auto 2px;max-width:400px;}
   .truckWrap svg{display:block;width:100%;height:auto;overflow:visible;}
-  /* ground pool of light under the truck */
   .truckWrap::after{
     content:"";position:absolute;left:8%;right:8%;bottom:6px;height:26px;
     background:radial-gradient(50% 100% at 50% 100%,rgba(255,140,60,.22),transparent 72%);
     filter:blur(5px);
   }
-
   .beam{transform-origin:center;}
   .beamR{animation:beat 1.05s steps(1,end) infinite;}
   .beamB{animation:beat 1.05s steps(1,end) infinite;animation-delay:.525s;}
@@ -184,63 +113,243 @@
   .lampB{animation:lamp 1.05s steps(1,end) infinite;animation-delay:.525s;}
   @keyframes lamp{0%,49%{opacity:1;}50%,100%{opacity:.22;}}
 
-  .card h1{
+  h1.title{
     font-family:var(--cond);font-style:italic;font-weight:800;
-    font-size:clamp(52px,17vw,104px);line-height:.82;letter-spacing:.03em;
-    margin:6px 0 0;text-transform:uppercase;color:var(--paper);
+    font-size:clamp(48px,16vw,96px);line-height:.82;letter-spacing:.03em;
+    margin:4px 0 0;text-transform:uppercase;color:var(--paper);
     text-wrap:balance;text-shadow:0 6px 30px rgba(0,0,0,.6);
   }
-  .card h1 span{display:block;color:var(--ember);}
+  h1.title span{display:block;color:var(--ember);}
   .tagline{
-    font-family:var(--cond);font-size:12.5px;font-weight:700;
+    font-family:var(--cond);font-size:12px;font-weight:700;
     letter-spacing:.26em;text-transform:uppercase;
-    color:rgba(233,241,246,.5);margin:13px 0 0;
+    color:rgba(233,241,246,.5);margin:11px 0 0;
   }
-  #playBtn{
-    margin-top:24px;
-    font-family:var(--cond);font-size:19px;font-weight:800;
-    letter-spacing:.22em;text-transform:uppercase;color:#2A0A05;
-    background:linear-gradient(160deg,var(--ember-hi),var(--ember) 55%,#C4460F);
-    border:0;border-radius:3px;padding:16px 54px;cursor:pointer;
-    box-shadow:0 6px 26px rgba(255,122,46,.32),0 2px 8px rgba(0,0,0,.5);
-  }
-  #playBtn:focus-visible{outline:3px solid var(--water);outline-offset:3px;}
-  #playBtn:active{transform:translateY(1px);}
+  .startBtns{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:11px;}
   .hint{
-    font-family:var(--body);font-size:13px;line-height:1.55;
-    color:rgba(233,241,246,.46);margin:18px 0 0;
+    font-family:var(--body);font-size:12.5px;line-height:1.5;
+    color:rgba(233,241,246,.42);margin:16px 0 0;
+  }
+  /* version, deliberately quiet — it is for Taha, not for players */
+  .version{
+    position:absolute;left:0;right:0;bottom:calc(10px + env(safe-area-inset-bottom));
+    text-align:center;
+    font-family:var(--cond);font-size:11px;font-weight:600;
+    letter-spacing:.20em;color:rgba(233,241,246,.30);
   }
 
-  /* ================= end card ================= */
-  #end{
-    position:fixed;inset:0;z-index:7;display:none;place-items:center;
-    background:rgba(6,10,16,.86);
-    backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
-    pointer-events:auto;
+  /* ============ levels map ============ */
+  #levels .wrap{
+    width:100%;max-width:460px;height:100%;
+    display:flex;flex-direction:column;
+    padding:calc(14px + env(safe-area-inset-top)) 16px calc(14px + env(safe-area-inset-bottom));
   }
-  #end.show{display:grid;}
-  #end h2{
+  .levHead{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;flex:0 0 auto;margin-bottom:4px;
+  }
+  .levHead h2{
     font-family:var(--cond);font-weight:800;font-style:italic;
-    font-size:clamp(40px,13vw,74px);line-height:.86;margin:0;
-    text-transform:uppercase;text-wrap:balance;
+    font-size:30px;letter-spacing:.03em;text-transform:uppercase;margin:0;
   }
-  #end.win h2{color:var(--water);}
-  #end.lose h2{color:var(--ember);}
-  #endSub{
-    font-family:var(--body);font-size:15px;color:rgba(233,241,246,.62);
-    margin:14px 0 0;line-height:1.5;
+  .levHead .sub{
+    font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:.2em;
+    text-transform:uppercase;color:rgba(233,241,246,.42);
   }
-  #againBtn{
-    margin-top:26px;font-family:var(--cond);font-size:17px;font-weight:800;
-    letter-spacing:.2em;text-transform:uppercase;color:#07101A;
+  #map{position:relative;flex:1;min-height:0;}
+  #mapLine{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  .node{
+    position:absolute;
+    width:54px;height:54px;margin:-27px 0 0 -27px;
+    border-radius:50%;
+    display:grid;place-items:center;
+    font-family:var(--cond);font-weight:800;font-size:22px;
+    border:2px solid;cursor:pointer;padding:0;
+    background:var(--night-2);
+  }
+  .node:focus-visible{outline:3px solid var(--water);outline-offset:3px;}
+  .node.locked{
+    border-color:var(--locked);color:var(--locked);
+    cursor:not-allowed;background:rgba(14,22,34,.6);
+  }
+  .node.open{
+    border-color:var(--brass);color:var(--brass-hi);
+    box-shadow:0 0 16px rgba(201,146,46,.28);
+  }
+  .node.done{
+    border-color:var(--water);color:var(--water);
+    background:rgba(60,110,140,.22);
+  }
+  .node.next{animation:pulse 1.9s ease-in-out infinite;}
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(255,122,46,.42);}
+    50%{box-shadow:0 0 0 11px rgba(255,122,46,0);}
+  }
+  .nodeTime{
+    position:absolute;left:50%;top:31px;transform:translateX(-50%);
+    font-family:var(--cond);font-size:10.5px;font-weight:700;letter-spacing:.06em;
+    color:rgba(207,233,255,.6);white-space:nowrap;
+  }
+  .nodeFires{
+    position:absolute;left:50%;top:-16px;transform:translateX(-50%);
+    font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:.14em;
+    color:rgba(255,122,46,.62);white-space:nowrap;text-transform:uppercase;
+  }
+
+  /* ============ settings / pause sheets ============ */
+  .sheetCard{
+    width:min(400px,88vw);
+    background:linear-gradient(#121B27,#0C1420);
+    border:1px solid var(--glass-line);
+    border-radius:6px;
+    padding:24px 22px 22px;
+    box-shadow:0 20px 60px rgba(0,0,0,.6);
+  }
+  .sheetCard h3{
+    font-family:var(--cond);font-weight:800;font-style:italic;
+    font-size:29px;letter-spacing:.03em;text-transform:uppercase;
+    margin:0 0 18px;text-align:center;
+  }
+  .row{margin-bottom:18px;}
+  .row .lab{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-family:var(--cond);font-size:12px;font-weight:700;
+    letter-spacing:.2em;text-transform:uppercase;
+    color:rgba(233,241,246,.6);margin-bottom:9px;
+  }
+  .row .lab b{color:var(--brass-hi);font-size:15px;font-variant-numeric:tabular-nums;}
+
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:26px;background:transparent;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:6px;border-radius:3px;
+    background:linear-gradient(90deg,var(--brass) var(--fill,60%),rgba(207,233,255,.16) var(--fill,60%));
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:22px;height:22px;border-radius:50%;margin-top:-8px;
     background:linear-gradient(160deg,var(--brass-hi),var(--brass) 55%,#8A6115);
-    border:0;border-radius:3px;padding:15px 44px;cursor:pointer;
+    box-shadow:0 2px 8px rgba(0,0,0,.5);
   }
-  #againBtn:focus-visible{outline:3px solid var(--water);outline-offset:3px;}
+  input[type=range]::-moz-range-track{
+    height:6px;border-radius:3px;background:rgba(207,233,255,.16);
+  }
+  input[type=range]::-moz-range-progress{height:6px;border-radius:3px;background:var(--brass);}
+  input[type=range]::-moz-range-thumb{
+    width:22px;height:22px;border:0;border-radius:50%;
+    background:linear-gradient(160deg,var(--brass-hi),var(--brass) 55%,#8A6115);
+  }
+  input[type=range]:focus-visible{outline:3px solid var(--water);outline-offset:4px;}
+
+  /* ============ in-game HUD ============ */
+  #hud{
+    position:fixed;inset:0;
+    pointer-events:none;
+    display:none;
+    grid-template-rows:auto 1fr auto;
+    padding:calc(12px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right))
+            calc(14px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+    font-family:var(--cond);
+  }
+  #hud.on{display:grid;}
+  .topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .plate{
+    background:var(--glass);
+    border:1px solid var(--glass-line);
+    border-radius:3px;padding:6px 10px 5px;
+    backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+  }
+  .plate .label{
+    font-size:9.5px;font-weight:700;letter-spacing:.18em;
+    text-transform:uppercase;color:rgba(233,241,246,.55);line-height:1;
+  }
+  .plate .value{
+    font-size:27px;font-weight:800;line-height:.95;
+    font-variant-numeric:tabular-nums;margin-top:3px;
+  }
+  .plate .value em{font-style:normal;font-size:15px;color:rgba(233,241,246,.40);}
+  #savedPlate .value{color:var(--water);}
+  #timePlate{text-align:center;}
+  #timePlate .value{color:var(--brass-hi);font-size:24px;}
+  #burnPlate .value{color:var(--ember-hi);}
+  #burnPlate.hot{border-color:rgba(255,122,46,.65);}
+  #burnPlate.hot .value{color:var(--ember);animation:throb .85s ease-in-out infinite;}
+  @keyframes throb{0%,100%{opacity:1;}50%{opacity:.55;}}
+
+  /* how far left/right you have turned, inside the 180 you are allowed */
+  #arc{
+    justify-self:center;align-self:start;
+    margin-top:7px;
+    width:120px;height:6px;
+    border:1px solid rgba(201,146,46,.30);
+    border-radius:2px;position:relative;overflow:hidden;
+  }
+  #arcMark{
+    position:absolute;top:0;bottom:0;width:3px;
+    background:var(--brass-hi);left:50%;margin-left:-1.5px;
+  }
+
+  .deck{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;}
+
+  #pauseBtn{
+    pointer-events:auto;position:relative;
+    width:46px;height:46px;flex:0 0 auto;
+    border-radius:50%;display:grid;place-items:center;padding:0;
+    background:var(--glass);border:1px solid var(--glass-line);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;
+  }
+  #pauseBtn:active{transform:scale(.94);}
+  #pauseBtn:focus-visible{outline:3px solid var(--water);outline-offset:2px;}
+  #pauseBtn svg{width:18px;height:18px;fill:var(--brass-hi);}
+
+  /* pressure gauge */
+  #gauge{
+    pointer-events:auto;position:relative;width:72px;height:min(44dvh,260px);
+    flex:0 0 auto;touch-action:none;
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+  }
+  #gaugeBody{
+    position:relative;flex:1;width:50px;
+    border:1.5px solid rgba(201,146,46,.55);border-radius:2px;
+    background:linear-gradient(to top,rgba(8,13,20,.78),rgba(14,22,34,.45));
+    backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+    overflow:hidden;
+  }
+  #gaugeFill{
+    position:absolute;left:0;right:0;bottom:0;height:40%;
+    background:linear-gradient(to top,rgba(207,233,255,.14),rgba(201,146,46,.44));
+    border-top:1.5px solid var(--brass-hi);will-change:height;
+  }
+  #gaugeTicks{position:absolute;inset:0;pointer-events:none;}
+  #gaugeTicks i{position:absolute;right:0;height:1px;background:rgba(233,241,246,.26);}
+  #gaugeTicks i.major{background:rgba(233,241,246,.46);}
+  #gaugeMarker{position:absolute;left:-7px;right:-7px;height:0;bottom:40%;pointer-events:none;will-change:bottom;}
+  #gaugeMarker::before{
+    content:"";position:absolute;left:0;right:0;top:-1.5px;height:3px;
+    background:var(--brass-hi);box-shadow:0 0 7px rgba(240,195,104,.7);
+  }
+  .gcap{font-size:9px;font-weight:700;letter-spacing:.2em;color:rgba(233,241,246,.44);text-align:center;}
+  #psi{font-size:21px;font-weight:800;line-height:1;color:var(--brass-hi);font-variant-numeric:tabular-nums;}
+  #psi em{font-style:normal;font-size:9.5px;letter-spacing:.14em;color:rgba(233,241,246,.42);}
+
+  /* first-time nudge that drag aims the hose */
+  #dragHint{
+    position:fixed;left:50%;top:52%;transform:translate(-50%,-50%);
+    font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:.18em;
+    text-transform:uppercase;color:rgba(233,241,246,.62);
+    text-shadow:0 2px 14px rgba(0,0,0,.8);
+    pointer-events:none;z-index:3;opacity:0;text-align:center;line-height:1.7;
+  }
+  #dragHint.show{animation:hintFade 4.2s ease forwards;}
+  @keyframes hintFade{
+    0%{opacity:0;}12%{opacity:1;}70%{opacity:1;}100%{opacity:0;}
+  }
 
   #toast{
-    position:fixed;left:50%;top:17%;transform:translate(-50%,-6px);
-    font-family:var(--cond);font-weight:800;font-size:31px;letter-spacing:.09em;
+    position:fixed;left:50%;top:16%;transform:translate(-50%,-6px);
+    font-family:var(--cond);font-weight:800;font-size:29px;letter-spacing:.09em;
     text-transform:uppercase;color:var(--water);
     text-shadow:0 3px 18px rgba(0,0,0,.7);
     opacity:0;pointer-events:none;z-index:4;
@@ -253,26 +362,39 @@
     100%{opacity:0;transform:translate(-50%,-24px) scale(1);}
   }
 
+  /* ============ end card ============ */
+  #end .sheetCard{text-align:center;}
+  #end h3{margin-bottom:8px;}
+  #end.win h3{color:var(--water);}
+  #end.lose h3{color:var(--ember);}
+  #endSub{font-family:var(--body);font-size:14.5px;color:rgba(233,241,246,.62);margin:0 0 6px;line-height:1.5;}
+  #endTime{
+    font-family:var(--cond);font-weight:800;font-size:46px;line-height:1;
+    color:var(--brass-hi);font-variant-numeric:tabular-nums;margin:12px 0 4px;
+  }
+  #endBest{font-family:var(--cond);font-size:11.5px;font-weight:700;letter-spacing:.2em;
+           text-transform:uppercase;color:rgba(233,241,246,.45);}
+
   @media (prefers-reduced-motion:reduce){
     *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}
   }
-  @media (max-height:540px){
-    #stick{width:104px;height:104px;}
-    #stickNub{width:46px;height:46px;margin:-23px 0 0 -23px;}
-    #gauge{height:min(60dvh,205px);width:64px;}
-    #gaugeBody{width:44px;}
-    .truckWrap{max-width:280px;}
-    .card h1{font-size:clamp(38px,11vw,62px);}
+  @media (max-height:560px){
+    #gauge{height:min(58dvh,200px);width:62px;}
+    #gaugeBody{width:42px;}
+    .truckWrap{max-width:250px;}
+    h1.title{font-size:clamp(34px,10vw,54px);}
+    .node{width:44px;height:44px;margin:-22px 0 0 -22px;font-size:18px;}
   }
 </style>
 
 <div id="stage"></div>
 
+<!-- ===================== in-game HUD ===================== -->
 <div id="hud">
   <div class="topbar">
     <div class="plate" id="savedPlate">
-      <div class="label">Windows saved</div>
-      <div class="value"><span id="saved">0</span><em>/<span id="total">48</span></em></div>
+      <div class="label">Saved</div>
+      <div class="value"><span id="saved">0</span></div>
     </div>
     <div class="plate" id="timePlate">
       <div class="label">Time</div>
@@ -284,15 +406,12 @@
     </div>
   </div>
 
-  <div></div>
+  <div id="arc"><div id="arcMark"></div></div>
 
   <div class="deck">
-    <div id="stick">
-      <div id="arc"><div id="arcMark"></div></div>
-      <div id="stickRing"></div>
-      <div id="stickNub"></div>
-      <div class="cap">AIM</div>
-    </div>
+    <button id="pauseBtn" aria-label="Pause">
+      <svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+    </button>
 
     <div id="gauge">
       <div id="psi">45<em>PSI</em></div>
@@ -306,117 +425,134 @@
   </div>
 </div>
 
+<div id="dragHint">Drag anywhere to aim the hose<br>Slide the bar to set pressure</div>
 <div id="toast"></div>
 
-<div id="end">
-  <div class="card">
-    <h2 id="endTitle">Fire out</h2>
-    <p id="endSub">You saved the building.</p>
-    <button id="againBtn">Roll out again</button>
-  </div>
-</div>
+<!-- ===================== start ===================== -->
+<div class="screen on" id="start">
+  <button class="icon" id="startGear" style="top:calc(14px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right));" aria-label="Settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.6v2.2M12 19.2v2.2M21.4 12h-2.2M4.8 12H2.6M18.6 5.4l-1.6 1.6M7 17l-1.6 1.6M18.6 18.6L17 17M7 7L5.4 5.4"/></svg>
+  </button>
 
-<div id="intro">
   <div class="card">
     <div class="truckWrap">
       <svg viewBox="0 0 460 210" role="img" aria-label="A fire engine at night with its beacons flashing">
         <defs>
           <linearGradient id="bodyG" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#E03040"/>
-            <stop offset="55%" stop-color="#C8202C"/>
-            <stop offset="100%" stop-color="#7E1018"/>
+            <stop offset="0" stop-color="#E03040"/><stop offset="55%" stop-color="#C8202C"/><stop offset="100%" stop-color="#7E1018"/>
           </linearGradient>
           <linearGradient id="cabG" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#E8404E"/>
-            <stop offset="100%" stop-color="#A5161F"/>
+            <stop offset="0" stop-color="#E8404E"/><stop offset="100%" stop-color="#A5161F"/>
           </linearGradient>
           <linearGradient id="glassG" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#7FB6D6"/>
-            <stop offset="100%" stop-color="#2B4A5E"/>
+            <stop offset="0" stop-color="#7FB6D6"/><stop offset="100%" stop-color="#2B4A5E"/>
           </linearGradient>
-          <radialGradient id="glowR">
-            <stop offset="0" stop-color="#FF4756" stop-opacity=".85"/>
-            <stop offset="100%" stop-color="#FF4756" stop-opacity="0"/>
-          </radialGradient>
-          <radialGradient id="glowB">
-            <stop offset="0" stop-color="#7FB0FF" stop-opacity=".85"/>
-            <stop offset="100%" stop-color="#7FB0FF" stop-opacity="0"/>
-          </radialGradient>
+          <radialGradient id="glowR"><stop offset="0" stop-color="#FF4756" stop-opacity=".85"/><stop offset="100%" stop-color="#FF4756" stop-opacity="0"/></radialGradient>
+          <radialGradient id="glowB"><stop offset="0" stop-color="#7FB0FF" stop-opacity=".85"/><stop offset="100%" stop-color="#7FB0FF" stop-opacity="0"/></radialGradient>
         </defs>
-
-        <!-- beacon light cones, thrown up and out into the night -->
-        <g class="beam beamR">
-          <polygon points="196,44 96,4 96,86" fill="url(#glowR)"/>
-          <ellipse cx="196" cy="44" rx="46" ry="30" fill="url(#glowR)"/>
-        </g>
-        <g class="beam beamB">
-          <polygon points="232,44 332,4 332,86" fill="url(#glowB)"/>
-          <ellipse cx="232" cy="44" rx="46" ry="30" fill="url(#glowB)"/>
-        </g>
-
-        <!-- ladder -->
+        <g class="beam beamR"><polygon points="196,44 96,4 96,86" fill="url(#glowR)"/><ellipse cx="196" cy="44" rx="46" ry="30" fill="url(#glowR)"/></g>
+        <g class="beam beamB"><polygon points="232,44 332,4 332,86" fill="url(#glowB)"/><ellipse cx="232" cy="44" rx="46" ry="30" fill="url(#glowB)"/></g>
         <g stroke="#B9BFC6" stroke-width="3" fill="none" opacity=".92">
-          <line x1="250" y1="70" x2="410" y2="70"/>
-          <line x1="250" y1="82" x2="410" y2="82"/>
-          <line x1="266" y1="70" x2="266" y2="82"/>
-          <line x1="292" y1="70" x2="292" y2="82"/>
-          <line x1="318" y1="70" x2="318" y2="82"/>
-          <line x1="344" y1="70" x2="344" y2="82"/>
-          <line x1="370" y1="70" x2="370" y2="82"/>
-          <line x1="396" y1="70" x2="396" y2="82"/>
+          <line x1="250" y1="70" x2="410" y2="70"/><line x1="250" y1="82" x2="410" y2="82"/>
+          <line x1="266" y1="70" x2="266" y2="82"/><line x1="292" y1="70" x2="292" y2="82"/>
+          <line x1="318" y1="70" x2="318" y2="82"/><line x1="344" y1="70" x2="344" y2="82"/>
+          <line x1="370" y1="70" x2="370" y2="82"/><line x1="396" y1="70" x2="396" y2="82"/>
         </g>
-
-        <!-- body -->
         <rect x="196" y="86" width="228" height="62" rx="5" fill="url(#bodyG)"/>
-        <!-- equipment lockers: shutter lines -->
         <g fill="#8C1A22" opacity=".85">
-          <rect x="212" y="98" width="52" height="38" rx="3"/>
-          <rect x="276" y="98" width="52" height="38" rx="3"/>
-          <rect x="340" y="98" width="52" height="38" rx="3"/>
+          <rect x="212" y="98" width="52" height="38" rx="3"/><rect x="276" y="98" width="52" height="38" rx="3"/><rect x="340" y="98" width="52" height="38" rx="3"/>
         </g>
         <g stroke="#5E0C12" stroke-width="1.4" opacity=".7">
           <line x1="212" y1="110" x2="264" y2="110"/><line x1="212" y1="122" x2="264" y2="122"/>
           <line x1="276" y1="110" x2="328" y2="110"/><line x1="276" y1="122" x2="328" y2="122"/>
           <line x1="340" y1="110" x2="392" y2="110"/><line x1="340" y1="122" x2="392" y2="122"/>
         </g>
-        <!-- reflective stripe -->
         <rect x="196" y="140" width="228" height="7" fill="#F2D64A" opacity=".9"/>
-
-        <!-- cab -->
         <path d="M100 86 L100 108 Q100 112 104 112 L196 112 L196 86 Q196 82 192 82 L108 82 Q100 82 100 86 Z" fill="url(#cabG)"/>
         <rect x="98" y="60" width="98" height="30" rx="5" fill="url(#cabG)"/>
         <path d="M104 64 L150 64 L150 86 L104 86 Q100 86 100 82 L100 68 Q100 64 104 64 Z" fill="url(#glassG)" opacity=".92"/>
         <rect x="156" y="64" width="36" height="22" rx="3" fill="url(#glassG)" opacity=".92"/>
         <rect x="98" y="112" width="98" height="30" rx="4" fill="#A5161F"/>
         <rect x="98" y="140" width="98" height="7" fill="#F2D64A" opacity=".9"/>
-        <!-- headlight -->
         <circle cx="104" cy="124" r="6" fill="#FFE9A8"/>
         <ellipse cx="86" cy="124" rx="26" ry="11" fill="#FFE08A" opacity=".22"/>
-
-        <!-- light bar on the cab roof -->
         <rect x="106" y="50" width="84" height="11" rx="3" fill="#2A323B"/>
         <rect class="lampR" x="112" y="52" width="32" height="7" rx="2" fill="#FF4756"/>
         <rect class="lampB" x="152" y="52" width="32" height="7" rx="2" fill="#7FB0FF"/>
-
-        <!-- wheels -->
         <g>
-          <circle cx="146" cy="152" r="22" fill="#14181D"/>
-          <circle cx="146" cy="152" r="10" fill="#5A646E"/>
-          <circle cx="300" cy="152" r="22" fill="#14181D"/>
-          <circle cx="300" cy="152" r="10" fill="#5A646E"/>
-          <circle cx="372" cy="152" r="22" fill="#14181D"/>
-          <circle cx="372" cy="152" r="10" fill="#5A646E"/>
+          <circle cx="146" cy="152" r="22" fill="#14181D"/><circle cx="146" cy="152" r="10" fill="#5A646E"/>
+          <circle cx="300" cy="152" r="22" fill="#14181D"/><circle cx="300" cy="152" r="10" fill="#5A646E"/>
+          <circle cx="372" cy="152" r="22" fill="#14181D"/><circle cx="372" cy="152" r="10" fill="#5A646E"/>
         </g>
-
-        <!-- road -->
         <rect x="40" y="172" width="380" height="2" rx="1" fill="#2A343F"/>
       </svg>
     </div>
 
-    <h1>Soak<span>It</span></h1>
+    <h1 class="title">Soak<span>It</span></h1>
     <p class="tagline">Engine 12 &middot; Courtyard fire</p>
-    <button id="playBtn">Play</button>
-    <p class="hint">Left thumb swings the hose. Right thumb sets the pressure.<br>Close windows need less. The top floors need a lot.</p>
+
+    <div class="startBtns">
+      <button class="btn hot" id="playBtn">Play</button>
+      <button class="btn ghost" id="levelsBtn">Levels</button>
+    </div>
+
+    <p class="hint">Drag to aim the hose. Slide the bar for pressure.</p>
+  </div>
+
+  <div class="version" id="verLabel">v0</div>
+</div>
+
+<!-- ===================== levels ===================== -->
+<div class="screen" id="levels">
+  <button class="icon" id="levBack" style="top:calc(14px + env(safe-area-inset-top));left:calc(14px + env(safe-area-inset-left));" aria-label="Back">
+    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <div class="wrap">
+    <div class="levHead">
+      <div style="flex:1"></div>
+      <div style="text-align:center">
+        <h2>Levels</h2>
+        <div class="sub" id="levProgress">0 of 10 cleared</div>
+      </div>
+      <div style="flex:1"></div>
+    </div>
+    <div id="map"><svg id="mapLine" preserveAspectRatio="none"></svg></div>
+  </div>
+</div>
+
+<!-- ===================== pause ===================== -->
+<div class="screen sheet" id="pause">
+  <div class="sheetCard">
+    <h3>Paused</h3>
+    <button class="btn hot wide" id="resumeBtn">Resume</button>
+    <button class="btn ghost wide" id="pauseSettings">Settings</button>
+    <button class="btn ghost wide" id="quitBtn">Back to menu</button>
+  </div>
+</div>
+
+<!-- ===================== settings ===================== -->
+<div class="screen sheet" id="settings">
+  <div class="sheetCard">
+    <h3>Settings</h3>
+    <div class="row">
+      <div class="lab"><span>Sound volume</span><b id="volLabel">70%</b></div>
+      <input type="range" id="vol" min="0" max="100" value="70" aria-label="Sound volume">
+    </div>
+    <button class="btn hot wide" id="setResume">Resume</button>
+    <button class="btn ghost wide" id="setBack">Back</button>
+  </div>
+</div>
+
+<!-- ===================== end ===================== -->
+<div class="screen sheet" id="end">
+  <div class="sheetCard">
+    <h3 id="endTitle">Fire out</h3>
+    <div id="endTime">0.0s</div>
+    <div id="endBest">Best 0.0s</div>
+    <p id="endSub">You saved the building.</p>
+    <button class="btn hot wide" id="nextBtn">Next level</button>
+    <button class="btn ghost wide" id="retryBtn">Try again</button>
+    <button class="btn ghost wide" id="endMenu">Back to menu</button>
   </div>
 </div>
 
@@ -490,6 +626,9 @@
 (function(){
 "use strict";
 
+/* Rewritten by publish-update.ps1 on every release. */
+var GAME_VERSION = 4;
+
 (function meta(){
   var m=document.createElement("meta");
   m.name="viewport";
@@ -497,151 +636,254 @@
   document.head.appendChild(m);
 })();
 
-var $ = function(id){ return document.getElementById(id); };
-var stage=$("stage"), intro=$("intro"), playBtn=$("playBtn"), toastEl=$("toast");
-var savedEl=$("saved"), totalEl=$("total"), burningEl=$("burning"), burnPlate=$("burnPlate"), timeEl=$("time");
-var psiEl=$("psi"), stickEl=$("stick"), nubEl=$("stickNub"), arcMark=$("arcMark");
+var $=function(id){return document.getElementById(id);};
+var stage=$("stage"), hud=$("hud"), toastEl=$("toast"), dragHint=$("dragHint");
+var savedEl=$("saved"), burningEl=$("burning"), burnPlate=$("burnPlate"), timeEl=$("time");
+var psiEl=$("psi"), arcMark=$("arcMark");
 var gaugeEl=$("gauge"), gBody=$("gaugeBody"), gFill=$("gaugeFill"), gMark=$("gaugeMarker"), gTicks=$("gaugeTicks");
-var endEl=$("end"), endTitle=$("endTitle"), endSub=$("endSub"), againBtn=$("againBtn");
 
 /* ============================================================
-   TUNE — every number that decides how it feels
+   TUNE
    ============================================================ */
 var TUNE = {
-  speedMin: 10.0,      // bottom of the bar: ground floor of the far wall
-  speedMax: 25.0,      // top of the bar: fourth floor of the far wall
+  speedMin: 10.0,
+  speedMax: 25.0,
   gravity: 9.81,
   drag: 0.075,
-  spreadLoose: 0.075,  // low pressure sprays wide
-  spreadTight: 0.024,  // high pressure is a tight jet
+  spreadLoose: 0.075,
+  spreadTight: 0.024,
   emitMin: 3.0,
   emitMax: 15.0,
-  yawRate: 1.30,
-  pitchRate: 0.85,
-  yawLimit: Math.PI/2, // the 180 degrees you are allowed, total
+  aimSens: 0.0040,      // radians of turn per pixel dragged
+  yawLimit: Math.PI/2,
   pitchMin: -0.25,
   pitchMax: 1.10,
-  pitchStart: 0.72,    // starts you pointed at the building, not the pavement
-  douse: 0.012,        // water per second on target; see hitWindow for why it divides by rate
-  fireGrow: 0.035,     // how fast an untouched fire builds
-  spreadAt: 0.60,      // a fire only spreads once it is this well developed
-  spreadEvery: 8.0,    // seconds between jumps, at the cap below
-  // Spread is CAPPED rather than scaling with every burning window. Without
-  // this the fire runs away exponentially and the game becomes a cliff: you
-  // either outpace it completely or lose every time. Capped, difficulty is a
-  // slope — a beginner still wins, it just takes them far longer.
+  pitchStart: 0.72,
+  douse: 0.012,
+  fireGrow: 0.035,
+  spreadAt: 0.60,
   spreadCap: 2,
-  loseAt: 18,
   eyeY: 1.70
 };
 
-/* courtyard: front wall ahead, two wings beside you, truck behind */
-// the wings stop short of the front block, leaving a gap at each corner that
-// you can see the street and the rest of the city through
-// Distances are solved against the water, not picked by eye: at a natural aim
-// the bottom of the pressure bar hits the ground floor and the top hits the
-// fourth. Move the wall or the floors and those numbers must be re-solved.
-var WALL_Z = -16, WALL_X = 9, WALL_TOP = 13.5, WING_FRONT = -11, WING_BACK = 3;
-var WIN_W = 1.5, WIN_H = 2.0, WIN_HW = WIN_W/2, WIN_HH = WIN_H/2;
-var ROWS = [2.8, 5.4, 8.0, 10.6];
-var FRONT_COLS = [-7.2,-4.32,-1.44,1.44,4.32,7.2];
-var WING_COLS  = [-2.5,-6.5,-10.5];
+var WALL_Z=-16, WALL_X=9, WALL_TOP=13.5, WING_FRONT=-11, WING_BACK=3;
+var WIN_W=1.5, WIN_H=2.0, WIN_HW=WIN_W/2, WIN_HH=WIN_H/2;
+var ROWS=[2.8,5.4,8.0,10.6];
+var FRONT_COLS=[-7.2,-4.32,-1.44,1.44,4.32,7.2];
+var WING_COLS=[-2.5,-6.5,-10.5];
 
-var MAX_DROPS=1200, MAX_STEAM=400, MAX_EMBER=260;
+var MAX_DROPS=1100, MAX_STEAM=380, MAX_FLAME=900, MAX_SMOKE=260;
+
+/* Ten levels. Fires climb 5 -> 18; the "building lost" limit climbs with them,
+   otherwise level 10 would begin already lost. Later levels spread faster too. */
+var LEVELS=[];
+(function(){
+  var counts=[5,6,8,9,11,12,14,15,17,18];
+  for(var i=0;i<10;i++){
+    LEVELS.push({
+      n:i+1,
+      fires:counts[i],
+      loseAt:Math.min(46,counts[i]+12),
+      spreadEvery:8.0-i*0.28
+    });
+  }
+})();
+
+/* ============================================================
+   SAVED PROGRESS  (storage can throw; never let it break the game)
+   ============================================================ */
+var save={unlocked:1,best:{},vol:0.7,seenHint:false};
+try{
+  var raw=localStorage.getItem("soakit.save");
+  if(raw){
+    var p=JSON.parse(raw);
+    if(p&&typeof p==="object"){
+      save.unlocked=Math.max(1,Math.min(10,p.unlocked||1));
+      save.best=p.best||{};
+      save.vol=(typeof p.vol==="number")?p.vol:0.7;
+      save.seenHint=!!p.seenHint;
+    }
+  }
+}catch(e){}
+function persist(){ try{ localStorage.setItem("soakit.save",JSON.stringify(save)); }catch(e){} }
+
+/* ============================================================
+   SOUND — all generated in code, so there are no audio files to
+   download and every sound works offline.
+   ============================================================ */
+var Snd=(function(){
+  var ctx=null, master=null, noiseBuf=null;
+  var water=null, fire=null, ready=false, crackleAt=0;
+
+  function makeNoise(){
+    var len=Math.floor(ctx.sampleRate*2);
+    var b=ctx.createBuffer(1,len,ctx.sampleRate);
+    var d=b.getChannelData(0);
+    for(var i=0;i<len;i++) d[i]=Math.random()*2-1;
+    return b;
+  }
+  function loopNoise(type,freq,q){
+    var s=ctx.createBufferSource(); s.buffer=noiseBuf; s.loop=true;
+    var f=ctx.createBiquadFilter(); f.type=type; f.frequency.value=freq;
+    if(q!==undefined) f.Q.value=q;
+    var g=ctx.createGain(); g.gain.value=0;
+    s.connect(f); f.connect(g); g.connect(master); s.start();
+    return {src:s,filt:f,gain:g};
+  }
+  function init(){
+    if(ready) return;
+    try{
+      var AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC) return;
+      ctx=new AC();
+      master=ctx.createGain();
+      master.gain.value=save.vol;
+      master.connect(ctx.destination);
+      noiseBuf=makeNoise();
+      water=loopNoise("bandpass",900,0.8);   // the jet: rushing air
+      fire=loopNoise("lowpass",420,1.0);     // the blaze: a low roar underneath
+      ready=true;
+    }catch(e){ ready=false; }
+  }
+  function ramp(param,to,secs){
+    try{ param.setTargetAtTime(to,ctx.currentTime,Math.max(0.01,secs/3)); }catch(e){}
+  }
+  function burst(freq,type,dur,vol,q){
+    if(!ready) return;
+    try{
+      var s=ctx.createBufferSource(); s.buffer=noiseBuf;
+      s.playbackRate.value=0.8+Math.random()*0.5;
+      var f=ctx.createBiquadFilter(); f.type=type||"highpass"; f.frequency.value=freq;
+      if(q) f.Q.value=q;
+      var g=ctx.createGain(), t=ctx.currentTime;
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.linearRampToValueAtTime(vol,t+0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      s.connect(f); f.connect(g); g.connect(master);
+      s.start(t); s.stop(t+dur+0.05);
+    }catch(e){}
+  }
+  function tone(freq,dur,vol,type,slideTo){
+    if(!ready) return;
+    try{
+      var o=ctx.createOscillator(); o.type=type||"sine";
+      var g=ctx.createGain(), t=ctx.currentTime;
+      o.frequency.setValueAtTime(freq,t);
+      if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo,t+dur);
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.linearRampToValueAtTime(vol,t+0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      o.connect(g); g.connect(master);
+      o.start(t); o.stop(t+dur+0.05);
+    }catch(e){}
+  }
+
+  return {
+    init:init,
+    resume:function(){ if(ready&&ctx.state==="suspended"){ try{ctx.resume();}catch(e){} } },
+    suspend:function(){ if(ready&&ctx.state==="running"){ try{ctx.suspend();}catch(e){} } },
+    setVolume:function(v){ save.vol=v; if(ready) master.gain.value=v; },
+    isOn:function(){ return ready; },
+    frame:function(live,pressure,fireAmount,dt){
+      if(!ready) return;
+      ramp(water.gain.gain, live?(0.045+pressure*0.16):0, 0.12);
+      ramp(water.filt.frequency, 700+pressure*2100, 0.12);
+      ramp(fire.gain.gain, live?Math.min(0.16,fireAmount*0.030):0, 0.35);
+      if(live&&fireAmount>0){
+        crackleAt-=dt;
+        if(crackleAt<=0){
+          crackleAt=0.10+Math.random()*(1.5/Math.max(1,fireAmount*0.5));
+          burst(1100+Math.random()*1800,"bandpass",0.05+Math.random()*0.07,0.05+Math.random()*0.07,1.5);
+        }
+      }
+    },
+    steam:function(){ burst(2600,"highpass",0.34,0.10); },
+    splash:function(){ burst(1500,"highpass",0.12,0.035); },
+    clear:function(){ burst(3000,"highpass",0.45,0.13); tone(660,0.32,0.10,"sine",1320); },
+    win:function(){
+      tone(523,0.16,0.11,"triangle");
+      setTimeout(function(){tone(659,0.16,0.11,"triangle");},150);
+      setTimeout(function(){tone(784,0.16,0.11,"triangle");},300);
+      setTimeout(function(){tone(1047,0.45,0.12,"triangle");},450);
+    },
+    lose:function(){
+      tone(300,0.5,0.11,"sawtooth",120);
+      setTimeout(function(){tone(200,0.7,0.09,"sawtooth",80);},240);
+    },
+    tap:function(){ tone(880,0.05,0.05,"square"); }
+  };
+})();
 
 /* ============================================================
    RENDERER
    ============================================================ */
-var renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:"high-performance"});
-// capped at 1.5 rather than the device's full ratio — the single biggest
-// framerate lever on a phone, and at night the difference is invisible
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 1.5));
-renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.shadowMap.enabled = false;   // no shadows anywhere: this is why it runs
+var renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+renderer.outputEncoding=THREE.sRGBEncoding;
+renderer.shadowMap.enabled=false;
 stage.appendChild(renderer.domElement);
 
-var scene = new THREE.Scene();
-scene.background = new THREE.Color(0x070B12);
-// haze starts well past the courtyard so the skyline reads as distance,
-// not as a wall of fog
-scene.fog = new THREE.Fog(0x0A121C, 34, 165);
+var scene=new THREE.Scene();
+scene.background=new THREE.Color(0x070B12);
+scene.fog=new THREE.Fog(0x0A121C,34,165);
 
-var camera = new THREE.PerspectiveCamera(64, 1, 0.1, 300);
-camera.rotation.order = "YXZ";
-camera.position.set(0, TUNE.eyeY, 0);
+var camera=new THREE.PerspectiveCamera(64,1,0.1,300);
+camera.rotation.order="YXZ";
+camera.position.set(0,TUNE.eyeY,0);
 scene.add(camera);
 
-/* ---- light: one lamp behind you, which IS the truck ---- */
-scene.add(new THREE.AmbientLight(0x2A3A52, 0.55));
-var beacon = new THREE.PointLight(0xFF3A46, 1.5, 70, 1.4);
-beacon.position.set(0, 3.4, 8);
+scene.add(new THREE.AmbientLight(0x2A3A52,0.55));
+var beacon=new THREE.PointLight(0xFF3A46,1.5,70,1.4);
+beacon.position.set(0,3.4,8);
 scene.add(beacon);
-var fill = new THREE.DirectionalLight(0x4A6890, 0.35);
-fill.position.set(0, 10, 4);
+var fill=new THREE.DirectionalLight(0x4A6890,0.35);
+fill.position.set(0,10,4);
 scene.add(fill);
+/* one light standing in for the whole blaze, so walls warm as the fire grows */
+var fireLight=new THREE.PointLight(0xFF7A2A,0,40,1.6);
+fireLight.position.set(0,6,WALL_Z+3);
+scene.add(fireLight);
 
 /* ============================================================
-   BUILDINGS
+   BUILDINGS + CITY
    ============================================================ */
-var wallMat = new THREE.MeshPhongMaterial({color:0x2A3340, shininess:4, specular:0x11161D});
-var trimMat = new THREE.MeshPhongMaterial({color:0x1B222C, shininess:2});
-
-function wall(w,h,segW,segH,pos,rotY){
-  var m = new THREE.Mesh(new THREE.PlaneGeometry(w,h,segW,segH), wallMat);
-  m.position.copy(pos);
-  m.rotation.y = rotY;
-  scene.add(m);
-  return m;
+var wallMat=new THREE.MeshPhongMaterial({color:0x2A3340,shininess:4,specular:0x11161D});
+var trimMat=new THREE.MeshPhongMaterial({color:0x1B222C,shininess:2});
+function wall(w,h,sw,sh,pos,rotY){
+  var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h,sw,sh),wallMat);
+  m.position.copy(pos); m.rotation.y=rotY; scene.add(m); return m;
 }
-var WING_LEN = WING_BACK - WING_FRONT, WING_MID = (WING_FRONT+WING_BACK)/2;
-// front block
-wall(WALL_X*2, WALL_TOP, 8, 6, new THREE.Vector3(0, WALL_TOP/2, WALL_Z), 0);
-// left wing (faces +X)
-wall(WING_LEN, WALL_TOP, 8, 6, new THREE.Vector3(-WALL_X, WALL_TOP/2, WING_MID), Math.PI/2);
-// right wing (faces -X)
-wall(WING_LEN, WALL_TOP, 8, 6, new THREE.Vector3(WALL_X, WALL_TOP/2, WING_MID), -Math.PI/2);
-
-// blank outer faces, so the wings read as solid blocks from the corner gaps
-wall(WING_LEN, WALL_TOP, 1, 1, new THREE.Vector3(-WALL_X-1.6, WALL_TOP/2, WING_MID), -Math.PI/2);
-wall(WING_LEN, WALL_TOP, 1, 1, new THREE.Vector3(WALL_X+1.6, WALL_TOP/2, WING_MID), Math.PI/2);
-wall(3.2, WALL_TOP, 1, 1, new THREE.Vector3(-WALL_X-0.8, WALL_TOP/2, WING_FRONT), 0);
-wall(3.2, WALL_TOP, 1, 1, new THREE.Vector3(WALL_X+0.8, WALL_TOP/2, WING_FRONT), 0);
-
-// roof lips, so the buildings read as solid against the sky
+var WING_LEN=WING_BACK-WING_FRONT, WING_MID=(WING_FRONT+WING_BACK)/2;
+wall(WALL_X*2,WALL_TOP,8,6,new THREE.Vector3(0,WALL_TOP/2,WALL_Z),0);
+wall(WING_LEN,WALL_TOP,8,6,new THREE.Vector3(-WALL_X,WALL_TOP/2,WING_MID),Math.PI/2);
+wall(WING_LEN,WALL_TOP,8,6,new THREE.Vector3(WALL_X,WALL_TOP/2,WING_MID),-Math.PI/2);
+wall(WING_LEN,WALL_TOP,1,1,new THREE.Vector3(-WALL_X-1.6,WALL_TOP/2,WING_MID),-Math.PI/2);
+wall(WING_LEN,WALL_TOP,1,1,new THREE.Vector3(WALL_X+1.6,WALL_TOP/2,WING_MID),Math.PI/2);
+wall(3.2,WALL_TOP,1,1,new THREE.Vector3(-WALL_X-0.8,WALL_TOP/2,WING_FRONT),0);
+wall(3.2,WALL_TOP,1,1,new THREE.Vector3(WALL_X+0.8,WALL_TOP/2,WING_FRONT),0);
 function lip(w,pos,rotY){
-  var m = new THREE.Mesh(new THREE.BoxGeometry(w,0.7,1.1), trimMat);
-  m.position.copy(pos); m.rotation.y = rotY; scene.add(m);
+  var m=new THREE.Mesh(new THREE.BoxGeometry(w,0.7,1.1),trimMat);
+  m.position.copy(pos); m.rotation.y=rotY; scene.add(m);
 }
-lip(WALL_X*2+2.2, new THREE.Vector3(0, WALL_TOP+0.3, WALL_Z+0.3), 0);
-lip(WING_LEN, new THREE.Vector3(-WALL_X-0.8, WALL_TOP+0.3, WING_MID), Math.PI/2);
-lip(WING_LEN, new THREE.Vector3(WALL_X+0.8, WALL_TOP+0.3, WING_MID), -Math.PI/2);
+lip(WALL_X*2+2.2,new THREE.Vector3(0,WALL_TOP+0.3,WALL_Z+0.3),0);
+lip(WING_LEN,new THREE.Vector3(-WALL_X-0.8,WALL_TOP+0.3,WING_MID),Math.PI/2);
+lip(WING_LEN,new THREE.Vector3(WALL_X+0.8,WALL_TOP+0.3,WING_MID),-Math.PI/2);
 
-/* ground */
-var ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(200,200,1,1),
-  new THREE.MeshPhongMaterial({color:0x11161C, shininess:26, specular:0x28323E})
-);
-ground.rotation.x = -Math.PI/2;
+var ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200,1,1),
+  new THREE.MeshPhongMaterial({color:0x11161C,shininess:26,specular:0x28323E}));
+ground.rotation.x=-Math.PI/2;
 scene.add(ground);
 
-/* ============================================================
-   THE CITY — everything here is scenery, none of it burns.
-   At night a building is a dark shape with lit windows, which is
-   exactly what is cheap to draw, so this costs almost nothing.
-   ============================================================ */
 function windowTexture(){
   var c=document.createElement("canvas"); c.width=c.height=64;
   var x=c.getContext("2d");
   x.fillStyle="#0B1017"; x.fillRect(0,0,64,64);
-  for(var r=0;r<8;r++){
-    for(var col=0;col<8;col++){
-      if(Math.random()<0.40){
-        var warm = Math.random()<0.78;
-        x.fillStyle = warm
-          ? "rgba(255,206,132,"+(0.45+Math.random()*0.55).toFixed(2)+")"
-          : "rgba(168,208,255,"+(0.35+Math.random()*0.5).toFixed(2)+")";
-        x.fillRect(col*8+2, r*8+2, 4, 5);
-      }
+  for(var r=0;r<8;r++) for(var col=0;col<8;col++){
+    if(Math.random()<0.40){
+      var warm=Math.random()<0.78;
+      x.fillStyle=warm?"rgba(255,206,132,"+(0.45+Math.random()*0.55).toFixed(2)+")"
+                      :"rgba(168,208,255,"+(0.35+Math.random()*0.5).toFixed(2)+")";
+      x.fillRect(col*8+2,r*8+2,4,5);
     }
   }
   var t=new THREE.CanvasTexture(c);
@@ -650,289 +892,239 @@ function windowTexture(){
   t.minFilter=THREE.LinearMipmapLinearFilter;
   return t;
 }
-var WIN_TEX = windowTexture();
-
-var towers = [
-  // beyond the burning block
-  [ -6,-34, 13, 34], [  9,-38, 15, 44], [ -22,-40, 14, 27], [ 20,-33, 11, 24],
-  [ -34,-52, 17, 52], [ 12,-56, 19, 38], [ -2,-64, 15, 30], [ 30,-50, 14, 46],
-  // down the street, left and right
-  [ -26,-16, 12, 30], [ -30, 2, 13, 22], [ -40,-30, 15, 40],
-  [  26,-16, 12, 26], [  31, 3, 13, 24], [  42,-28, 16, 36],
-  // far skyline, mostly silhouette
-  [ -54,-62, 18, 58], [ 50,-64, 17, 50], [ 66,-40, 15, 42], [ -66,-38, 14, 34]
-];
-towers.forEach(function(t){
-  var w=t[2], h=t[3], tex=WIN_TEX.clone();
+var WIN_TEX=windowTexture();
+[[-6,-34,13,34],[9,-38,15,44],[-22,-40,14,27],[20,-33,11,24],
+ [-34,-52,17,52],[12,-56,19,38],[-2,-64,15,30],[30,-50,14,46],
+ [-26,-16,12,30],[-30,2,13,22],[-40,-30,15,40],
+ [26,-16,12,26],[31,3,13,24],[42,-28,16,36],
+ [-54,-62,18,58],[50,-64,17,50],[66,-40,15,42],[-66,-38,14,34]
+].forEach(function(t){
+  var w=t[2],h=t[3],tex=WIN_TEX.clone();
   tex.needsUpdate=true;
-  tex.repeat.set(Math.max(1,Math.round(w/3.2)), Math.max(1,Math.round(h/3.4)));
-  var m=new THREE.Mesh(
-    new THREE.BoxGeometry(w,h,w*0.85),
-    new THREE.MeshBasicMaterial({map:tex})
-  );
-  m.position.set(t[0], h/2, t[1]);
-  scene.add(m);
-  // roof cap reads as a parapet and stops the window grid running off the top
-  var cap=new THREE.Mesh(new THREE.BoxGeometry(w+0.6,0.6,w*0.85+0.6), trimMat);
-  cap.position.set(t[0], h+0.3, t[1]);
-  scene.add(cap);
+  tex.repeat.set(Math.max(1,Math.round(w/3.2)),Math.max(1,Math.round(h/3.4)));
+  var m=new THREE.Mesh(new THREE.BoxGeometry(w,h,w*0.85),new THREE.MeshBasicMaterial({map:tex}));
+  m.position.set(t[0],h/2,t[1]); scene.add(m);
+  var cap=new THREE.Mesh(new THREE.BoxGeometry(w+0.6,0.6,w*0.85+0.6),trimMat);
+  cap.position.set(t[0],h+0.3,t[1]); scene.add(cap);
 });
 
-/* ---- the street, running past the foot of the burning block ---- */
-var ROAD_Z = -13.5, ROAD_W = 4.6;
-var road = new THREE.Mesh(
-  new THREE.PlaneGeometry(150, ROAD_W),
-  new THREE.MeshPhongMaterial({color:0x0C1015, shininess:64, specular:0x3A4756})
-);
-road.rotation.x = -Math.PI/2;
-road.position.set(0, 0.02, ROAD_Z);
-scene.add(road);
-
-(function roadPaint(){
-  // centre dashes
+var ROAD_Z=-13.5, ROAD_W=4.6;
+var road=new THREE.Mesh(new THREE.PlaneGeometry(150,ROAD_W),
+  new THREE.MeshPhongMaterial({color:0x0C1015,shininess:64,specular:0x3A4756}));
+road.rotation.x=-Math.PI/2; road.position.set(0,0.02,ROAD_Z); scene.add(road);
+(function(){
   var dash=new THREE.PlaneGeometry(1.7,0.14);
-  var dashMat=new THREE.MeshBasicMaterial({color:0xC9B87A});
+  var dm=new THREE.MeshBasicMaterial({color:0xC9B87A});
   for(var x=-70;x<70;x+=6){
-    var d=new THREE.Mesh(dash,dashMat);
-    d.rotation.x=-Math.PI/2;
-    d.position.set(x,0.035,ROAD_Z);
-    scene.add(d);
+    var d=new THREE.Mesh(dash,dm); d.rotation.x=-Math.PI/2;
+    d.position.set(x,0.035,ROAD_Z); scene.add(d);
   }
-  // kerbs
-  var kerbMat=new THREE.MeshPhongMaterial({color:0x39424D, shininess:8});
-  [ROAD_Z-ROAD_W/2-0.2, ROAD_Z+ROAD_W/2+0.2].forEach(function(z){
-    var k=new THREE.Mesh(new THREE.BoxGeometry(150,0.22,0.4), kerbMat);
-    k.position.set(0,0.11,z);
-    scene.add(k);
+  var km=new THREE.MeshPhongMaterial({color:0x39424D,shininess:8});
+  [ROAD_Z-ROAD_W/2-0.2,ROAD_Z+ROAD_W/2+0.2].forEach(function(z){
+    var k=new THREE.Mesh(new THREE.BoxGeometry(150,0.22,0.4),km);
+    k.position.set(0,0.11,z); scene.add(k);
   });
 })();
+[-34,-19,17,32,47].forEach(function(x){
+  var pole=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.12,6.4,7),trimMat);
+  pole.position.set(x,3.2,ROAD_Z+ROAD_W/2+0.7); scene.add(pole);
+  var arm=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.12,0.12),trimMat);
+  arm.position.set(x-0.7,6.35,ROAD_Z+ROAD_W/2+0.7); scene.add(arm);
+  var lamp=new THREE.Sprite(new THREE.SpriteMaterial({color:0xFFD08A,transparent:true,opacity:0.85,
+    blending:THREE.AdditiveBlending,depthWrite:false}));
+  lamp.scale.set(3.4,3.4,1); lamp.position.set(x-1.4,6.3,ROAD_Z+ROAD_W/2+0.7); scene.add(lamp);
+  var pool2=new THREE.Mesh(new THREE.CircleGeometry(3.4,14),
+    new THREE.MeshBasicMaterial({color:0xFFC981,transparent:true,opacity:0.10,
+      blending:THREE.AdditiveBlending,depthWrite:false}));
+  pool2.rotation.x=-Math.PI/2; pool2.position.set(x-1.4,0.05,ROAD_Z+0.4); scene.add(pool2);
+});
 
-/* ---- streetlights: fake glow, no extra real lights to pay for ---- */
-function streetlight(x){
-  var pole=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.12,6.4,7), trimMat);
-  pole.position.set(x,3.2,ROAD_Z+ROAD_W/2+0.7);
-  scene.add(pole);
-  var arm=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.12,0.12), trimMat);
-  arm.position.set(x-0.7,6.35,ROAD_Z+ROAD_W/2+0.7);
-  scene.add(arm);
-  var lamp=new THREE.Sprite(new THREE.SpriteMaterial({
-    color:0xFFD08A, transparent:true, opacity:0.85,
-    blending:THREE.AdditiveBlending, depthWrite:false
-  }));
-  lamp.scale.set(3.4,3.4,1);
-  lamp.position.set(x-1.4,6.3,ROAD_Z+ROAD_W/2+0.7);
-  scene.add(lamp);
-  // pool of light on the tarmac
-  var pool=new THREE.Mesh(new THREE.CircleGeometry(3.4,14),
-    new THREE.MeshBasicMaterial({color:0xFFC981, transparent:true, opacity:0.10,
-      blending:THREE.AdditiveBlending, depthWrite:false}));
-  pool.rotation.x=-Math.PI/2;
-  pool.position.set(x-1.4,0.05,ROAD_Z+0.4);
-  scene.add(pool);
-}
-[-34,-19,17,32,47].forEach(streetlight);
-
-/* ---- parked cars: at night a car is mostly its lights ---- */
 var hazards=[];
 function parkedCar(x,z,rot,body){
-  var g=new THREE.Group();
-  g.position.set(x,0,z); g.rotation.y=rot;
-
+  var g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=rot;
   var shell=new THREE.Mesh(new THREE.BoxGeometry(4.3,0.80,1.82),
-    new THREE.MeshPhongMaterial({color:body, shininess:80, specular:0x556270}));
+    new THREE.MeshPhongMaterial({color:body,shininess:80,specular:0x556270}));
   shell.position.y=0.66; g.add(shell);
-  var cabin=new THREE.Mesh(new THREE.BoxGeometry(2.15,0.60,1.68),
-    new THREE.MeshPhongMaterial({color:0x0B1118, shininess:96, specular:0x66798C}));
-  cabin.position.set(-0.2,1.32,0); g.add(cabin);
-
-  var wheelGeo=new THREE.CylinderGeometry(0.34,0.34,0.26,10);
-  var wheelMat=new THREE.MeshPhongMaterial({color:0x0A0D11, shininess:4});
+  var cab=new THREE.Mesh(new THREE.BoxGeometry(2.15,0.60,1.68),
+    new THREE.MeshPhongMaterial({color:0x0B1118,shininess:96,specular:0x66798C}));
+  cab.position.set(-0.2,1.32,0); g.add(cab);
+  var wg=new THREE.CylinderGeometry(0.34,0.34,0.26,10);
+  var wm=new THREE.MeshPhongMaterial({color:0x0A0D11,shininess:4});
   [[1.35,0.92],[1.35,-0.92],[-1.4,0.92],[-1.4,-0.92]].forEach(function(p){
-    var w=new THREE.Mesh(wheelGeo,wheelMat);
-    w.rotation.x=Math.PI/2;
-    w.position.set(p[0],0.34,p[1]);
-    g.add(w);
+    var w=new THREE.Mesh(wg,wm); w.rotation.x=Math.PI/2; w.position.set(p[0],0.34,p[1]); g.add(w);
   });
-
   function lamp(px,pz,col,w,h){
     var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),
-      new THREE.MeshBasicMaterial({color:col, transparent:true, opacity:0.95,
-        blending:THREE.AdditiveBlending, depthWrite:false}));
-    m.position.set(px,0.72,pz);
-    m.rotation.y = px<0 ? Math.PI/2 : -Math.PI/2;
-    g.add(m);
-    return m;
+      new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.95,
+        blending:THREE.AdditiveBlending,depthWrite:false}));
+    m.position.set(px,0.72,pz); m.rotation.y=px<0?Math.PI/2:-Math.PI/2; g.add(m); return m;
   }
-  var t1=lamp(-2.17,0.62,0xFF2B18,0.42,0.16);
-  var t2=lamp(-2.17,-0.62,0xFF2B18,0.42,0.16);
-  lamp(2.17,0.60,0xFFEAC0,0.36,0.15);
-  lamp(2.17,-0.60,0xFFEAC0,0.36,0.15);
-  hazards.push(t1,t2);
-
+  hazards.push(lamp(-2.17,0.62,0xFF2B18,0.42,0.16),lamp(-2.17,-0.62,0xFF2B18,0.42,0.16));
+  lamp(2.17,0.60,0xFFEAC0,0.36,0.15); lamp(2.17,-0.60,0xFFEAC0,0.36,0.15);
   scene.add(g);
 }
-parkedCar(-7.5, ROAD_Z+1.4, 0, 0x24405C);
-parkedCar( 4.5, ROAD_Z+1.4, 0, 0x4A2230);
-parkedCar( 17.0, ROAD_Z-1.4, Math.PI, 0x2C3A2A);
-parkedCar(-21.0, ROAD_Z-1.4, Math.PI, 0x3A3242);
-
-/* stars */
-(function stars(){
-  var n=140, pos=new Float32Array(n*3);
-  for(var i=0;i<n;i++){
-    var a=Math.random()*Math.PI*2, e=0.28+Math.random()*0.9, r=90;
-    pos[i*3]=Math.cos(a)*Math.cos(e)*r;
-    pos[i*3+1]=Math.sin(e)*r;
-    pos[i*3+2]=Math.sin(a)*Math.cos(e)*r;
-  }
-  var g=new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.BufferAttribute(pos,3));
-  scene.add(new THREE.Points(g, new THREE.PointsMaterial({color:0x9FB6D0, size:0.55, sizeAttenuation:false, transparent:true, opacity:0.75})));
-})();
+parkedCar(-7.5,ROAD_Z+1.4,0,0x24405C);
+parkedCar(4.5,ROAD_Z+1.4,0,0x4A2230);
+parkedCar(17.0,ROAD_Z-1.4,Math.PI,0x2C3A2A);
+parkedCar(-21.0,ROAD_Z-1.4,Math.PI,0x3A3242);
 
 /* ============================================================
-   WINDOWS — every one of them in a single draw call
+   WINDOWS
    ============================================================ */
-var wins = [];
-function addWin(face, x, y, z, rotY){
-  wins.push({face:face, x:x, y:y, z:z, rotY:rotY, fire:0, out:false, spreadT:Math.random()*TUNE.spreadEvery});
+var wins=[];
+function addWin(face,x,y,z,rotY){
+  wins.push({face:face,x:x,y:y,z:z,rotY:rotY,fire:0,out:false,flick:Math.random()*6.28});
 }
-FRONT_COLS.forEach(function(cx){ ROWS.forEach(function(ry){ addWin("front", cx, ry, WALL_Z+0.10, 0); }); });
-WING_COLS.forEach(function(cz){ ROWS.forEach(function(ry){ addWin("left",  -WALL_X+0.10, ry, cz, Math.PI/2); }); });
-WING_COLS.forEach(function(cz){ ROWS.forEach(function(ry){ addWin("right",  WALL_X-0.10, ry, cz, -Math.PI/2); }); });
-totalEl.textContent = wins.length;
+FRONT_COLS.forEach(function(cx){ ROWS.forEach(function(ry){ addWin("front",cx,ry,WALL_Z+0.10,0); }); });
+WING_COLS.forEach(function(cz){ ROWS.forEach(function(ry){ addWin("left",-WALL_X+0.10,ry,cz,Math.PI/2); }); });
+WING_COLS.forEach(function(cz){ ROWS.forEach(function(ry){ addWin("right",WALL_X-0.10,ry,cz,-Math.PI/2); }); });
 
-var winGeo = new THREE.PlaneGeometry(WIN_W, WIN_H);
-var winMesh = new THREE.InstancedMesh(winGeo, new THREE.MeshBasicMaterial(), wins.length);
-var glowMesh = new THREE.InstancedMesh(
-  new THREE.PlaneGeometry(WIN_W*3.1, WIN_H*2.7),
-  new THREE.MeshBasicMaterial({transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, opacity:0.5}),
-  wins.length
-);
-(function placeWins(){
-  var m=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(), s=new THREE.Vector3(1,1,1), p=new THREE.Vector3();
+var winMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(WIN_W,WIN_H),
+  new THREE.MeshBasicMaterial(),wins.length);
+var glowMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(WIN_W*3.4,WIN_H*3.0),
+  new THREE.MeshBasicMaterial({transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:0.5}),
+  wins.length);
+(function(){
+  var m=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),
+      s=new THREE.Vector3(1,1,1),p=new THREE.Vector3();
   wins.forEach(function(w,i){
     p.set(w.x,w.y,w.z); e.set(0,w.rotY,0); q.setFromEuler(e); m.compose(p,q,s);
     winMesh.setMatrixAt(i,m);
-    // glow sits just proud of the glass so it does not z-fight
-    p.set(w.x + (w.face==="left"?0.05:w.face==="right"?-0.05:0), w.y, w.z + (w.face==="front"?0.05:0));
-    m.compose(p,q,s);
-    glowMesh.setMatrixAt(i,m);
+    p.set(w.x+(w.face==="left"?0.05:w.face==="right"?-0.05:0),w.y,w.z+(w.face==="front"?0.05:0));
+    m.compose(p,q,s); glowMesh.setMatrixAt(i,m);
   });
-  winMesh.instanceMatrix.needsUpdate = true;
-  glowMesh.instanceMatrix.needsUpdate = true;
+  winMesh.instanceMatrix.needsUpdate=true;
+  glowMesh.instanceMatrix.needsUpdate=true;
 })();
-scene.add(winMesh);
-scene.add(glowMesh);
+scene.add(winMesh); scene.add(glowMesh);
 
-var COL_DARK = new THREE.Color(0x121A24);
-var COL_OUT  = new THREE.Color(0x2E4E63);
-var COL_FIRE = new THREE.Color(0xFF6A18);
-var COL_HOT  = new THREE.Color(0xFFD070);
-var _c = new THREE.Color(), _g = new THREE.Color();
-
-function paintWins(){
+var COL_DARK=new THREE.Color(0x121A24), COL_OUT=new THREE.Color(0x2E4E63);
+var COL_FIRE=new THREE.Color(0xFF5A10), COL_HOT=new THREE.Color(0xFFE08A);
+var _c=new THREE.Color(), _g=new THREE.Color();
+function paintWins(now){
   for(var i=0;i<wins.length;i++){
-    var w = wins[i];
-    if(w.fire > 0){
-      _c.copy(COL_FIRE).lerp(COL_HOT, Math.min(1,w.fire)*0.55);
-      _g.copy(COL_FIRE).multiplyScalar(0.30 + Math.min(1,w.fire)*0.70);
+    var w=wins[i];
+    if(w.fire>0){
+      var lvl=Math.min(1,w.fire);
+      // two waves at odd speeds never line up, so the flicker never looks like a pulse
+      var fl=0.72+0.28*(Math.sin(now*11.0+w.flick)*0.5+Math.sin(now*6.3+w.flick*2.1)*0.5);
+      _c.copy(COL_FIRE).lerp(COL_HOT,lvl*0.5).multiplyScalar(0.55+fl*0.65);
+      _g.copy(COL_FIRE).multiplyScalar((0.22+lvl*0.68)*fl);
     } else {
-      _c.copy(w.out ? COL_OUT : COL_DARK);
-      _g.setRGB(0,0,0);
+      _c.copy(w.out?COL_OUT:COL_DARK); _g.setRGB(0,0,0);
     }
-    winMesh.setColorAt(i,_c);
-    glowMesh.setColorAt(i,_g);
+    winMesh.setColorAt(i,_c); glowMesh.setColorAt(i,_g);
   }
-  winMesh.instanceColor.needsUpdate = true;
-  glowMesh.instanceColor.needsUpdate = true;
+  winMesh.instanceColor.needsUpdate=true;
+  glowMesh.instanceColor.needsUpdate=true;
 }
-paintWins();
 
 /* ============================================================
-   THE NOZZLE — a child of the camera, so it is always in your hands
+   NOZZLE — a child of the camera, so it is always in your hands
    ============================================================ */
-var brass = new THREE.MeshPhongMaterial({color:0xC9922E, shininess:70, specular:0x6A5020});
-var rubber = new THREE.MeshPhongMaterial({color:0x1E2A33, shininess:12});
-(function nozzle(){
-  var g = new THREE.Group();
-  g.position.set(0.06, -0.34, -0.62);
-  g.rotation.set(0.10, 0, 0.06);
-
-  var barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.036,0.048,0.34,12), brass);
-  barrel.rotation.x = -Math.PI/2;
-  barrel.position.z = -0.16;
-  g.add(barrel);
-
-  var tip = new THREE.Mesh(new THREE.CylinderGeometry(0.020,0.036,0.09,12), brass);
-  tip.rotation.x = -Math.PI/2;
-  tip.position.z = -0.36;
-  g.add(tip);
-
-  var grip = new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.20,10), rubber);
-  grip.rotation.x = -Math.PI/2;
-  grip.position.z = 0.06;
-  g.add(grip);
-
-  // the hose runs down out of frame, which sells "you are holding this"
-  var curve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0,0,0.14),
-    new THREE.Vector3(0.02,-0.10,0.34),
-    new THREE.Vector3(0.10,-0.34,0.52)
-  ]);
-  g.add(new THREE.Mesh(new THREE.TubeGeometry(curve,10,0.045,7,false), rubber));
-
+var brass=new THREE.MeshPhongMaterial({color:0xC9922E,shininess:70,specular:0x6A5020});
+var rubber=new THREE.MeshPhongMaterial({color:0x1E2A33,shininess:12});
+(function(){
+  var g=new THREE.Group();
+  g.position.set(0.06,-0.34,-0.62);
+  g.rotation.set(0.10,0,0.06);
+  var barrel=new THREE.Mesh(new THREE.CylinderGeometry(0.036,0.048,0.34,12),brass);
+  barrel.rotation.x=-Math.PI/2; barrel.position.z=-0.16; g.add(barrel);
+  var tip=new THREE.Mesh(new THREE.CylinderGeometry(0.020,0.036,0.09,12),brass);
+  tip.rotation.x=-Math.PI/2; tip.position.z=-0.36; g.add(tip);
+  var grip=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.20,10),rubber);
+  grip.rotation.x=-Math.PI/2; grip.position.z=0.06; g.add(grip);
+  var curve=new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0,0,0.14),new THREE.Vector3(0.02,-0.10,0.34),new THREE.Vector3(0.10,-0.34,0.52)]);
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(curve,10,0.045,7,false),rubber));
   camera.add(g);
 })();
 
 /* ============================================================
    PARTICLES
    ============================================================ */
-function pool(count, color, sizeLo, sizeHi, extraBright){
+function pool(count,color,sizeLo,sizeHi,additive){
   var geo=new THREE.BufferGeometry();
-  var pos=new Float32Array(count*3), size=new Float32Array(count), alpha=new Float32Array(count);
+  var pos=new Float32Array(count*3),size=new Float32Array(count),alpha=new Float32Array(count);
   for(var i=0;i<count;i++){ pos[i*3+1]=-999; alpha[i]=0; size[i]=sizeLo+Math.random()*(sizeHi-sizeLo); }
-  geo.setAttribute("position", new THREE.BufferAttribute(pos,3));
-  geo.setAttribute("aSize", new THREE.BufferAttribute(size,1));
-  geo.setAttribute("aAlpha", new THREE.BufferAttribute(alpha,1));
+  geo.setAttribute("position",new THREE.BufferAttribute(pos,3));
+  geo.setAttribute("aSize",new THREE.BufferAttribute(size,1));
+  geo.setAttribute("aAlpha",new THREE.BufferAttribute(alpha,1));
   var mat=new THREE.ShaderMaterial({
-    transparent:true, depthWrite:false,
-    blending: extraBright ? THREE.AdditiveBlending : THREE.NormalBlending,
-    uniforms:{ uColor:{value:new THREE.Color(color)} },
+    transparent:true,depthWrite:false,
+    blending:additive?THREE.AdditiveBlending:THREE.NormalBlending,
+    uniforms:{uColor:{value:new THREE.Color(color)}},
     vertexShader:[
       "attribute float aSize; attribute float aAlpha; varying float vA;",
       "void main(){ vA=aAlpha;",
-      "  vec4 mv = modelViewMatrix * vec4(position,1.0);",
-      "  gl_PointSize = aSize * (700.0 / max(-mv.z, 0.5));",
-      "  gl_Position = projectionMatrix * mv; }"
+      " vec4 mv=modelViewMatrix*vec4(position,1.0);",
+      " gl_PointSize=aSize*(700.0/max(-mv.z,0.5));",
+      " gl_Position=projectionMatrix*mv; }"
     ].join("\n"),
     fragmentShader:[
       "uniform vec3 uColor; varying float vA;",
       "void main(){ vec2 c=gl_PointCoord-0.5; float d=dot(c,c);",
-      "  if(d>0.25) discard;",
-      "  float edge=smoothstep(0.25,0.045,d);",
-      "  float core=smoothstep(0.09,0.0,d);",
-      "  gl_FragColor = vec4(mix(uColor, vec3(1.0), core*0.5), edge*vA); }"
+      " if(d>0.25) discard;",
+      " float edge=smoothstep(0.25,0.045,d);",
+      " float core=smoothstep(0.09,0.0,d);",
+      " gl_FragColor=vec4(mix(uColor,vec3(1.0),core*0.5),edge*vA); }"
     ].join("\n")
   });
   var pts=new THREE.Points(geo,mat);
-  pts.frustumCulled=false;
-  scene.add(pts);
-  // sizes are assigned once and never re-uploaded — one less buffer per frame
+  pts.frustumCulled=false; scene.add(pts);
   return {geo:geo,pos:pos,size:size,alpha:alpha,pts:pts};
 }
 
-var water = pool(MAX_DROPS, 0xCFE9FF, 0.045, 0.095, false);
-var wvx=new Float32Array(MAX_DROPS), wvy=new Float32Array(MAX_DROPS), wvz=new Float32Array(MAX_DROPS);
+var water=pool(MAX_DROPS,0xCFE9FF,0.045,0.095,false);
+var wvx=new Float32Array(MAX_DROPS),wvy=new Float32Array(MAX_DROPS),wvz=new Float32Array(MAX_DROPS);
 var wlife=new Float32Array(MAX_DROPS); var wHead=0;
 
-var steam = pool(MAX_STEAM, 0xDCE9F0, 0.10, 0.26, false);
-var svx=new Float32Array(MAX_STEAM), svy=new Float32Array(MAX_STEAM), svz=new Float32Array(MAX_STEAM);
-var slife=new Float32Array(MAX_STEAM), smax=new Float32Array(MAX_STEAM); var sHead=0;
+var steam=pool(MAX_STEAM,0xDCE9F0,0.10,0.26,false);
+var svx=new Float32Array(MAX_STEAM),svy=new Float32Array(MAX_STEAM),svz=new Float32Array(MAX_STEAM);
+var slife=new Float32Array(MAX_STEAM),smax=new Float32Array(MAX_STEAM); var sHead=0;
 
-var ember = pool(MAX_EMBER, 0xFF8A2A, 0.03, 0.075, true);
-var evx=new Float32Array(MAX_EMBER), evy=new Float32Array(MAX_EMBER), evz=new Float32Array(MAX_EMBER);
-var elife=new Float32Array(MAX_EMBER), emax=new Float32Array(MAX_EMBER); var eHead=0;
+var smoke=pool(MAX_SMOKE,0x39424C,0.5,0.5,false);
+var smVx=new Float32Array(MAX_SMOKE),smVy=new Float32Array(MAX_SMOKE),smVz=new Float32Array(MAX_SMOKE);
+var smLife=new Float32Array(MAX_SMOKE),smMax=new Float32Array(MAX_SMOKE),smGrow=new Float32Array(MAX_SMOKE);
+var smHead=0;
+
+/* ---- flames get their own shader: the colour has to cool with age ---- */
+var flameGeo=new THREE.BufferGeometry();
+var flPos=new Float32Array(MAX_FLAME*3),flSize=new Float32Array(MAX_FLAME),
+    flLifeA=new Float32Array(MAX_FLAME),flSeed=new Float32Array(MAX_FLAME);
+var flVx=new Float32Array(MAX_FLAME),flVy=new Float32Array(MAX_FLAME),flVz=new Float32Array(MAX_FLAME);
+var flLife=new Float32Array(MAX_FLAME),flMax=new Float32Array(MAX_FLAME),flBase=new Float32Array(MAX_FLAME);
+for(var fi=0;fi<MAX_FLAME;fi++){ flPos[fi*3+1]=-999; flSeed[fi]=Math.random()*100; }
+flameGeo.setAttribute("position",new THREE.BufferAttribute(flPos,3));
+flameGeo.setAttribute("aSize",new THREE.BufferAttribute(flSize,1));
+flameGeo.setAttribute("aLife",new THREE.BufferAttribute(flLifeA,1));
+var flamePts=new THREE.Points(flameGeo,new THREE.ShaderMaterial({
+  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+  vertexShader:[
+    "attribute float aSize; attribute float aLife; varying float vL;",
+    "void main(){ vL=aLife;",
+    " vec4 mv=modelViewMatrix*vec4(position,1.0);",
+    " gl_PointSize=aSize*(700.0/max(-mv.z,0.5));",
+    " gl_Position=projectionMatrix*mv; }"
+  ].join("\n"),
+  fragmentShader:[
+    "varying float vL;",
+    "void main(){",
+    " vec2 c=gl_PointCoord-0.5; float d=dot(c,c);",
+    " if(d>0.25) discard;",
+    " float soft=smoothstep(0.25,0.0,d);",
+    // age drives colour: white hot at birth, cooling to deep red as it climbs
+    " float age=1.0-vL;",
+    " vec3 col=mix(vec3(1.0,0.96,0.80),vec3(1.0,0.52,0.10),smoothstep(0.0,0.40,age));",
+    " col=mix(col,vec3(0.66,0.11,0.02),smoothstep(0.38,1.0,age));",
+    // a tight bright centre keeps it reading as flame rather than fog
+    " float core=smoothstep(0.055,0.0,d);",
+    " col+=vec3(0.55,0.30,0.06)*core*vL;",
+    " gl_FragColor=vec4(col,soft*vL*(0.35+0.65*vL)); }"
+  ].join("\n")
+}));
+flamePts.frustumCulled=false; scene.add(flamePts);
+var flHead=0;
 
 function puffSteam(x,y,z,n){
   for(var i=0;i<n;i++){
@@ -962,15 +1154,17 @@ function splashDrops(x,y,z,n){
    STATE
    ============================================================ */
 var yaw=0, pitch=TUNE.pitchStart, pressure=0.40;
-var aimX=0, aimY=0, running=false, finished=false;
-var saved=0, burning=0, emitCarry=0, frame=0, elapsed=0, spreadClock=TUNE.spreadEvery;
+var running=false, paused=false, finished=false;
+var saved=0, burning=0, emitCarry=0, frame=0, elapsed=0, spreadClock=8;
+var level=1, cfg=LEVELS[0], fireTotal=0, screenNow="start";
+var settingsFrom="start";
 
 function paintGauge(){
   var pct=(pressure*100).toFixed(1)+"%";
   gFill.style.height=pct; gMark.style.bottom=pct;
-  psiEl.innerHTML = Math.round(15+pressure*75)+"<em>PSI</em>";
+  psiEl.innerHTML=Math.round(15+pressure*75)+"<em>PSI</em>";
 }
-(function ticks(){
+(function(){
   var h="";
   for(var i=0;i<=10;i++){
     var maj=(i%2===0);
@@ -980,77 +1174,66 @@ function paintGauge(){
 })();
 paintGauge();
 
+/* fires sit in the same places every attempt, so times are worth comparing */
+function seeded(seed){
+  var s=seed>>>0;
+  return function(){ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
+}
+function startingWindows(n,seed){
+  var idx=[]; for(var i=0;i<wins.length;i++) idx.push(i);
+  var rnd=seeded(seed);
+  for(var j=idx.length-1;j>0;j--){ var k=(rnd()*(j+1))|0,t=idx[j]; idx[j]=idx[k]; idx[k]=t; }
+  return idx.slice(0,n);
+}
 function ignite(i){
   var w=wins[i];
-  if(w.out || w.fire>0) return false;
+  if(!w||w.out||w.fire>0) return false;
   w.fire=0.30; return true;
 }
-function resetGame(){
-  wins.forEach(function(w){ w.fire=0; w.out=false; w.spreadT=Math.random()*TUNE.spreadEvery; });
-  saved=0; burning=0; finished=false;
-  elapsed=0; spreadClock=TUNE.spreadEvery;
-  yaw=0; pitch=TUNE.pitchStart; pressure=0.40; paintGauge();
-  for(var i=0;i<MAX_DROPS;i++){ wlife[i]=0; water.alpha[i]=0; water.pos[i*3+1]=-999; }
-  // six starter fires across all three faces and several floors, so you have
-  // to swing the hose the full width and work the pressure bar from the off
-  [5,14,21,26,34,43].forEach(ignite);
-  savedEl.textContent="0"; burningEl.textContent="6";
-  timeEl.innerHTML = "0.0<em>s</em>";
-  paintWins();
-  endEl.className="";
-}
 
-/* ---- joystick ---- */
-var stickId=null, sCx=0, sCy=0, STICK_R=40;
-stickEl.addEventListener("pointerdown", function(e){
-  if(stickId!==null) return;
-  stickId=e.pointerId;
-  try{ stickEl.setPointerCapture(stickId); }catch(err){}
-  stickEl.classList.add("live");
-  var r=stickEl.getBoundingClientRect();
-  sCx=r.left+r.width/2; sCy=r.top+r.height/2;
-  moveStick(e); e.preventDefault();
+/* ============================================================
+   AIMING — drag anywhere on the world to swing the hose
+   ============================================================ */
+var aimId=null,lastX=0,lastY=0;
+stage.addEventListener("pointerdown",function(e){
+  if(!running||paused||finished||aimId!==null) return;
+  aimId=e.pointerId; lastX=e.clientX; lastY=e.clientY;
+  try{ stage.setPointerCapture(aimId); }catch(err){}
 });
-stickEl.addEventListener("pointermove", function(e){
-  if(e.pointerId!==stickId) return;
-  moveStick(e); e.preventDefault();
+stage.addEventListener("pointermove",function(e){
+  if(e.pointerId!==aimId) return;
+  yaw+=(e.clientX-lastX)*TUNE.aimSens;
+  pitch-=(e.clientY-lastY)*TUNE.aimSens;
+  lastX=e.clientX; lastY=e.clientY;
+  yaw=Math.max(-TUNE.yawLimit,Math.min(TUNE.yawLimit,yaw));
+  pitch=Math.max(TUNE.pitchMin,Math.min(TUNE.pitchMax,pitch));
+  e.preventDefault();
 });
-function endStick(e){
-  if(e.pointerId!==stickId) return;
-  stickId=null; stickEl.classList.remove("live");
-  aimX=aimY=0; nubEl.style.transform="";
-}
-stickEl.addEventListener("pointerup", endStick);
-stickEl.addEventListener("pointercancel", endStick);
-function moveStick(e){
-  var dx=e.clientX-sCx, dy=e.clientY-sCy, len=Math.hypot(dx,dy);
-  if(len>STICK_R){ dx=dx/len*STICK_R; dy=dy/len*STICK_R; }
-  nubEl.style.transform="translate("+dx.toFixed(1)+"px,"+dy.toFixed(1)+"px)";
-  aimX=dx/STICK_R; aimY=dy/STICK_R;
-}
+function endAim(e){ if(e.pointerId===aimId) aimId=null; }
+stage.addEventListener("pointerup",endAim);
+stage.addEventListener("pointercancel",endAim);
 
-/* ---- pressure ---- */
+/* the pressure bar keeps its own finger, so both thumbs work at once */
 var gaugeId=null;
-gaugeEl.addEventListener("pointerdown", function(e){
+gaugeEl.addEventListener("pointerdown",function(e){
   if(gaugeId!==null) return;
   gaugeId=e.pointerId;
   try{ gaugeEl.setPointerCapture(gaugeId); }catch(err){}
-  moveGauge(e); e.preventDefault();
+  moveGauge(e); e.preventDefault(); e.stopPropagation();
 });
-gaugeEl.addEventListener("pointermove", function(e){
+gaugeEl.addEventListener("pointermove",function(e){
   if(e.pointerId!==gaugeId) return;
-  moveGauge(e); e.preventDefault();
+  moveGauge(e); e.preventDefault(); e.stopPropagation();
 });
 function endGauge(e){ if(e.pointerId===gaugeId) gaugeId=null; }
-gaugeEl.addEventListener("pointerup", endGauge);
-gaugeEl.addEventListener("pointercancel", endGauge);
+gaugeEl.addEventListener("pointerup",endGauge);
+gaugeEl.addEventListener("pointercancel",endGauge);
 function moveGauge(e){
   var r=gBody.getBoundingClientRect();
   pressure=Math.max(0,Math.min(1,1-(e.clientY-r.top)/r.height));
   paintGauge();
 }
 
-/* keyboard for desktop testing */
 var keys={};
 addEventListener("keydown",function(e){
   keys[e.key.toLowerCase()]=true;
@@ -1059,9 +1242,9 @@ addEventListener("keydown",function(e){
 addEventListener("keyup",function(e){ keys[e.key.toLowerCase()]=false; });
 
 /* ============================================================
-   NOZZLE IN WORLD SPACE
+   NOZZLE MATHS
    ============================================================ */
-var TIP=new THREE.Vector3(), DIR=new THREE.Vector3(), RIGHT=new THREE.Vector3(), UPV=new THREE.Vector3();
+var TIP=new THREE.Vector3(),DIR=new THREE.Vector3(),RIGHT=new THREE.Vector3(),UPV=new THREE.Vector3();
 var UP=new THREE.Vector3(0,1,0);
 function readNozzle(){
   DIR.set(0,0,-1).applyQuaternion(camera.quaternion).normalize();
@@ -1070,266 +1253,434 @@ function readNozzle(){
   if(RIGHT.lengthSq()<1e-6) RIGHT.set(1,0,0);
   UPV.crossVectors(RIGHT,DIR).normalize();
 }
-
 function toast(t){
   toastEl.textContent=t;
   toastEl.classList.remove("pop"); void toastEl.offsetWidth; toastEl.classList.add("pop");
 }
-
-/* which window (if any) sits at this point on a wall */
-function winAt(face, a, y){
+function winAt(face,a,y){
   for(var i=0;i<wins.length;i++){
     var w=wins[i];
     if(w.face!==face) continue;
-    var wa = (face==="front") ? w.x : w.z;
-    if(Math.abs(a-wa)<=WIN_HW && Math.abs(y-w.y)<=WIN_HH) return i;
+    var wa=(face==="front")?w.x:w.z;
+    if(Math.abs(a-wa)<=WIN_HW&&Math.abs(y-w.y)<=WIN_HH) return i;
   }
   return -1;
 }
-
-function hitWindow(i, sp, x, y, z){
+function hitWindow(i,sp,x,y,z){
   var w=wins[i];
   if(w.fire<=0) return;
-  // The hose delivers a FIXED amount of water per second; raising the pressure
-  // splits it into more droplets rather than making more of it. So each droplet
-  // carries less when the stream is heavy. Without this, high pressure douses
-  // ~8x faster than low simply because it emits more particles, and the low
-  // floors — which need low pressure — become unfairly slow.
-  var rateNow = TUNE.emitMin + (TUNE.emitMax-TUNE.emitMin)*pressure;
-  w.fire -= TUNE.douse / rateNow;
+  // fixed flow: more pressure means more droplets each carrying less water, so
+  // the bar changes how precise you are, not how strong you are
+  var rateNow=TUNE.emitMin+(TUNE.emitMax-TUNE.emitMin)*pressure;
+  w.fire-=TUNE.douse/rateNow;
   if(Math.random()<0.30) puffSteam(x,y,z,1);
+  if(Math.random()<0.04) Snd.steam();
   if(w.fire<=0){
-    w.fire=0; w.out=true;
-    saved++; savedEl.textContent=saved;
-    puffSteam(x,y,z,7);
-    toast("Window clear");
+    w.fire=0; w.out=true; saved++; savedEl.textContent=saved;
+    puffSteam(x,y,z,8); Snd.clear(); toast("Window clear");
   }
+}
+function neighbours(i){
+  var w=wins[i],out=[];
+  for(var j=0;j<wins.length;j++){
+    if(j===i) continue;
+    var o=wins[j];
+    if(o.face!==w.face||o.out||o.fire>0) continue;
+    var da=(w.face==="front")?Math.abs(o.x-w.x):Math.abs(o.z-w.z);
+    var dy=Math.abs(o.y-w.y);
+    if(da<4.2&&dy<0.2) out.push(j);
+    else if(da<0.2&&dy<3.8){ out.push(j); if(o.y>w.y) out.push(j); }
+  }
+  return out;
 }
 
 /* ============================================================
    SIMULATION
    ============================================================ */
-function step(dt, noDraw){
+var clock=new THREE.Clock();
+function step(dt,noDraw){
   frame++;
+  var now=performance.now()/1000;
+  var live=running&&!paused&&!finished;
 
-  /* aim */
-  var kx=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0);
-  var ky=(keys.arrowdown||keys.s?1:0)-(keys.arrowup||keys.w?1:0);
-  var ax=Math.max(-1,Math.min(1,aimX+kx)), ay=Math.max(-1,Math.min(1,aimY+ky));
-  if(keys.q){ pressure=Math.max(0,pressure-dt*0.7); paintGauge(); }
-  if(keys.e){ pressure=Math.min(1,pressure+dt*0.7); paintGauge(); }
-
-  yaw   += ax*TUNE.yawRate*dt;
-  pitch -= ay*TUNE.pitchRate*dt;
-  yaw   = Math.max(-TUNE.yawLimit, Math.min(TUNE.yawLimit, yaw));
-  pitch = Math.max(TUNE.pitchMin, Math.min(TUNE.pitchMax, pitch));
-
-  camera.rotation.y = -yaw;
-  camera.rotation.x = pitch;
+  if(live){
+    var kx=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0);
+    var ky=(keys.arrowdown||keys.s?1:0)-(keys.arrowup||keys.w?1:0);
+    if(kx||ky){
+      yaw+=kx*1.3*dt; pitch-=ky*0.85*dt;
+      yaw=Math.max(-TUNE.yawLimit,Math.min(TUNE.yawLimit,yaw));
+      pitch=Math.max(TUNE.pitchMin,Math.min(TUNE.pitchMax,pitch));
+    }
+    if(keys.q){ pressure=Math.max(0,pressure-dt*0.7); paintGauge(); }
+    if(keys.e){ pressure=Math.min(1,pressure+dt*0.7); paintGauge(); }
+  }
+  camera.rotation.y=-yaw;
+  camera.rotation.x=pitch;
   readNozzle();
 
-  /* truck beacon behind you, sweeping the walls red then blue */
-  var now = performance.now();
-  var beat = Math.floor(now/525)%2;
-  beacon.color.setHex(beat ? 0x3A7BFF : 0xFF3A46);
-  beacon.intensity = 1.25 + Math.sin(now/90)*0.18;
-
-  // hazard lights on the parked cars, off the same clock as the beacon
+  var nowMs=performance.now();
+  beacon.color.setHex((Math.floor(nowMs/525)%2)?0x3A7BFF:0xFF3A46);
+  beacon.intensity=1.25+Math.sin(nowMs/90)*0.18;
   if(frame%4===0){
-    var haz = (Math.floor(now/560)%2) ? 0.95 : 0.12;
-    for(var hz2=0; hz2<hazards.length; hz2++) hazards[hz2].material.opacity = haz;
+    var haz=(Math.floor(nowMs/560)%2)?0.95:0.12;
+    for(var hz=0;hz<hazards.length;hz++) hazards[hz].material.opacity=haz;
   }
 
-  /* emit water */
-  if(running && !finished){
+  /* ---- water ---- */
+  if(live){
     var speed=TUNE.speedMin+(TUNE.speedMax-TUNE.speedMin)*pressure;
     var spread=TUNE.spreadLoose+(TUNE.spreadTight-TUNE.spreadLoose)*pressure;
     var rate=TUNE.emitMin+(TUNE.emitMax-TUNE.emitMin)*pressure;
-    emitCarry += rate*dt*60;
+    emitCarry+=rate*dt*60;
     var n=emitCarry|0; emitCarry-=n; if(n>70) n=70;
     for(var i=0;i<n;i++){
       var k=wHead; wHead=(wHead+1)%MAX_DROPS;
       var frac=i/Math.max(1,n)*dt;
-      var rx=(Math.random()+Math.random()-1)*spread, ry=(Math.random()+Math.random()-1)*spread;
+      var rx=(Math.random()+Math.random()-1)*spread,ry=(Math.random()+Math.random()-1)*spread;
       var jv=speed*(0.92+Math.random()*0.16);
       var vx=DIR.x*jv+RIGHT.x*rx*jv+UPV.x*ry*jv;
       var vy=DIR.y*jv+RIGHT.y*rx*jv+UPV.y*ry*jv;
       var vz=DIR.z*jv+RIGHT.z*rx*jv+UPV.z*ry*jv;
-      water.pos[k*3]=TIP.x+vx*frac;
-      water.pos[k*3+1]=TIP.y+vy*frac;
-      water.pos[k*3+2]=TIP.z+vz*frac;
+      water.pos[k*3]=TIP.x+vx*frac; water.pos[k*3+1]=TIP.y+vy*frac; water.pos[k*3+2]=TIP.z+vz*frac;
       wvx[k]=vx; wvy[k]=vy; wvz[k]=vz;
       wlife[k]=3.0; water.alpha[k]=0.55+Math.random()*0.4;
     }
+
+    var dk=1-TUNE.drag*dt;
+    for(var d=0;d<MAX_DROPS;d++){
+      if(wlife[d]<=0) continue;
+      wlife[d]-=dt;
+      wvy[d]-=TUNE.gravity*dt;
+      wvx[d]*=dk; wvy[d]*=dk; wvz[d]*=dk;
+      var i3=d*3;
+      var px=water.pos[i3],py=water.pos[i3+1],pz=water.pos[i3+2];
+      var nx=px+wvx[d]*dt,ny=py+wvy[d]*dt,nz=pz+wvz[d]*dt;
+      var sp=Math.hypot(wvx[d],wvy[d],wvz[d]);
+      var hit=false,hx=0,hy=0,hz2=0,face=null,along=0;
+      if(pz>WALL_Z&&nz<=WALL_Z&&ny<WALL_TOP&&Math.abs(nx)<WALL_X){
+        var t=(WALL_Z-pz)/(nz-pz);
+        hx=px+(nx-px)*t; hy=py+(ny-py)*t; hz2=WALL_Z; face="front"; along=hx; hit=true;
+      }
+      if(!hit&&px>-WALL_X&&nx<=-WALL_X&&ny<WALL_TOP&&nz>WING_FRONT&&nz<WING_BACK){
+        var t2=(-WALL_X-px)/(nx-px);
+        hy=py+(ny-py)*t2; hz2=pz+(nz-pz)*t2; hx=-WALL_X; face="left"; along=hz2; hit=true;
+      }
+      if(!hit&&px<WALL_X&&nx>=WALL_X&&ny<WALL_TOP&&nz>WING_FRONT&&nz<WING_BACK){
+        var t3=(WALL_X-px)/(nx-px);
+        hy=py+(ny-py)*t3; hz2=pz+(nz-pz)*t3; hx=WALL_X; face="right"; along=hz2; hit=true;
+      }
+      if(hit){
+        var wi=winAt(face,along,hy);
+        if(wi>=0) hitWindow(wi,sp,hx,hy,hz2);
+        else if(Math.random()<0.25){ splashDrops(hx,hy,hz2,1); if(Math.random()<0.05) Snd.splash(); }
+        wlife[d]=0; water.alpha[d]=0; water.pos[i3+1]=-999; continue;
+      }
+      if(ny<=0.03){
+        if(Math.random()<0.30) splashDrops(nx,0.04,nz,1);
+        wlife[d]=0; water.alpha[d]=0; water.pos[i3+1]=-999; continue;
+      }
+      water.pos[i3]=nx; water.pos[i3+1]=ny; water.pos[i3+2]=nz;
+      if(Math.abs(nx)>44||Math.abs(nz)>44||ny>40){ wlife[d]=0; water.alpha[d]=0; water.pos[i3+1]=-999; continue; }
+      if(wlife[d]<0.4) water.alpha[d]*=0.94;
+    }
+    water.geo.attributes.position.needsUpdate=true;
+    water.geo.attributes.aAlpha.needsUpdate=true;
+
+    for(var s=0;s<MAX_STEAM;s++){
+      if(slife[s]<=0) continue;
+      slife[s]-=dt;
+      svy[s]+=1.4*dt; svx[s]*=0.96; svz[s]*=0.96;
+      var s3=s*3;
+      steam.pos[s3]+=svx[s]*dt; steam.pos[s3+1]+=svy[s]*dt; steam.pos[s3+2]+=svz[s]*dt;
+      steam.alpha[s]=Math.max(0,slife[s]/smax[s])*0.6;
+      if(slife[s]<=0){ steam.alpha[s]=0; steam.pos[s3+1]=-999; }
+    }
+    steam.geo.attributes.position.needsUpdate=true;
+    steam.geo.attributes.aAlpha.needsUpdate=true;
   }
 
-  /* integrate water + walls */
-  var dk=1-TUNE.drag*dt;
-  for(var d=0; d<MAX_DROPS; d++){
-    if(wlife[d]<=0) continue;
-    wlife[d]-=dt;
-    wvy[d]-=TUNE.gravity*dt;
-    wvx[d]*=dk; wvy[d]*=dk; wvz[d]*=dk;
-    var i3=d*3;
-    var px=water.pos[i3], py=water.pos[i3+1], pz=water.pos[i3+2];
-    var nx=px+wvx[d]*dt, ny=py+wvy[d]*dt, nz=pz+wvz[d]*dt;
-    var sp=Math.hypot(wvx[d],wvy[d],wvz[d]);
-    var hit=false, hx=0,hy=0,hz=0, face=null, along=0;
-
-    // walls are axis aligned, so a crossing test is exact and cheap
-    if(!hit && pz>WALL_Z && nz<=WALL_Z && ny<WALL_TOP && Math.abs(nx)<WALL_X){
-      var t=(WALL_Z-pz)/(nz-pz);
-      hx=px+(nx-px)*t; hy=py+(ny-py)*t; hz=WALL_Z;
-      face="front"; along=hx; hit=true;
-    }
-    if(!hit && px>-WALL_X && nx<=-WALL_X && ny<WALL_TOP && nz>WING_FRONT && nz<WING_BACK){
-      var t2=(-WALL_X-px)/(nx-px);
-      hy=py+(ny-py)*t2; hz=pz+(nz-pz)*t2; hx=-WALL_X;
-      face="left"; along=hz; hit=true;
-    }
-    if(!hit && px<WALL_X && nx>=WALL_X && ny<WALL_TOP && nz>WING_FRONT && nz<WING_BACK){
-      var t3=(WALL_X-px)/(nx-px);
-      hy=py+(ny-py)*t3; hz=pz+(nz-pz)*t3; hx=WALL_X;
-      face="right"; along=hz; hit=true;
-    }
-
-    if(hit){
-      var wi=winAt(face, along, hy);
-      if(wi>=0) hitWindow(wi, sp, hx, hy, hz);
-      else if(Math.random()<0.25) splashDrops(hx,hy,hz,1);
-      wlife[d]=0; water.alpha[d]=0; water.pos[i3+1]=-999;
-      continue;
-    }
-
-    if(ny<=0.03){
-      if(Math.random()<0.30) splashDrops(nx,0.04,nz,1);
-      wlife[d]=0; water.alpha[d]=0; water.pos[i3+1]=-999;
-      continue;
-    }
-    water.pos[i3]=nx; water.pos[i3+1]=ny; water.pos[i3+2]=nz;
-    if(Math.abs(nx)>44||Math.abs(nz)>44||ny>40){ wlife[d]=0; water.alpha[d]=0; water.pos[i3+1]=-999; continue; }
-    if(wlife[d]<0.4) water.alpha[d]*=0.94;
-  }
-  water.geo.attributes.position.needsUpdate=true;
-  water.geo.attributes.aAlpha.needsUpdate=true;
-
-  /* steam / splash */
-  for(var s=0;s<MAX_STEAM;s++){
-    if(slife[s]<=0) continue;
-    slife[s]-=dt;
-    svy[s]+=1.4*dt;            // steam rises
-    svx[s]*=0.96; svz[s]*=0.96;
-    var s3=s*3;
-    steam.pos[s3]+=svx[s]*dt; steam.pos[s3+1]+=svy[s]*dt; steam.pos[s3+2]+=svz[s]*dt;
-    steam.alpha[s]=Math.max(0, slife[s]/smax[s])*0.6;
-    if(slife[s]<=0){ steam.alpha[s]=0; steam.pos[s3+1]=-999; }
-  }
-  steam.geo.attributes.position.needsUpdate=true;
-  steam.geo.attributes.aAlpha.needsUpdate=true;
-
-  /* fire: grow, spread, throw embers */
-  burning=0;
+  /* ---- fire: grow, spread, and throw flame ---- */
+  var prevBurning=burning;
+  burning=0; fireTotal=0;
   var hotCount=0;
-  for(var f=0;f<wins.length;f++){
-    var w=wins[f];
+  var flameShare=Math.min(1, 7/Math.max(1,prevBurning));
+  for(var f2=0;f2<wins.length;f2++){
+    var w=wins[f2];
     if(w.fire<=0) continue;
-    burning++;
-    if(!finished){
-      w.fire=Math.min(1.4, w.fire+TUNE.fireGrow*dt);
-      if(w.fire>=TUNE.spreadAt) hotCount++;
-    }
-    if(frame%2===0 && Math.random()<w.fire*0.5){
-      var k2=eHead; eHead=(eHead+1)%MAX_EMBER;
-      ember.pos[k2*3]=w.x+(Math.random()-0.5)*WIN_W;
-      ember.pos[k2*3+1]=w.y-0.4;
-      ember.pos[k2*3+2]=w.z+(Math.random()-0.5)*(w.face==="front"?WIN_W:0.2);
-      evx[k2]=(Math.random()-0.5)*0.5; evy[k2]=1.3+Math.random()*1.9; evz[k2]=(Math.random()-0.5)*0.5;
-      emax[k2]=elife[k2]=0.7+Math.random()*0.8;
-      ember.alpha[k2]=0.9;
-    }
-  }
-  for(var em=0;em<MAX_EMBER;em++){
-    if(elife[em]<=0) continue;
-    elife[em]-=dt;
-    evy[em]+=0.5*dt;
-    var e3=em*3;
-    ember.pos[e3]+=evx[em]*dt; ember.pos[e3+1]+=evy[em]*dt; ember.pos[e3+2]+=evz[em]*dt;
-    ember.alpha[em]=Math.max(0, elife[em]/emax[em]);
-    if(elife[em]<=0){ ember.alpha[em]=0; ember.pos[e3+1]=-999; }
-  }
-  ember.geo.attributes.position.needsUpdate=true;
-  ember.geo.attributes.aAlpha.needsUpdate=true;
+    burning++; fireTotal+=Math.min(1,w.fire);
+    if(!live) continue;
 
-  /* one capped spread clock for the whole building, not one per window */
-  if(running && !finished && hotCount>0){
-    spreadClock -= dt * Math.min(hotCount, TUNE.spreadCap);
+    w.fire=Math.min(1.4,w.fire+TUNE.fireGrow*dt);
+    if(w.fire>=TUNE.spreadAt) hotCount++;
+
+    /* Flame birth rate rises with how developed the fire is: a new fire is a
+       few thin tongues, a full blaze pours out of the window.
+       The whole building shares one flame budget — past about seven fires each
+       one emits proportionally fewer, so level 10 costs the same as level 1 and
+       flames never hit the pool limit and start vanishing in mid air. */
+    var lvl=Math.min(1,w.fire);
+    var want=(0.30+lvl*1.15)*flameShare*dt*60;
+    var count=want|0;
+    if(Math.random()<(want-count)) count++;
+    var outward=(w.face==="front")?0:(w.face==="left"?1:-1);
+    for(var c=0;c<count;c++){
+      var k2=flHead; flHead=(flHead+1)%MAX_FLAME;
+      var ox=(Math.random()-0.5)*WIN_W*0.8;
+      flPos[k2*3]  = w.x+(w.face==="front"?ox:outward*0.16);
+      flPos[k2*3+1]= w.y-WIN_HH*0.75+Math.random()*0.25;
+      flPos[k2*3+2]= w.z+(w.face==="front"?0.12:ox);
+      flVx[k2]=(Math.random()-0.5)*0.35+outward*0.5*lvl;
+      flVy[k2]=1.5+Math.random()*1.5+lvl*1.3;
+      flVz[k2]=(Math.random()-0.5)*0.35+(w.face==="front"?0.5*lvl:0);
+      flMax[k2]=flLife[k2]=0.42+Math.random()*0.42+lvl*0.25;
+      // fewer particles than before, so each one is fatter to keep the fire solid
+      flBase[k2]=(0.46+Math.random()*0.40)*(0.58+lvl*0.66);
+      flSize[k2]=flBase[k2];
+      flLifeA[k2]=1;
+    }
+
+    if(w.fire>0.5&&frame%3===0&&Math.random()<0.30*lvl){
+      var k3=smHead; smHead=(smHead+1)%MAX_SMOKE;
+      smoke.pos[k3*3]=w.x+(w.face==="front"?(Math.random()-0.5)*WIN_W:outward*0.3);
+      smoke.pos[k3*3+1]=w.y+WIN_HH*0.9;
+      smoke.pos[k3*3+2]=w.z+(w.face==="front"?0.3:(Math.random()-0.5)*WIN_W);
+      smVx[k3]=(Math.random()-0.5)*0.5+outward*0.6;
+      smVy[k3]=1.3+Math.random()*1.1;
+      smVz[k3]=(Math.random()-0.5)*0.5+(w.face==="front"?0.6:0);
+      smMax[k3]=smLife[k3]=1.6+Math.random()*1.6;
+      smGrow[k3]=0.7+Math.random()*1.1;
+      smoke.size[k3]=0.5; smoke.alpha[k3]=0.30;
+    }
+  }
+
+  /* flame motion: rise, wander, and thin out as they cool */
+  if(live){
+    for(var fl=0;fl<MAX_FLAME;fl++){
+      if(flLife[fl]<=0) continue;
+      flLife[fl]-=dt;
+      if(flLife[fl]<=0){ flPos[fl*3+1]=-999; flSize[fl]=0; flLifeA[fl]=0; continue; }
+      flVy[fl]+=2.4*dt;                 // hot air keeps accelerating upward
+      flVx[fl]*=0.965; flVz[fl]*=0.965;
+      var q=fl*3;
+      var t01=flLife[fl]/flMax[fl];
+      // sideways wander makes a tongue lick instead of rising in a straight line
+      var wob=Math.sin(now*7.5+flSeed[fl])*0.55+Math.sin(now*13.1+flSeed[fl]*1.7)*0.25;
+      flPos[q]  +=(flVx[fl]+wob*0.30)*dt;
+      flPos[q+1]+= flVy[fl]*dt;
+      flPos[q+2]+=(flVz[fl]+wob*0.18)*dt;
+      // fat through the middle of its life, thin at both ends
+      flSize[fl]=flBase[fl]*(0.45+0.75*Math.sin(Math.min(1,(1-t01)*1.15)*Math.PI));
+      flLifeA[fl]=t01;
+    }
+    flameGeo.attributes.position.needsUpdate=true;
+    flameGeo.attributes.aSize.needsUpdate=true;
+    flameGeo.attributes.aLife.needsUpdate=true;
+
+    for(var sm=0;sm<MAX_SMOKE;sm++){
+      if(smLife[sm]<=0) continue;
+      smLife[sm]-=dt;
+      smVy[sm]*=0.99; smVx[sm]*=0.98; smVz[sm]*=0.98;
+      var m3=sm*3;
+      smoke.pos[m3]+=smVx[sm]*dt; smoke.pos[m3+1]+=smVy[sm]*dt; smoke.pos[m3+2]+=smVz[sm]*dt;
+      var age=1-smLife[sm]/smMax[sm];
+      smoke.size[sm]=0.5+smGrow[sm]*age*2.4;
+      smoke.alpha[sm]=Math.max(0,1-age)*0.34*Math.min(1,age*4);
+      if(smLife[sm]<=0){ smoke.alpha[sm]=0; smoke.pos[m3+1]=-999; }
+    }
+    smoke.geo.attributes.position.needsUpdate=true;
+    smoke.geo.attributes.aAlpha.needsUpdate=true;
+    smoke.geo.attributes.aSize.needsUpdate=true;
+  }
+
+  /* the blaze throws one warm, unsteady light across the courtyard */
+  var flick=0.82+0.18*(Math.sin(now*9.3)*0.6+Math.sin(now*17.7)*0.4);
+  fireLight.intensity=Math.min(3.2,fireTotal*0.42)*flick;
+  fireLight.distance=22+Math.min(30,fireTotal*3);
+
+  /* ---- spreading, capped so the fire cannot run away ---- */
+  if(live&&hotCount>0){
+    spreadClock-=dt*Math.min(hotCount,TUNE.spreadCap);
     if(spreadClock<=0){
-      spreadClock = TUNE.spreadEvery;
+      spreadClock=cfg.spreadEvery;
       var hots=[];
       for(var hh=0;hh<wins.length;hh++) if(wins[hh].fire>=TUNE.spreadAt) hots.push(hh);
       if(hots.length){
-        var from=hots[(Math.random()*hots.length)|0];
-        var nb=neighbours(from);
+        var nb=neighbours(hots[(Math.random()*hots.length)|0]);
         if(nb.length) ignite(nb[(Math.random()*nb.length)|0]);
       }
     }
   }
 
-  /* clock */
-  if(running && !finished){
-    elapsed += dt;
-    if(frame%6===0) timeEl.innerHTML = elapsed.toFixed(1)+"<em>s</em>";
+  if(live){
+    elapsed+=dt;
+    if(frame%6===0) timeEl.innerHTML=elapsed.toFixed(1)+"<em>s</em>";
   }
-
-  /* readouts + end states */
   if(frame%3===0){
     burningEl.textContent=burning;
-    burnPlate.className = "plate" + (burning>=TUNE.loseAt-5 ? " hot" : "");
-    arcMark.style.left = ((yaw/TUNE.yawLimit)*0.5+0.5)*100 + "%";
-    paintWins();
+    burnPlate.className="plate"+(burning>=cfg.loseAt-4?" hot":"");
+    arcMark.style.left=((yaw/TUNE.yawLimit)*0.5+0.5)*100+"%";
   }
-  if(running && !finished){
-    if(burning===0 && saved>0) finish(true);
-    else if(burning>=TUNE.loseAt) finish(false);
+  paintWins(now);
+  Snd.frame(live,pressure,fireTotal,dt);
+
+  if(live){
+    if(burning===0&&saved>0) finish(true);
+    else if(burning>=cfg.loseAt) finish(false);
   }
 
   if(!noDraw) renderer.render(scene,camera);
 }
 
-function neighbours(i){
-  var w=wins[i], out=[];
-  for(var j=0;j<wins.length;j++){
-    if(j===i) continue;
-    var o=wins[j];
-    if(o.face!==w.face || o.out || o.fire>0) continue;
-    var da = (w.face==="front") ? Math.abs(o.x-w.x) : Math.abs(o.z-w.z);
-    var dy = Math.abs(o.y-w.y);
-    // side by side, or the floor directly above / below
-    if(da<4.2 && dy<0.2) out.push(j);
-    else if(da<0.2 && dy<3.8){ out.push(j); if(o.y>w.y) out.push(j); } // fire climbs
-  }
-  return out;
+/* ============================================================
+   SCREENS
+   ============================================================ */
+var SCREENS=["start","levels","pause","settings","end"];
+function show(which){
+  SCREENS.forEach(function(id){
+    var el=$(id);
+    if(id==="end") el.className="screen sheet"+(which==="end"?" on":"");
+    else el.classList.toggle("on",which===id);
+  });
+  hud.classList.toggle("on",which==="game");
+  screenNow=which;
+}
+
+function startLevel(n){
+  level=Math.max(1,Math.min(10,n));
+  cfg=LEVELS[level-1];
+  wins.forEach(function(w){ w.fire=0; w.out=false; });
+  saved=0; burning=0; finished=false; paused=false;
+  elapsed=0; spreadClock=cfg.spreadEvery;
+  yaw=0; pitch=TUNE.pitchStart; pressure=0.40; paintGauge();
+  for(var i=0;i<MAX_DROPS;i++){ wlife[i]=0; water.alpha[i]=0; water.pos[i*3+1]=-999; }
+  for(var f=0;f<MAX_FLAME;f++){ flLife[f]=0; flLifeA[f]=0; flSize[f]=0; flPos[f*3+1]=-999; }
+  for(var s2=0;s2<MAX_SMOKE;s2++){ smLife[s2]=0; smoke.alpha[s2]=0; smoke.pos[s2*3+1]=-999; }
+  startingWindows(cfg.fires,1234+level*7919).forEach(ignite);
+  savedEl.textContent="0";
+  burningEl.textContent=cfg.fires;
+  timeEl.innerHTML="0.0<em>s</em>";
+  paintWins(0);
+  running=true;
+  show("game");
+  if(!save.seenHint){ dragHint.classList.add("show"); save.seenHint=true; persist(); }
 }
 
 function finish(won){
-  finished=true;
-  endEl.className = "show " + (won?"win":"lose");
-  endTitle.textContent = won ? "Fire out" : "Building lost";
-  endSub.innerHTML = won
-    ? "Every window clear in <b>" + elapsed.toFixed(1) + " seconds</b>.<br>" +
-      saved + " saved. Send that time to your friends."
-    : "The fire got away from you after " + elapsed.toFixed(1) + " seconds. " +
-      saved + " windows saved before it spread.";
+  finished=true; running=false;
+  var t=elapsed, best=save.best[level];
+  if(won){
+    if(level>=save.unlocked&&level<10) save.unlocked=level+1;
+    if(best===undefined||t<best){ save.best[level]=Math.round(t*10)/10; best=save.best[level]; }
+    persist(); Snd.win();
+  } else Snd.lose();
+  $("endTitle").textContent=won?"Fire out":"Building lost";
+  $("endTime").textContent=t.toFixed(1)+"s";
+  $("endBest").textContent=won?("Best "+best.toFixed(1)+"s  ·  Level "+level)
+                              :("Level "+level+"  ·  "+saved+" saved");
+  $("endSub").textContent=won?(level<10?"Every window clear.":"You cleared all ten levels.")
+                             :"The fire got away from you.";
+  $("nextBtn").style.display=(won&&level<10)?"block":"none";
+  show("end");
+  $("end").className="screen sheet on "+(won?"win":"lose");
 }
+
+/* ---- level map, drawn as a zigzag path ---- */
+function buildMap(){
+  var map=$("map");
+  Array.prototype.slice.call(map.querySelectorAll(".nodeWrap")).forEach(function(n){ n.parentNode.removeChild(n); });
+  var pts=[];
+  for(var i=0;i<10;i++){
+    var num=i+1, lv=LEVELS[i];
+    var x=(i%2===0)?26:74, y=7+i*9.5;
+    pts.push([x,y]);
+    var state=(num<save.unlocked)?"done":(num===save.unlocked?"open next":"locked");
+    var wrap=document.createElement("div");
+    wrap.className="nodeWrap";
+    wrap.style.cssText="position:absolute;left:"+x+"%;top:"+y+"%;";
+    var b=document.createElement("button");
+    b.className="node "+state;
+    b.setAttribute("aria-label","Level "+num+", "+lv.fires+" fires");
+    if(state==="locked"){ b.disabled=true; b.textContent="•"; }
+    else {
+      b.textContent=num;
+      b.addEventListener("click",(function(nn){ return function(){ Snd.init(); Snd.resume(); Snd.tap(); startLevel(nn); }; })(num));
+    }
+    wrap.appendChild(b);
+    var fires=document.createElement("div");
+    fires.className="nodeFires"; fires.textContent=lv.fires+" fires";
+    wrap.appendChild(fires);
+    if(save.best[num]!==undefined){
+      var bt=document.createElement("div");
+      bt.className="nodeTime"; bt.textContent=save.best[num].toFixed(1)+"s";
+      wrap.appendChild(bt);
+    }
+    map.appendChild(wrap);
+  }
+  var svg=$("mapLine");
+  svg.setAttribute("viewBox","0 0 100 100");
+  svg.innerHTML='<path d="'+pts.map(function(p,i){ return (i?"L":"M")+p[0]+" "+p[1]; }).join(" ")+
+    '" fill="none" stroke="rgba(201,146,46,0.32)" stroke-width="2" stroke-linecap="round" '+
+    'stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>';
+  var done=0;
+  for(var q=1;q<=10;q++) if(save.best[q]!==undefined) done++;
+  $("levProgress").textContent=done+" of 10 cleared";
+}
+
+function goStart(){ running=false; paused=false; finished=false; show("start"); Snd.suspend(); }
+
+/* ---- wiring ---- */
+$("playBtn").addEventListener("click",function(){ Snd.init(); Snd.resume(); Snd.tap(); startLevel(save.unlocked); });
+$("levelsBtn").addEventListener("click",function(){ Snd.init(); Snd.resume(); Snd.tap(); buildMap(); show("levels"); });
+$("levBack").addEventListener("click",function(){ Snd.tap(); show("start"); });
+
+$("pauseBtn").addEventListener("click",function(e){
+  e.stopPropagation();
+  if(!running||finished) return;
+  paused=true; Snd.tap(); show("pause");
+});
+$("resumeBtn").addEventListener("click",function(){ Snd.tap(); Snd.resume(); paused=false; show("game"); });
+$("quitBtn").addEventListener("click",function(){ Snd.tap(); goStart(); });
+$("pauseSettings").addEventListener("click",function(){ Snd.tap(); settingsFrom="pause"; show("settings"); });
+
+$("startGear").addEventListener("click",function(){ Snd.init(); Snd.tap(); settingsFrom="start"; show("settings"); });
+$("setBack").addEventListener("click",function(){ Snd.tap(); show(settingsFrom==="pause"?"pause":"start"); });
+$("setResume").addEventListener("click",function(){
+  Snd.tap();
+  if(settingsFrom==="pause"&&running){ Snd.resume(); paused=false; show("game"); }
+  else show("start");
+});
+
+var vol=$("vol"), volLabel=$("volLabel");
+function applyVol(v){
+  vol.value=Math.round(v*100);
+  vol.style.setProperty("--fill",Math.round(v*100)+"%");
+  volLabel.textContent=Math.round(v*100)+"%";
+  Snd.setVolume(v);
+}
+vol.addEventListener("input",function(){ applyVol(parseInt(vol.value,10)/100); persist(); });
+vol.addEventListener("change",function(){ Snd.init(); Snd.resume(); Snd.tap(); });
+applyVol(save.vol);
+
+$("retryBtn").addEventListener("click",function(){ Snd.tap(); startLevel(level); });
+$("nextBtn").addEventListener("click",function(){ Snd.tap(); startLevel(Math.min(10,level+1)); });
+$("endMenu").addEventListener("click",function(){ Snd.tap(); goStart(); });
+
+$("verLabel").textContent="v"+GAME_VERSION;
+
+/* pause automatically if the player leaves the app mid-level */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){
+    Snd.suspend();
+    if(running&&!finished&&!paused){ paused=true; show("pause"); }
+  }
+});
 
 function tick(){
   requestAnimationFrame(tick);
   step(Math.min(clock.getDelta(),0.05));
 }
-var clock=new THREE.Clock();
-
 function resize(){
-  var w=stage.clientWidth||window.innerWidth, h=stage.clientHeight||window.innerHeight;
+  var w=stage.clientWidth||window.innerWidth,h=stage.clientHeight||window.innerHeight;
   renderer.setSize(w,h,false);
   camera.aspect=w/h; camera.updateProjectionMatrix();
 }
@@ -1337,48 +1688,49 @@ addEventListener("resize",resize);
 addEventListener("orientationchange",function(){ setTimeout(resize,220); });
 resize();
 
-/* test handle — rAF is frozen while the tab is hidden, so the sim can be
-   pumped by hand to check physics and balance without a visible window */
+/* ============================================================
+   TEST HANDLE — a hidden tab freezes requestAnimationFrame and
+   screenshots are unavailable, so the sim can be pumped by hand.
+   ============================================================ */
 window.__soak={
   step:step,
-  state:function(){ return {yaw:+yaw.toFixed(3),pitch:+pitch.toFixed(3),pressure:+pressure.toFixed(3),
-                            saved:saved,burning:burning,finished:finished,running:running}; },
+  state:function(){
+    return {level:level,yaw:+yaw.toFixed(3),pitch:+pitch.toFixed(3),pressure:+pressure.toFixed(3),
+            saved:saved,burning:burning,fireTotal:+fireTotal.toFixed(2),
+            finished:finished,paused:paused,running:running,screen:screenNow,
+            elapsed:+elapsed.toFixed(1),version:GAME_VERSION};
+  },
   set:function(o){
     if(o.yaw!==undefined) yaw=o.yaw;
     if(o.pitch!==undefined) pitch=o.pitch;
     if(o.pressure!==undefined){ pressure=o.pressure; paintGauge(); }
-    if(o.running!==undefined) running=o.running;
+    if(o.paused!==undefined) paused=o.paused;
   },
+  level:startLevel,
+  show:show,
   wins:function(){ return wins.map(function(w,i){ return {i:i,face:w.face,x:+w.x.toFixed(1),y:w.y,z:+w.z.toFixed(1),fire:+w.fire.toFixed(2),out:w.out}; }); },
-  ignite:ignite,
-  reset:resetGame,
-  // where does the stream land on the far wall at this pressure?
-  probe:function(pressureVal, pitchVal){
+  flamesAlive:function(){ var n=0; for(var i=0;i<MAX_FLAME;i++) if(flLife[i]>0) n++; return n; },
+  smokeAlive:function(){ var n=0; for(var i=0;i<MAX_SMOKE;i++) if(smLife[i]>0) n++; return n; },
+  levels:LEVELS,
+  saveData:function(){ return save; },
+  probe:function(pressureVal,pitchVal){
     var sp=TUNE.speedMin+(TUNE.speedMax-TUNE.speedMin)*pressureVal;
     var q=new THREE.Quaternion().setFromEuler(new THREE.Euler(pitchVal,0,0,"YXZ"));
     var dir=new THREE.Vector3(0,0,-1).applyQuaternion(q);
     var x=0.06,y=TUNE.eyeY-0.30,z=-1.00;
-    var vx=dir.x*sp, vy=dir.y*sp, vz=dir.z*sp, h=1/240;
+    var vx=dir.x*sp,vy=dir.y*sp,vz=dir.z*sp,h=1/240;
     for(var i=0;i<2400;i++){
       vy-=TUNE.gravity*h; var kk=1-TUNE.drag*h; vx*=kk; vy*=kk; vz*=kk;
       var pz2=z; z+=vz*h; x+=vx*h; y+=vy*h;
-      if(pz2>WALL_Z && z<=WALL_Z) return {face:"front", height:+y.toFixed(2), x:+x.toFixed(2)};
-      if(y<=0.03) return {face:"ground", dist:+Math.hypot(x,z).toFixed(2)};
+      if(pz2>WALL_Z&&z<=WALL_Z) return {face:"front",height:+y.toFixed(2),x:+x.toFixed(2)};
+      if(y<=0.03) return {face:"ground",dist:+Math.hypot(x,z).toFixed(2)};
     }
     return {face:"none"};
   }
 };
 
-playBtn.addEventListener("click", function(){
-  if(running) return;
-  running=true;
-  intro.classList.add("gone");
-  setTimeout(function(){ intro.style.display="none"; },600);
-});
-againBtn.addEventListener("click", function(){ resetGame(); });
-
-resetGame();
-running=false;
+buildMap();
+show("start");
 tick();
 })();
 </script>

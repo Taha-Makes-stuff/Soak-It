@@ -1,6 +1,6 @@
 {
-  "version": 3,
+  "version": 4,
   "name": "Soak It",
   "file": "index.html",
-  "notes": "Proving the update loop end to end"
+  "notes": "Real fire, 10 levels, drag to aim, sound, menus"
 }
