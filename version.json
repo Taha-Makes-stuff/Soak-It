@@ -1,6 +1,6 @@
 {
-  "version": 5,
+  "version": 6,
   "name": "Soak It",
   "file": "index.html",
-  "notes": "Start screen now shows both the game and app version"
+  "notes": "Get the app button for people playing in a browser"
 }

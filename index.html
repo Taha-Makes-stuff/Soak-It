@@ -130,6 +130,25 @@
     font-family:var(--body);font-size:12.5px;line-height:1.5;
     color:rgba(233,241,246,.42);margin:16px 0 0;
   }
+  /* offered only in a browser on Android — inside the app it would be nonsense */
+  .getApp{
+    position:absolute;left:50%;transform:translateX(-50%);
+    bottom:calc(32px + env(safe-area-inset-bottom));
+    display:inline-flex;align-items:center;gap:7px;
+    font-family:var(--cond);font-size:12px;font-weight:700;
+    letter-spacing:.18em;text-transform:uppercase;
+    color:var(--brass-hi);text-decoration:none;
+    border:1px solid rgba(201,146,46,.5);border-radius:3px;
+    padding:9px 16px;background:rgba(8,14,22,.5);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    white-space:nowrap;
+  }
+  .getApp[hidden]{display:none;}
+  .getApp:active{transform:translateX(-50%) translateY(1px);}
+  .getApp:focus-visible{outline:3px solid var(--water);outline-offset:3px;}
+  .getApp svg{width:15px;height:15px;fill:none;stroke:var(--brass-hi);stroke-width:2;
+              stroke-linecap:round;stroke-linejoin:round;}
+
   /* version, deliberately quiet — it is for Taha, not for players */
   .version{
     position:absolute;left:0;right:0;bottom:calc(10px + env(safe-area-inset-bottom));
@@ -499,6 +518,11 @@
     <p class="hint">Drag to aim the hose. Slide the bar for pressure.</p>
   </div>
 
+  <!-- only shown to Android players in a browser: gets them the real app -->
+  <a class="getApp" id="getApp" href="https://taha-makes-stuff.github.io/Soak-It/SoakIt.apk" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 11l5 5 5-5M4 20h16"/></svg>
+    Get the Android app
+  </a>
   <div class="version" id="verLabel">v0</div>
 </div>
 
@@ -627,7 +651,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 5;
+var GAME_VERSION = 6;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -1676,6 +1700,14 @@ $("endMenu").addEventListener("click",function(){ Snd.tap(); goStart(); });
   $("verLabel").textContent = appVer
     ? ("game v"+GAME_VERSION+"  ·  app "+appVer)
     : ("game v"+GAME_VERSION);
+
+  /* Offer the real app only to someone playing in a browser on Android.
+     Inside the app it would be nonsense, and an iPhone cannot install it —
+     dangling it in front of them would just be a dead end. */
+  var inApp = !!appVer;
+  var onAndroid = /Android/i.test(navigator.userAgent || "");
+  var link=$("getApp");
+  if(link && !inApp && onAndroid) link.hidden=false;
 })();
 
 /* pause automatically if the player leaves the app mid-level */
