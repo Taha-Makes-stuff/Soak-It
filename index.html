@@ -98,13 +98,48 @@
 
   /* ============ start screen ============ */
   .card{text-align:center;padding:0 22px;max-width:520px;width:100%;}
-  .truckWrap{position:relative;margin:0 auto 2px;max-width:400px;}
+  /* The engine arrives: charges in from the right, kicks the back end out in a
+     drift, rocks on its suspension and settles. One motion, no bouncing about. */
+  .truckLane{position:relative;overflow:hidden;margin:0 auto 2px;max-width:430px;padding:0 4px;}
+  .truckWrap{
+    position:relative;width:100%;
+    transform:translateX(128%);
+    animation:rollIn 1.75s cubic-bezier(.16,.84,.32,1) .25s forwards;
+    transform-origin:62% 82%;
+    will-change:transform;
+  }
   .truckWrap svg{display:block;width:100%;height:auto;overflow:visible;}
   .truckWrap::after{
     content:"";position:absolute;left:8%;right:8%;bottom:6px;height:26px;
     background:radial-gradient(50% 100% at 50% 100%,rgba(255,140,60,.22),transparent 72%);
     filter:blur(5px);
   }
+  @keyframes rollIn{
+    0%   { transform:translateX(128%) rotate(0deg); }
+    46%  { transform:translateX(6%)   rotate(-1.2deg); }   /* still coming in fast */
+    62%  { transform:translateX(-7%)  rotate(-5.4deg); }   /* back end steps out */
+    76%  { transform:translateX(2.5%) rotate(3.1deg); }    /* catches it */
+    88%  { transform:translateX(-1%)  rotate(-1.2deg); }   /* rocks back */
+    100% { transform:translateX(0)    rotate(0deg); }      /* planted */
+  }
+
+  /* tyre smoke, thrown out only while the back end is sliding */
+  .skid{
+    position:absolute;bottom:7%;right:12%;
+    width:46%;height:24px;pointer-events:none;
+    background:radial-gradient(closest-side,rgba(206,220,232,.42),transparent 72%);
+    filter:blur(7px);opacity:0;
+    animation:skid 1.75s ease-out .25s forwards;
+  }
+  @keyframes skid{
+    0%,42%{opacity:0;transform:translateX(0) scaleX(.5);}
+    62%   {opacity:.85;transform:translateX(26%) scaleX(1.25);}
+    100%  {opacity:0;transform:translateX(62%) scaleX(1.9);}
+  }
+
+  /* everything else waits for the engine to arrive before appearing */
+  .afterTruck{opacity:0;animation:riseIn .55s ease .95s forwards;}
+  @keyframes riseIn{from{opacity:0;transform:translateY(9px);}to{opacity:1;transform:none;}}
   .beam{transform-origin:center;}
   .beamR{animation:beat 1.05s steps(1,end) infinite;}
   .beamB{animation:beat 1.05s steps(1,end) infinite;animation-delay:.525s;}
@@ -289,7 +324,10 @@
     font-variant-numeric:tabular-nums;margin-top:3px;
   }
   .plate .value em{font-style:normal;font-size:15px;color:rgba(233,241,246,.40);}
-  #savedPlate .value{color:var(--water);}
+  #livesPlate .value{color:var(--water);}
+  /* someone is in trouble right now — the counter says so without words */
+  #livesPlate.urgent{border-color:rgba(255,122,46,.7);}
+  #livesPlate.urgent .value{color:var(--ember);animation:throb .7s ease-in-out infinite;}
   #timePlate{text-align:center;}
   #timePlate .value{color:var(--brass-hi);font-size:24px;}
   #burnPlate .value{color:var(--ember-hi);}
@@ -411,9 +449,9 @@
 <!-- ===================== in-game HUD ===================== -->
 <div id="hud">
   <div class="topbar">
-    <div class="plate" id="savedPlate">
-      <div class="label">Saved</div>
-      <div class="value"><span id="saved">0</span></div>
+    <div class="plate" id="livesPlate">
+      <div class="label">Rescued</div>
+      <div class="value"><span id="lives">0</span><em>/<span id="livesTotal">0</span></em></div>
     </div>
     <div class="plate" id="timePlate">
       <div class="label">Time</div>
@@ -454,7 +492,9 @@
   </button>
 
   <div class="card">
+    <div class="truckLane">
     <div class="truckWrap">
+      <div class="skid"></div>
       <svg viewBox="0 0 460 210" role="img" aria-label="A fire engine at night with its beacons flashing">
         <defs>
           <linearGradient id="bodyG" x1="0" y1="0" x2="0" y2="1">
@@ -506,16 +546,17 @@
         <rect x="40" y="172" width="380" height="2" rx="1" fill="#2A343F"/>
       </svg>
     </div>
+    </div>
 
-    <h1 class="title">Soak<span>It</span></h1>
-    <p class="tagline">Engine 12 &middot; Courtyard fire</p>
+    <h1 class="title afterTruck">Soak<span>It</span></h1>
+    <p class="tagline afterTruck">Engine 12 &middot; Night shift</p>
 
-    <div class="startBtns">
+    <div class="startBtns afterTruck">
       <button class="btn hot" id="playBtn">Play</button>
       <button class="btn ghost" id="levelsBtn">Levels</button>
     </div>
 
-    <p class="hint">Drag to aim the hose. Slide the bar for pressure.</p>
+    <p class="hint afterTruck">Drag to aim the hose. Slide the bar for pressure.</p>
   </div>
 
   <!-- only shown to Android players in a browser: gets them the real app -->
@@ -651,7 +692,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 6;
+var GAME_VERSION = 7;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -662,7 +703,8 @@ var GAME_VERSION = 6;
 
 var $=function(id){return document.getElementById(id);};
 var stage=$("stage"), hud=$("hud"), toastEl=$("toast"), dragHint=$("dragHint");
-var savedEl=$("saved"), burningEl=$("burning"), burnPlate=$("burnPlate"), timeEl=$("time");
+var livesEl=$("lives"), livesTotalEl=$("livesTotal"), livesPlate=$("livesPlate");
+var burningEl=$("burning"), burnPlate=$("burnPlate"), timeEl=$("time");
 var psiEl=$("psi"), arcMark=$("arcMark");
 var gaugeEl=$("gauge"), gBody=$("gaugeBody"), gFill=$("gaugeFill"), gMark=$("gaugeMarker"), gTicks=$("gaugeTicks");
 
@@ -675,74 +717,114 @@ var TUNE = {
   gravity: 9.81,
   drag: 0.075,
   spreadLoose: 0.075,
-  spreadTight: 0.024,
+  spreadTight: 0.014,   // a jet at pressure holds together: it must stay on a window at 20m
   emitMin: 3.0,
   emitMax: 15.0,
-  aimSens: 0.0040,      // radians of turn per pixel dragged
+  aimSens: 0.0040,
   yawLimit: Math.PI/2,
   pitchMin: -0.25,
-  pitchMax: 1.10,
+  pitchMax: 1.15,
   pitchStart: 0.72,
   douse: 0.012,
   fireGrow: 0.035,
   spreadAt: 0.60,
   spreadCap: 2,
-  eyeY: 1.70
+  eyeY: 1.70,
+  // the hose fights back: the harder you open it up, the less steady your aim
+  shake: 0.012
 };
 
-var WALL_Z=-16, WALL_X=9, WALL_TOP=13.5, WING_FRONT=-11, WING_BACK=3;
 var WIN_W=1.5, WIN_H=2.0, WIN_HW=WIN_W/2, WIN_HH=WIN_H/2;
-var ROWS=[2.8,5.4,8.0,10.6];
-var FRONT_COLS=[-7.2,-4.32,-1.44,1.44,4.32,7.2];
-var WING_COLS=[-2.5,-6.5,-10.5];
-
-var MAX_DROPS=1100, MAX_STEAM=380, MAX_FLAME=900, MAX_SMOKE=260;
-
-/* Ten levels. Fires climb 5 -> 18; the "building lost" limit climbs with them,
-   otherwise level 10 would begin already lost. Later levels spread faster too. */
-var LEVELS=[];
-(function(){
-  var counts=[5,6,8,9,11,12,14,15,17,18];
-  for(var i=0;i<10;i++){
-    LEVELS.push({
-      n:i+1,
-      fires:counts[i],
-      loseAt:Math.min(46,counts[i]+12),
-      spreadEvery:8.0-i*0.28
-    });
-  }
-})();
+var MAX_DROPS=1100, MAX_STEAM=380, MAX_FLAME=900, MAX_SMOKE=260, MAX_WINDOWS=80;
 
 /* ============================================================
-   SAVED PROGRESS  (storage can throw; never let it break the game)
+   THE TEN PLACES
+   A face is one flat wall: 'z' faces run left-right in front of you,
+   'x' faces run away from you down one side. `cols` are positions along
+   the wall, `rows` are floor heights.
+   ============================================================ */
+var LAYOUTS=[
+  { name:"Courtyard", fires:5, lives:1, faces:[
+    {ax:"z", v:-16, lo:-9,  hi:9,  top:13.5, cols:[-7.2,-4.32,-1.44,1.44,4.32,7.2], rows:[2.8,5.4,8.0,10.6]},
+    {ax:"x", v:-9,  lo:-11, hi:3,  top:13.5, cols:[-2.5,-6.5,-10.5],                rows:[2.8,5.4,8.0,10.6]},
+    {ax:"x", v:9,   lo:-11, hi:3,  top:13.5, cols:[-2.5,-6.5,-10.5],                rows:[2.8,5.4,8.0,10.6]}
+  ]},
+  { name:"The Tower", fires:6, lives:1, faces:[
+    {ax:"z", v:-11, lo:-5, hi:5, top:19, cols:[-3.2,0,3.2], rows:[2.8,5.6,8.4,11.2,14.0]}
+  ]},
+  { name:"Wide Block", fires:8, lives:2, faces:[
+    {ax:"z", v:-16, lo:-13, hi:13, top:9.6,
+     cols:[-11.5,-8.2,-4.9,-1.6,1.7,5.0,8.3,11.6], rows:[2.8,5.4,8.0]}
+  ]},
+  { name:"The Corner", fires:9, lives:2, faces:[
+    {ax:"z", v:-14, lo:-11, hi:5,  top:12, cols:[-9,-6,-3,0,3],   rows:[2.8,5.4,8.0,10.6]},
+    {ax:"x", v:5,   lo:-14, hi:-3, top:12, cols:[-5,-8,-11.5],    rows:[2.8,5.4,8.0,10.6]}
+  ]},
+  { name:"Twin Towers", fires:11, lives:3, faces:[
+    {ax:"z", v:-15, lo:-12, hi:-3, top:16, cols:[-10.5,-7.5,-4.5], rows:[3,6,9,12]},
+    {ax:"z", v:-15, lo:3,   hi:12, top:16, cols:[4.5,7.5,10.5],    rows:[3,6,9,12]}
+  ]},
+  { name:"The Alley", fires:12, lives:3, faces:[
+    {ax:"x", v:-6, lo:-20, hi:1, top:11, cols:[-2,-6,-10,-14,-18], rows:[2.8,5.4,8.0]},
+    {ax:"x", v:6,  lo:-20, hi:1, top:11, cols:[-2,-6,-10,-14,-18], rows:[2.8,5.4,8.0]}
+  ]},
+  { name:"Stepped", fires:14, lives:4, faces:[
+    {ax:"z", v:-15, lo:-8,  hi:8, top:11, cols:[-6,-3,0,3,6],   rows:[2.8,5.4,8.0]},
+    {ax:"x", v:-8,  lo:-15, hi:1, top:17, cols:[-2,-6,-10,-13.5], rows:[2.8,5.4,8.0,10.6,13.2]}
+  ]},
+  { name:"Long Facade", fires:15, lives:4, faces:[
+    {ax:"z", v:-17, lo:-12, hi:12, top:14,
+     cols:[-11,-8.25,-5.5,-2.75,0,2.75,5.5,8.25,11], rows:[3,5.9,8.8,11.7]}
+  ]},
+  { name:"Horseshoe", fires:17, lives:5, faces:[
+    {ax:"z", v:-11, lo:-7,  hi:7, top:14, cols:[-5.2,-2.6,0,2.6,5.2], rows:[2.8,5.4,8.0,10.6]},
+    {ax:"x", v:-7,  lo:-11, hi:1, top:14, cols:[-2,-5.5,-9],          rows:[2.8,5.4,8.0,10.6]},
+    {ax:"x", v:7,   lo:-11, hi:1, top:14, cols:[-2,-5.5,-9],          rows:[2.8,5.4,8.0,10.6]}
+  ]},
+  { name:"The Block", fires:18, lives:5, faces:[
+    {ax:"z", v:-17, lo:-11, hi:11, top:17, cols:[-9,-5.4,-1.8,1.8,5.4,9], rows:[3,5.8,8.6,11.4,14.2]},
+    {ax:"x", v:-11, lo:-14, hi:2,  top:17, cols:[-2,-6,-10,-13],          rows:[3,5.8,8.6,11.4,14.2]},
+    {ax:"x", v:11,  lo:-14, hi:2,  top:17, cols:[-2,-6,-10,-13],          rows:[3,5.8,8.6,11.4,14.2]}
+  ]}
+];
+var LEVELS=LAYOUTS.map(function(L,i){
+  return {
+    n:i+1, name:L.name, faces:L.faces,
+    fires:L.fires,
+    lives:L.lives,
+    loseAt:L.fires+12,
+    spreadEvery:13.0-i*0.45,
+    // less time to reach someone as the levels get harder
+    rescueTime:15.0-i*0.75
+  };
+});
+
+/* ============================================================
+   SAVED PROGRESS
    ============================================================ */
 var save={unlocked:1,best:{},vol:0.7,seenHint:false};
 try{
   var raw=localStorage.getItem("soakit.save");
   if(raw){
-    var p=JSON.parse(raw);
-    if(p&&typeof p==="object"){
-      save.unlocked=Math.max(1,Math.min(10,p.unlocked||1));
-      save.best=p.best||{};
-      save.vol=(typeof p.vol==="number")?p.vol:0.7;
-      save.seenHint=!!p.seenHint;
+    var pp=JSON.parse(raw);
+    if(pp&&typeof pp==="object"){
+      save.unlocked=Math.max(1,Math.min(10,pp.unlocked||1));
+      save.best=pp.best||{};
+      save.vol=(typeof pp.vol==="number")?pp.vol:0.7;
+      save.seenHint=!!pp.seenHint;
     }
   }
 }catch(e){}
 function persist(){ try{ localStorage.setItem("soakit.save",JSON.stringify(save)); }catch(e){} }
 
 /* ============================================================
-   SOUND — all generated in code, so there are no audio files to
-   download and every sound works offline.
+   SOUND — all generated, no files, works offline
    ============================================================ */
 var Snd=(function(){
-  var ctx=null, master=null, noiseBuf=null;
-  var water=null, fire=null, ready=false, crackleAt=0;
-
+  var ctx=null,master=null,noiseBuf=null,water=null,fire=null,ready=false,crackleAt=0;
   function makeNoise(){
     var len=Math.floor(ctx.sampleRate*2);
-    var b=ctx.createBuffer(1,len,ctx.sampleRate);
-    var d=b.getChannelData(0);
+    var b=ctx.createBuffer(1,len,ctx.sampleRate),d=b.getChannelData(0);
     for(var i=0;i<len;i++) d[i]=Math.random()*2-1;
     return b;
   }
@@ -759,19 +841,15 @@ var Snd=(function(){
     try{
       var AC=window.AudioContext||window.webkitAudioContext;
       if(!AC) return;
-      ctx=new AC();
-      master=ctx.createGain();
-      master.gain.value=save.vol;
+      ctx=new AC(); master=ctx.createGain(); master.gain.value=save.vol;
       master.connect(ctx.destination);
       noiseBuf=makeNoise();
-      water=loopNoise("bandpass",900,0.8);   // the jet: rushing air
-      fire=loopNoise("lowpass",420,1.0);     // the blaze: a low roar underneath
+      water=loopNoise("bandpass",900,0.8);
+      fire=loopNoise("lowpass",420,1.0);
       ready=true;
     }catch(e){ ready=false; }
   }
-  function ramp(param,to,secs){
-    try{ param.setTargetAtTime(to,ctx.currentTime,Math.max(0.01,secs/3)); }catch(e){}
-  }
+  function ramp(p,to,secs){ try{ p.setTargetAtTime(to,ctx.currentTime,Math.max(0.01,secs/3)); }catch(e){} }
   function burst(freq,type,dur,vol,q){
     if(!ready) return;
     try{
@@ -779,7 +857,7 @@ var Snd=(function(){
       s.playbackRate.value=0.8+Math.random()*0.5;
       var f=ctx.createBiquadFilter(); f.type=type||"highpass"; f.frequency.value=freq;
       if(q) f.Q.value=q;
-      var g=ctx.createGain(), t=ctx.currentTime;
+      var g=ctx.createGain(),t=ctx.currentTime;
       g.gain.setValueAtTime(0.0001,t);
       g.gain.linearRampToValueAtTime(vol,t+0.012);
       g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
@@ -787,27 +865,25 @@ var Snd=(function(){
       s.start(t); s.stop(t+dur+0.05);
     }catch(e){}
   }
-  function tone(freq,dur,vol,type,slideTo){
+  function tone(freq,dur,vol,type,slideTo,delay){
     if(!ready) return;
     try{
       var o=ctx.createOscillator(); o.type=type||"sine";
-      var g=ctx.createGain(), t=ctx.currentTime;
+      var g=ctx.createGain(),t=ctx.currentTime+(delay||0);
       o.frequency.setValueAtTime(freq,t);
       if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo,t+dur);
       g.gain.setValueAtTime(0.0001,t);
-      g.gain.linearRampToValueAtTime(vol,t+0.015);
+      g.gain.linearRampToValueAtTime(vol,t+0.02);
       g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
       o.connect(g); g.connect(master);
       o.start(t); o.stop(t+dur+0.05);
     }catch(e){}
   }
-
   return {
     init:init,
     resume:function(){ if(ready&&ctx.state==="suspended"){ try{ctx.resume();}catch(e){} } },
     suspend:function(){ if(ready&&ctx.state==="running"){ try{ctx.suspend();}catch(e){} } },
     setVolume:function(v){ save.vol=v; if(ready) master.gain.value=v; },
-    isOn:function(){ return ready; },
     frame:function(live,pressure,fireAmount,dt){
       if(!ready) return;
       ramp(water.gain.gain, live?(0.045+pressure*0.16):0, 0.12);
@@ -824,15 +900,28 @@ var Snd=(function(){
     steam:function(){ burst(2600,"highpass",0.34,0.10); },
     splash:function(){ burst(1500,"highpass",0.12,0.035); },
     clear:function(){ burst(3000,"highpass",0.45,0.13); tone(660,0.32,0.10,"sine",1320); },
+    /* someone reached in time — bright, rising, unmistakably good */
+    rescue:function(){
+      tone(784,0.14,0.13,"triangle");
+      tone(1047,0.14,0.13,"triangle",null,0.11);
+      tone(1319,0.34,0.14,"triangle",null,0.22);
+    },
+    /* someone lost — low and falling. Deliberately quiet and short: this
+       should land as a loss, not as something distressing to sit through. */
+    lost:function(){
+      tone(196,0.9,0.13,"sine",92);
+      tone(147,1.2,0.09,"sine",69,0.10);
+      burst(300,"lowpass",0.7,0.06);
+    },
     win:function(){
       tone(523,0.16,0.11,"triangle");
-      setTimeout(function(){tone(659,0.16,0.11,"triangle");},150);
-      setTimeout(function(){tone(784,0.16,0.11,"triangle");},300);
-      setTimeout(function(){tone(1047,0.45,0.12,"triangle");},450);
+      tone(659,0.16,0.11,"triangle",null,0.15);
+      tone(784,0.16,0.11,"triangle",null,0.30);
+      tone(1047,0.45,0.12,"triangle",null,0.45);
     },
     lose:function(){
       tone(300,0.5,0.11,"sawtooth",120);
-      setTimeout(function(){tone(200,0.7,0.09,"sawtooth",80);},240);
+      tone(200,0.7,0.09,"sawtooth",80,0.24);
     },
     tap:function(){ tone(880,0.05,0.05,"square"); }
   };
@@ -858,45 +947,21 @@ scene.add(camera);
 
 scene.add(new THREE.AmbientLight(0x2A3A52,0.55));
 var beacon=new THREE.PointLight(0xFF3A46,1.5,70,1.4);
-beacon.position.set(0,3.4,8);
-scene.add(beacon);
+beacon.position.set(0,3.4,8); scene.add(beacon);
 var fill=new THREE.DirectionalLight(0x4A6890,0.35);
-fill.position.set(0,10,4);
-scene.add(fill);
-/* one light standing in for the whole blaze, so walls warm as the fire grows */
+fill.position.set(0,10,4); scene.add(fill);
 var fireLight=new THREE.PointLight(0xFF7A2A,0,40,1.6);
-fireLight.position.set(0,6,WALL_Z+3);
-scene.add(fireLight);
+fireLight.position.set(0,6,-12); scene.add(fireLight);
 
 /* ============================================================
-   BUILDINGS + CITY
+   THE CITY — scenery, identical on every level
    ============================================================ */
 var wallMat=new THREE.MeshPhongMaterial({color:0x2A3340,shininess:4,specular:0x11161D});
 var trimMat=new THREE.MeshPhongMaterial({color:0x1B222C,shininess:2});
-function wall(w,h,sw,sh,pos,rotY){
-  var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h,sw,sh),wallMat);
-  m.position.copy(pos); m.rotation.y=rotY; scene.add(m); return m;
-}
-var WING_LEN=WING_BACK-WING_FRONT, WING_MID=(WING_FRONT+WING_BACK)/2;
-wall(WALL_X*2,WALL_TOP,8,6,new THREE.Vector3(0,WALL_TOP/2,WALL_Z),0);
-wall(WING_LEN,WALL_TOP,8,6,new THREE.Vector3(-WALL_X,WALL_TOP/2,WING_MID),Math.PI/2);
-wall(WING_LEN,WALL_TOP,8,6,new THREE.Vector3(WALL_X,WALL_TOP/2,WING_MID),-Math.PI/2);
-wall(WING_LEN,WALL_TOP,1,1,new THREE.Vector3(-WALL_X-1.6,WALL_TOP/2,WING_MID),-Math.PI/2);
-wall(WING_LEN,WALL_TOP,1,1,new THREE.Vector3(WALL_X+1.6,WALL_TOP/2,WING_MID),Math.PI/2);
-wall(3.2,WALL_TOP,1,1,new THREE.Vector3(-WALL_X-0.8,WALL_TOP/2,WING_FRONT),0);
-wall(3.2,WALL_TOP,1,1,new THREE.Vector3(WALL_X+0.8,WALL_TOP/2,WING_FRONT),0);
-function lip(w,pos,rotY){
-  var m=new THREE.Mesh(new THREE.BoxGeometry(w,0.7,1.1),trimMat);
-  m.position.copy(pos); m.rotation.y=rotY; scene.add(m);
-}
-lip(WALL_X*2+2.2,new THREE.Vector3(0,WALL_TOP+0.3,WALL_Z+0.3),0);
-lip(WING_LEN,new THREE.Vector3(-WALL_X-0.8,WALL_TOP+0.3,WING_MID),Math.PI/2);
-lip(WING_LEN,new THREE.Vector3(WALL_X+0.8,WALL_TOP+0.3,WING_MID),-Math.PI/2);
 
 var ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200,1,1),
   new THREE.MeshPhongMaterial({color:0x11161C,shininess:26,specular:0x28323E}));
-ground.rotation.x=-Math.PI/2;
-scene.add(ground);
+ground.rotation.x=-Math.PI/2; scene.add(ground);
 
 function windowTexture(){
   var c=document.createElement("canvas"); c.width=c.height=64;
@@ -917,11 +982,11 @@ function windowTexture(){
   return t;
 }
 var WIN_TEX=windowTexture();
-[[-6,-34,13,34],[9,-38,15,44],[-22,-40,14,27],[20,-33,11,24],
- [-34,-52,17,52],[12,-56,19,38],[-2,-64,15,30],[30,-50,14,46],
- [-26,-16,12,30],[-30,2,13,22],[-40,-30,15,40],
- [26,-16,12,26],[31,3,13,24],[42,-28,16,36],
- [-54,-62,18,58],[50,-64,17,50],[66,-40,15,42],[-66,-38,14,34]
+[[-6,-40,13,34],[9,-44,15,44],[-24,-46,14,27],[22,-39,11,24],
+ [-34,-58,17,52],[12,-62,19,38],[-2,-70,15,30],[30,-56,14,46],
+ [-30,-18,12,30],[-34,4,13,22],[-44,-34,15,40],
+ [30,-18,12,26],[35,5,13,24],[46,-32,16,36],
+ [-56,-66,18,58],[52,-68,17,50],[68,-44,15,42],[-68,-42,14,34]
 ].forEach(function(t){
   var w=t[2],h=t[3],tex=WIN_TEX.clone();
   tex.needsUpdate=true;
@@ -932,110 +997,133 @@ var WIN_TEX=windowTexture();
   cap.position.set(t[0],h+0.3,t[1]); scene.add(cap);
 });
 
-var ROAD_Z=-13.5, ROAD_W=4.6;
-var road=new THREE.Mesh(new THREE.PlaneGeometry(150,ROAD_W),
+var ROAD_Z=-24, ROAD_W=4.6;
+var road=new THREE.Mesh(new THREE.PlaneGeometry(160,ROAD_W),
   new THREE.MeshPhongMaterial({color:0x0C1015,shininess:64,specular:0x3A4756}));
 road.rotation.x=-Math.PI/2; road.position.set(0,0.02,ROAD_Z); scene.add(road);
 (function(){
   var dash=new THREE.PlaneGeometry(1.7,0.14);
   var dm=new THREE.MeshBasicMaterial({color:0xC9B87A});
-  for(var x=-70;x<70;x+=6){
+  for(var x=-75;x<75;x+=6){
     var d=new THREE.Mesh(dash,dm); d.rotation.x=-Math.PI/2;
     d.position.set(x,0.035,ROAD_Z); scene.add(d);
   }
-  var km=new THREE.MeshPhongMaterial({color:0x39424D,shininess:8});
-  [ROAD_Z-ROAD_W/2-0.2,ROAD_Z+ROAD_W/2+0.2].forEach(function(z){
-    var k=new THREE.Mesh(new THREE.BoxGeometry(150,0.22,0.4),km);
-    k.position.set(0,0.11,z); scene.add(k);
-  });
 })();
-[-34,-19,17,32,47].forEach(function(x){
+[-40,-24,24,40].forEach(function(x){
   var pole=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.12,6.4,7),trimMat);
-  pole.position.set(x,3.2,ROAD_Z+ROAD_W/2+0.7); scene.add(pole);
-  var arm=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.12,0.12),trimMat);
-  arm.position.set(x-0.7,6.35,ROAD_Z+ROAD_W/2+0.7); scene.add(arm);
-  var lamp=new THREE.Sprite(new THREE.SpriteMaterial({color:0xFFD08A,transparent:true,opacity:0.85,
+  pole.position.set(x,3.2,ROAD_Z+3); scene.add(pole);
+  var lamp=new THREE.Sprite(new THREE.SpriteMaterial({color:0xFFD08A,transparent:true,opacity:0.8,
     blending:THREE.AdditiveBlending,depthWrite:false}));
-  lamp.scale.set(3.4,3.4,1); lamp.position.set(x-1.4,6.3,ROAD_Z+ROAD_W/2+0.7); scene.add(lamp);
-  var pool2=new THREE.Mesh(new THREE.CircleGeometry(3.4,14),
-    new THREE.MeshBasicMaterial({color:0xFFC981,transparent:true,opacity:0.10,
-      blending:THREE.AdditiveBlending,depthWrite:false}));
-  pool2.rotation.x=-Math.PI/2; pool2.position.set(x-1.4,0.05,ROAD_Z+0.4); scene.add(pool2);
+  lamp.scale.set(3.2,3.2,1); lamp.position.set(x,6.3,ROAD_Z+3); scene.add(lamp);
 });
 
-var hazards=[];
-function parkedCar(x,z,rot,body){
-  var g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=rot;
-  var shell=new THREE.Mesh(new THREE.BoxGeometry(4.3,0.80,1.82),
-    new THREE.MeshPhongMaterial({color:body,shininess:80,specular:0x556270}));
-  shell.position.y=0.66; g.add(shell);
-  var cab=new THREE.Mesh(new THREE.BoxGeometry(2.15,0.60,1.68),
-    new THREE.MeshPhongMaterial({color:0x0B1118,shininess:96,specular:0x66798C}));
-  cab.position.set(-0.2,1.32,0); g.add(cab);
-  var wg=new THREE.CylinderGeometry(0.34,0.34,0.26,10);
-  var wm=new THREE.MeshPhongMaterial({color:0x0A0D11,shininess:4});
-  [[1.35,0.92],[1.35,-0.92],[-1.4,0.92],[-1.4,-0.92]].forEach(function(p){
-    var w=new THREE.Mesh(wg,wm); w.rotation.x=Math.PI/2; w.position.set(p[0],0.34,p[1]); g.add(w);
-  });
-  function lamp(px,pz,col,w,h){
-    var m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),
-      new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.95,
-        blending:THREE.AdditiveBlending,depthWrite:false}));
-    m.position.set(px,0.72,pz); m.rotation.y=px<0?Math.PI/2:-Math.PI/2; g.add(m); return m;
-  }
-  hazards.push(lamp(-2.17,0.62,0xFF2B18,0.42,0.16),lamp(-2.17,-0.62,0xFF2B18,0.42,0.16));
-  lamp(2.17,0.60,0xFFEAC0,0.36,0.15); lamp(2.17,-0.60,0xFFEAC0,0.36,0.15);
-  scene.add(g);
-}
-parkedCar(-7.5,ROAD_Z+1.4,0,0x24405C);
-parkedCar(4.5,ROAD_Z+1.4,0,0x4A2230);
-parkedCar(17.0,ROAD_Z-1.4,Math.PI,0x2C3A2A);
-parkedCar(-21.0,ROAD_Z-1.4,Math.PI,0x3A3242);
-
 /* ============================================================
-   WINDOWS
+   LEVEL GEOMETRY — rebuilt for each place
    ============================================================ */
-var wins=[];
-function addWin(face,x,y,z,rotY){
-  wins.push({face:face,x:x,y:y,z:z,rotY:rotY,fire:0,out:false,flick:Math.random()*6.28});
-}
-FRONT_COLS.forEach(function(cx){ ROWS.forEach(function(ry){ addWin("front",cx,ry,WALL_Z+0.10,0); }); });
-WING_COLS.forEach(function(cz){ ROWS.forEach(function(ry){ addWin("left",-WALL_X+0.10,ry,cz,Math.PI/2); }); });
-WING_COLS.forEach(function(cz){ ROWS.forEach(function(ry){ addWin("right",WALL_X-0.10,ry,cz,-Math.PI/2); }); });
+var levelGroup=new THREE.Group();
+scene.add(levelGroup);
+
+var wins=[];       // every window in the current level
+var faces=[];      // the walls, used for both drawing and collision
 
 var winMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(WIN_W,WIN_H),
-  new THREE.MeshBasicMaterial(),wins.length);
+  new THREE.MeshBasicMaterial(),MAX_WINDOWS);
 var glowMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(WIN_W*3.4,WIN_H*3.0),
   new THREE.MeshBasicMaterial({transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:0.5}),
-  wins.length);
-(function(){
+  MAX_WINDOWS);
+winMesh.frustumCulled=false; glowMesh.frustumCulled=false;
+scene.add(winMesh); scene.add(glowMesh);
+
+function clearGroup(g){
+  for(var i=g.children.length-1;i>=0;i--){
+    var c=g.children[i];
+    g.remove(c);
+    if(c.geometry) c.geometry.dispose();
+  }
+}
+
+/* a wall's normal always points back toward the player at the origin */
+function faceNormal(f){ return (f.v<0)?1:-1; }
+
+function buildGeometry(cfg){
+  clearGroup(levelGroup);
+  wins.length=0;
+  faces=cfg.faces;
+
   var m=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),
       s=new THREE.Vector3(1,1,1),p=new THREE.Vector3();
-  wins.forEach(function(w,i){
-    p.set(w.x,w.y,w.z); e.set(0,w.rotY,0); q.setFromEuler(e); m.compose(p,q,s);
-    winMesh.setMatrixAt(i,m);
-    p.set(w.x+(w.face==="left"?0.05:w.face==="right"?-0.05:0),w.y,w.z+(w.face==="front"?0.05:0));
-    m.compose(p,q,s); glowMesh.setMatrixAt(i,m);
+  var n=0;
+
+  cfg.faces.forEach(function(f){
+    var width=f.hi-f.lo, mid=(f.lo+f.hi)/2, nrm=faceNormal(f);
+    var rotY = (f.ax==="z") ? 0 : (nrm>0 ? Math.PI/2 : -Math.PI/2);
+
+    // the wall itself
+    var wall=new THREE.Mesh(new THREE.PlaneGeometry(width,f.top,8,6),wallMat);
+    if(f.ax==="z") wall.position.set(mid,f.top/2,f.v);
+    else           wall.position.set(f.v,f.top/2,mid);
+    wall.rotation.y=rotY;
+    levelGroup.add(wall);
+
+    // a blank back so it reads as a solid block from the side
+    var back=new THREE.Mesh(new THREE.PlaneGeometry(width,f.top,1,1),wallMat);
+    if(f.ax==="z") back.position.set(mid,f.top/2,f.v-1.6*nrm);
+    else           back.position.set(f.v-1.6*nrm,f.top/2,mid);
+    back.rotation.y=rotY+Math.PI;
+    levelGroup.add(back);
+
+    // roof parapet
+    var cap=new THREE.Mesh(new THREE.BoxGeometry(width+1.0,0.7,2.0),trimMat);
+    if(f.ax==="z") cap.position.set(mid,f.top+0.35,f.v-0.8*nrm);
+    else           cap.position.set(f.v-0.8*nrm,f.top+0.35,mid);
+    cap.rotation.y=rotY;
+    levelGroup.add(cap);
+
+    // the windows on this wall
+    f.cols.forEach(function(a){
+      f.rows.forEach(function(y){
+        if(n>=MAX_WINDOWS) return;
+        var w={face:f, along:a, y:y, fire:0, out:false, dead:false,
+               flick:Math.random()*6.28, life:null, x:0, z:0, nrm:nrm, rotY:rotY};
+        if(f.ax==="z"){ w.x=a; w.z=f.v+0.10*nrm; }
+        else          { w.x=f.v+0.10*nrm; w.z=a; }
+        wins.push(w);
+
+        p.set(w.x,y,w.z); e.set(0,rotY,0); q.setFromEuler(e); m.compose(p,q,s);
+        winMesh.setMatrixAt(n,m);
+        if(f.ax==="z") p.set(w.x,y,w.z+0.05*nrm);
+        else           p.set(w.x+0.05*nrm,y,w.z);
+        m.compose(p,q,s); glowMesh.setMatrixAt(n,m);
+        n++;
+      });
+    });
   });
+
+  winMesh.count=n; glowMesh.count=n;
   winMesh.instanceMatrix.needsUpdate=true;
   glowMesh.instanceMatrix.needsUpdate=true;
-})();
-scene.add(winMesh); scene.add(glowMesh);
+
+  // aim the blaze light at roughly the middle of this place
+  var cz=0,cx=0,k=0;
+  wins.forEach(function(w){ cx+=w.x; cz+=w.z; k++; });
+  if(k) fireLight.position.set(cx/k,6,cz/k+2);
+}
 
 var COL_DARK=new THREE.Color(0x121A24), COL_OUT=new THREE.Color(0x2E4E63);
 var COL_FIRE=new THREE.Color(0xFF5A10), COL_HOT=new THREE.Color(0xFFE08A);
+var COL_DEAD=new THREE.Color(0x1A0C0C);
 var _c=new THREE.Color(), _g=new THREE.Color();
 function paintWins(now){
   for(var i=0;i<wins.length;i++){
     var w=wins[i];
     if(w.fire>0){
       var lvl=Math.min(1,w.fire);
-      // two waves at odd speeds never line up, so the flicker never looks like a pulse
       var fl=0.72+0.28*(Math.sin(now*11.0+w.flick)*0.5+Math.sin(now*6.3+w.flick*2.1)*0.5);
       _c.copy(COL_FIRE).lerp(COL_HOT,lvl*0.5).multiplyScalar(0.55+fl*0.65);
       _g.copy(COL_FIRE).multiplyScalar((0.22+lvl*0.68)*fl);
     } else {
-      _c.copy(w.out?COL_OUT:COL_DARK); _g.setRGB(0,0,0);
+      _c.copy(w.dead?COL_DEAD:(w.out?COL_OUT:COL_DARK));
+      _g.setRGB(0,0,0);
     }
     winMesh.setColorAt(i,_c); glowMesh.setColorAt(i,_g);
   }
@@ -1044,7 +1132,81 @@ function paintWins(now){
 }
 
 /* ============================================================
-   NOZZLE — a child of the camera, so it is always in your hands
+   THE ONES YOU ARE THERE FOR
+   Simple shapes on purpose — a head and a body, waving. It only has
+   to read as "someone is in there", instantly, through flame.
+   ============================================================ */
+var lifeGroup=new THREE.Group();
+scene.add(lifeGroup);
+var lives=[];
+
+var LIFE_KINDS=[
+  {kind:"person", h:0.62, head:0.13, col:0xFFF0C8},
+  {kind:"kid",    h:0.40, head:0.115,col:0xC8F0FF},
+  {kind:"pet",    h:0.22, head:0.10, col:0xFFD8A0}
+];
+
+function makeFigure(kind){
+  var g=new THREE.Group();
+  var mat=new THREE.MeshBasicMaterial({color:kind.col});
+  var body=new THREE.Mesh(new THREE.CapsuleGeometry(kind.head*0.78,kind.h*0.62,3,7),mat);
+  body.position.y=kind.h*0.42;
+  g.add(body);
+  var head=new THREE.Mesh(new THREE.SphereGeometry(kind.head,9,7),mat);
+  head.position.y=kind.h*0.42+kind.h*0.40+kind.head*0.7;
+  g.add(head);
+  if(kind.kind==="pet"){
+    body.rotation.z=Math.PI/2;          // on all fours
+    body.position.y=kind.h*0.5;
+    head.position.set(kind.h*0.42,kind.h*0.72,0);
+  } else {
+    // an arm, raised — this is what makes it read as waving for help
+    var arm=new THREE.Mesh(new THREE.CapsuleGeometry(kind.head*0.34,kind.h*0.40,3,5),mat);
+    arm.position.set(kind.head*0.95,kind.h*0.78,0);
+    arm.rotation.z=-0.5;
+    g.add(arm);
+    g.userData.arm=arm;
+  }
+  // a soft halo so they stay visible against the fire behind them
+  var halo=new THREE.Sprite(new THREE.SpriteMaterial({color:kind.col,transparent:true,opacity:0.32,
+    blending:THREE.AdditiveBlending,depthWrite:false}));
+  halo.scale.set(kind.h*2.6,kind.h*2.6,1);
+  halo.position.y=kind.h*0.55;
+  g.add(halo);
+  g.userData.halo=halo;
+  g.userData.mats=[mat,halo.material];
+  return g;
+}
+
+function placeLives(cfg,fireIdx){
+  lives.length=0;
+  clearGroup(lifeGroup);
+  var count=Math.min(cfg.lives,fireIdx.length);
+  for(var i=0;i<count;i++){
+    var wi=fireIdx[i], w=wins[wi];
+    var kind=LIFE_KINDS[i%LIFE_KINDS.length];
+    var fig=makeFigure(kind);
+    // stand them at the window, just proud of the glass, facing out
+    fig.position.set(w.x + (w.face.ax==="x" ? 0.22*w.nrm : 0),
+                     w.y - WIN_HH + 0.06,
+                     w.z + (w.face.ax==="z" ? 0.22*w.nrm : 0));
+    fig.rotation.y=w.rotY;
+    lifeGroup.add(fig);
+    var life={win:wi,fig:fig,kind:kind.kind,t:cfg.rescueTime,max:cfg.rescueTime,
+              state:"waiting",seed:Math.random()*6.28,fade:1};
+    lives.push(life);
+    w.life=life;
+  }
+  livesTotalEl.textContent=lives.length;
+  livesEl.textContent="0";
+  livesPlate.className="plate";
+}
+
+function rescuedCount(){ var n=0; for(var i=0;i<lives.length;i++) if(lives[i].state==="saved") n++; return n; }
+function lostCount(){ var n=0; for(var i=0;i<lives.length;i++) if(lives[i].state==="lost") n++; return n; }
+
+/* ============================================================
+   NOZZLE
    ============================================================ */
 var brass=new THREE.MeshPhongMaterial({color:0xC9922E,shininess:70,specular:0x6A5020});
 var rubber=new THREE.MeshPhongMaterial({color:0x1E2A33,shininess:12});
@@ -1112,7 +1274,6 @@ var smVx=new Float32Array(MAX_SMOKE),smVy=new Float32Array(MAX_SMOKE),smVz=new F
 var smLife=new Float32Array(MAX_SMOKE),smMax=new Float32Array(MAX_SMOKE),smGrow=new Float32Array(MAX_SMOKE);
 var smHead=0;
 
-/* ---- flames get their own shader: the colour has to cool with age ---- */
 var flameGeo=new THREE.BufferGeometry();
 var flPos=new Float32Array(MAX_FLAME*3),flSize=new Float32Array(MAX_FLAME),
     flLifeA=new Float32Array(MAX_FLAME),flSeed=new Float32Array(MAX_FLAME);
@@ -1137,11 +1298,9 @@ var flamePts=new THREE.Points(flameGeo,new THREE.ShaderMaterial({
     " vec2 c=gl_PointCoord-0.5; float d=dot(c,c);",
     " if(d>0.25) discard;",
     " float soft=smoothstep(0.25,0.0,d);",
-    // age drives colour: white hot at birth, cooling to deep red as it climbs
     " float age=1.0-vL;",
     " vec3 col=mix(vec3(1.0,0.96,0.80),vec3(1.0,0.52,0.10),smoothstep(0.0,0.40,age));",
     " col=mix(col,vec3(0.66,0.11,0.02),smoothstep(0.38,1.0,age));",
-    // a tight bright centre keeps it reading as flame rather than fog
     " float core=smoothstep(0.055,0.0,d);",
     " col+=vec3(0.55,0.30,0.06)*core*vL;",
     " gl_FragColor=vec4(col,soft*vL*(0.35+0.65*vL)); }"
@@ -1180,8 +1339,7 @@ function splashDrops(x,y,z,n){
 var yaw=0, pitch=TUNE.pitchStart, pressure=0.40;
 var running=false, paused=false, finished=false;
 var saved=0, burning=0, emitCarry=0, frame=0, elapsed=0, spreadClock=8;
-var level=1, cfg=LEVELS[0], fireTotal=0, screenNow="start";
-var settingsFrom="start";
+var level=1, cfg=LEVELS[0], fireTotal=0, screenNow="start", settingsFrom="start";
 
 function paintGauge(){
   var pct=(pressure*100).toFixed(1)+"%";
@@ -1198,7 +1356,6 @@ function paintGauge(){
 })();
 paintGauge();
 
-/* fires sit in the same places every attempt, so times are worth comparing */
 function seeded(seed){
   var s=seed>>>0;
   return function(){ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
@@ -1207,7 +1364,7 @@ function startingWindows(n,seed){
   var idx=[]; for(var i=0;i<wins.length;i++) idx.push(i);
   var rnd=seeded(seed);
   for(var j=idx.length-1;j>0;j--){ var k=(rnd()*(j+1))|0,t=idx[j]; idx[j]=idx[k]; idx[k]=t; }
-  return idx.slice(0,n);
+  return idx.slice(0,Math.min(n,idx.length));
 }
 function ignite(i){
   var w=wins[i];
@@ -1216,7 +1373,7 @@ function ignite(i){
 }
 
 /* ============================================================
-   AIMING — drag anywhere on the world to swing the hose
+   AIMING
    ============================================================ */
 var aimId=null,lastX=0,lastY=0;
 stage.addEventListener("pointerdown",function(e){
@@ -1237,7 +1394,6 @@ function endAim(e){ if(e.pointerId===aimId) aimId=null; }
 stage.addEventListener("pointerup",endAim);
 stage.addEventListener("pointercancel",endAim);
 
-/* the pressure bar keeps its own finger, so both thumbs work at once */
 var gaugeId=null;
 gaugeEl.addEventListener("pointerdown",function(e){
   if(gaugeId!==null) return;
@@ -1281,39 +1437,48 @@ function toast(t){
   toastEl.textContent=t;
   toastEl.classList.remove("pop"); void toastEl.offsetWidth; toastEl.classList.add("pop");
 }
-function winAt(face,a,y){
+
+/* which window sits at this spot on this wall */
+function winAt(face,along,y){
   for(var i=0;i<wins.length;i++){
     var w=wins[i];
     if(w.face!==face) continue;
-    var wa=(face==="front")?w.x:w.z;
-    if(Math.abs(a-wa)<=WIN_HW&&Math.abs(y-w.y)<=WIN_HH) return i;
+    if(Math.abs(along-w.along)<=WIN_HW&&Math.abs(y-w.y)<=WIN_HH) return i;
   }
   return -1;
 }
-function hitWindow(i,sp,x,y,z){
+
+function hitWindow(i,x,y,z){
   var w=wins[i];
   if(w.fire<=0) return;
-  // fixed flow: more pressure means more droplets each carrying less water, so
-  // the bar changes how precise you are, not how strong you are
   var rateNow=TUNE.emitMin+(TUNE.emitMax-TUNE.emitMin)*pressure;
   w.fire-=TUNE.douse/rateNow;
   if(Math.random()<0.30) puffSteam(x,y,z,1);
   if(Math.random()<0.04) Snd.steam();
   if(w.fire<=0){
-    w.fire=0; w.out=true; saved++; savedEl.textContent=saved;
-    puffSteam(x,y,z,8); Snd.clear(); toast("Window clear");
+    w.fire=0; w.out=true; saved++;
+    puffSteam(x,y,z,8);
+    if(w.life&&w.life.state==="waiting"){
+      w.life.state="saved";
+      livesEl.textContent=rescuedCount();
+      Snd.rescue();
+      toast(w.life.kind==="pet"?"Pet rescued":(w.life.kind==="kid"?"Child rescued":"Rescued"));
+    } else {
+      Snd.clear();
+      toast("Window clear");
+    }
   }
 }
+
 function neighbours(i){
   var w=wins[i],out=[];
   for(var j=0;j<wins.length;j++){
     if(j===i) continue;
     var o=wins[j];
     if(o.face!==w.face||o.out||o.fire>0) continue;
-    var da=(w.face==="front")?Math.abs(o.x-w.x):Math.abs(o.z-w.z);
-    var dy=Math.abs(o.y-w.y);
-    if(da<4.2&&dy<0.2) out.push(j);
-    else if(da<0.2&&dy<3.8){ out.push(j); if(o.y>w.y) out.push(j); }
+    var da=Math.abs(o.along-w.along), dy=Math.abs(o.y-w.y);
+    if(da<4.6&&dy<0.2) out.push(j);
+    else if(da<0.2&&dy<3.9){ out.push(j); if(o.y>w.y) out.push(j); }
   }
   return out;
 }
@@ -1338,17 +1503,19 @@ function step(dt,noDraw){
     if(keys.q){ pressure=Math.max(0,pressure-dt*0.7); paintGauge(); }
     if(keys.e){ pressure=Math.min(1,pressure+dt*0.7); paintGauge(); }
   }
-  camera.rotation.y=-yaw;
-  camera.rotation.x=pitch;
+
+  /* the hose kicks: open it right up and holding a line gets harder.
+     Squared, so low pressure is rock steady and only the top end fights you. */
+  var amp = live ? pressure*pressure*TUNE.shake : 0;
+  var shx = (Math.sin(now*21.3)*0.6+Math.sin(now*34.7)*0.4)*amp;
+  var shy = (Math.sin(now*17.9)*0.6+Math.sin(now*29.3)*0.4)*amp;
+  camera.rotation.y=-yaw+shx;
+  camera.rotation.x=pitch+shy;
   readNozzle();
 
   var nowMs=performance.now();
   beacon.color.setHex((Math.floor(nowMs/525)%2)?0x3A7BFF:0xFF3A46);
   beacon.intensity=1.25+Math.sin(nowMs/90)*0.18;
-  if(frame%4===0){
-    var haz=(Math.floor(nowMs/560)%2)?0.95:0.12;
-    for(var hz=0;hz<hazards.length;hz++) hazards[hz].material.opacity=haz;
-  }
 
   /* ---- water ---- */
   if(live){
@@ -1379,24 +1546,29 @@ function step(dt,noDraw){
       var i3=d*3;
       var px=water.pos[i3],py=water.pos[i3+1],pz=water.pos[i3+2];
       var nx=px+wvx[d]*dt,ny=py+wvy[d]*dt,nz=pz+wvz[d]*dt;
-      var sp=Math.hypot(wvx[d],wvy[d],wvz[d]);
-      var hit=false,hx=0,hy=0,hz2=0,face=null,along=0;
-      if(pz>WALL_Z&&nz<=WALL_Z&&ny<WALL_TOP&&Math.abs(nx)<WALL_X){
-        var t=(WALL_Z-pz)/(nz-pz);
-        hx=px+(nx-px)*t; hy=py+(ny-py)*t; hz2=WALL_Z; face="front"; along=hx; hit=true;
+
+      /* walls are all axis aligned, so a crossing test is exact and cheap */
+      var hitFace=null,hAlong=0,hy=0,hx=0,hz=0;
+      for(var fj=0;fj<faces.length&&!hitFace;fj++){
+        var f=faces[fj];
+        if(f.ax==="z"){
+          if((pz-f.v)*(nz-f.v)<0){
+            var t=(f.v-pz)/(nz-pz);
+            var cx=px+(nx-px)*t, cy=py+(ny-py)*t;
+            if(cx>=f.lo&&cx<=f.hi&&cy<f.top&&cy>0){ hitFace=f; hAlong=cx; hy=cy; hx=cx; hz=f.v; }
+          }
+        } else {
+          if((px-f.v)*(nx-f.v)<0){
+            var t2=(f.v-px)/(nx-px);
+            var cz=pz+(nz-pz)*t2, cy2=py+(ny-py)*t2;
+            if(cz>=f.lo&&cz<=f.hi&&cy2<f.top&&cy2>0){ hitFace=f; hAlong=cz; hy=cy2; hx=f.v; hz=cz; }
+          }
+        }
       }
-      if(!hit&&px>-WALL_X&&nx<=-WALL_X&&ny<WALL_TOP&&nz>WING_FRONT&&nz<WING_BACK){
-        var t2=(-WALL_X-px)/(nx-px);
-        hy=py+(ny-py)*t2; hz2=pz+(nz-pz)*t2; hx=-WALL_X; face="left"; along=hz2; hit=true;
-      }
-      if(!hit&&px<WALL_X&&nx>=WALL_X&&ny<WALL_TOP&&nz>WING_FRONT&&nz<WING_BACK){
-        var t3=(WALL_X-px)/(nx-px);
-        hy=py+(ny-py)*t3; hz2=pz+(nz-pz)*t3; hx=WALL_X; face="right"; along=hz2; hit=true;
-      }
-      if(hit){
-        var wi=winAt(face,along,hy);
-        if(wi>=0) hitWindow(wi,sp,hx,hy,hz2);
-        else if(Math.random()<0.25){ splashDrops(hx,hy,hz2,1); if(Math.random()<0.05) Snd.splash(); }
+      if(hitFace){
+        var wi=winAt(hitFace,hAlong,hy);
+        if(wi>=0) hitWindow(wi,hx,hy,hz);
+        else if(Math.random()<0.25){ splashDrops(hx,hy,hz,1); if(Math.random()<0.05) Snd.splash(); }
         wlife[d]=0; water.alpha[d]=0; water.pos[i3+1]=-999; continue;
       }
       if(ny<=0.03){
@@ -1404,7 +1576,7 @@ function step(dt,noDraw){
         wlife[d]=0; water.alpha[d]=0; water.pos[i3+1]=-999; continue;
       }
       water.pos[i3]=nx; water.pos[i3+1]=ny; water.pos[i3+2]=nz;
-      if(Math.abs(nx)>44||Math.abs(nz)>44||ny>40){ wlife[d]=0; water.alpha[d]=0; water.pos[i3+1]=-999; continue; }
+      if(Math.abs(nx)>60||Math.abs(nz)>60||ny>40){ wlife[d]=0; water.alpha[d]=0; water.pos[i3+1]=-999; continue; }
       if(wlife[d]<0.4) water.alpha[d]*=0.94;
     }
     water.geo.attributes.position.needsUpdate=true;
@@ -1423,11 +1595,11 @@ function step(dt,noDraw){
     steam.geo.attributes.aAlpha.needsUpdate=true;
   }
 
-  /* ---- fire: grow, spread, and throw flame ---- */
+  /* ---- fire ---- */
   var prevBurning=burning;
   burning=0; fireTotal=0;
   var hotCount=0;
-  var flameShare=Math.min(1, 7/Math.max(1,prevBurning));
+  var flameShare=Math.min(1,7/Math.max(1,prevBurning));
   for(var f2=0;f2<wins.length;f2++){
     var w=wins[f2];
     if(w.fire<=0) continue;
@@ -1437,62 +1609,53 @@ function step(dt,noDraw){
     w.fire=Math.min(1.4,w.fire+TUNE.fireGrow*dt);
     if(w.fire>=TUNE.spreadAt) hotCount++;
 
-    /* Flame birth rate rises with how developed the fire is: a new fire is a
-       few thin tongues, a full blaze pours out of the window.
-       The whole building shares one flame budget — past about seven fires each
-       one emits proportionally fewer, so level 10 costs the same as level 1 and
-       flames never hit the pool limit and start vanishing in mid air. */
     var lvl=Math.min(1,w.fire);
     var want=(0.30+lvl*1.15)*flameShare*dt*60;
     var count=want|0;
     if(Math.random()<(want-count)) count++;
-    var outward=(w.face==="front")?0:(w.face==="left"?1:-1);
+    var side=(w.face.ax==="z")?0:w.nrm;
+    var frontal=(w.face.ax==="z")?w.nrm:0;
     for(var c=0;c<count;c++){
       var k2=flHead; flHead=(flHead+1)%MAX_FLAME;
       var ox=(Math.random()-0.5)*WIN_W*0.8;
-      flPos[k2*3]  = w.x+(w.face==="front"?ox:outward*0.16);
+      flPos[k2*3]  = w.x+((w.face.ax==="z")?ox:side*0.16);
       flPos[k2*3+1]= w.y-WIN_HH*0.75+Math.random()*0.25;
-      flPos[k2*3+2]= w.z+(w.face==="front"?0.12:ox);
-      flVx[k2]=(Math.random()-0.5)*0.35+outward*0.5*lvl;
+      flPos[k2*3+2]= w.z+((w.face.ax==="z")?frontal*0.12:ox);
+      flVx[k2]=(Math.random()-0.5)*0.35+side*0.5*lvl;
       flVy[k2]=1.5+Math.random()*1.5+lvl*1.3;
-      flVz[k2]=(Math.random()-0.5)*0.35+(w.face==="front"?0.5*lvl:0);
+      flVz[k2]=(Math.random()-0.5)*0.35+frontal*0.5*lvl;
       flMax[k2]=flLife[k2]=0.42+Math.random()*0.42+lvl*0.25;
-      // fewer particles than before, so each one is fatter to keep the fire solid
       flBase[k2]=(0.46+Math.random()*0.40)*(0.58+lvl*0.66);
-      flSize[k2]=flBase[k2];
-      flLifeA[k2]=1;
+      flSize[k2]=flBase[k2]; flLifeA[k2]=1;
     }
 
     if(w.fire>0.5&&frame%3===0&&Math.random()<0.30*lvl){
       var k3=smHead; smHead=(smHead+1)%MAX_SMOKE;
-      smoke.pos[k3*3]=w.x+(w.face==="front"?(Math.random()-0.5)*WIN_W:outward*0.3);
+      smoke.pos[k3*3]=w.x+((w.face.ax==="z")?(Math.random()-0.5)*WIN_W:side*0.3);
       smoke.pos[k3*3+1]=w.y+WIN_HH*0.9;
-      smoke.pos[k3*3+2]=w.z+(w.face==="front"?0.3:(Math.random()-0.5)*WIN_W);
-      smVx[k3]=(Math.random()-0.5)*0.5+outward*0.6;
+      smoke.pos[k3*3+2]=w.z+((w.face.ax==="z")?frontal*0.3:(Math.random()-0.5)*WIN_W);
+      smVx[k3]=(Math.random()-0.5)*0.5+side*0.6;
       smVy[k3]=1.3+Math.random()*1.1;
-      smVz[k3]=(Math.random()-0.5)*0.5+(w.face==="front"?0.6:0);
+      smVz[k3]=(Math.random()-0.5)*0.5+frontal*0.6;
       smMax[k3]=smLife[k3]=1.6+Math.random()*1.6;
       smGrow[k3]=0.7+Math.random()*1.1;
       smoke.size[k3]=0.5; smoke.alpha[k3]=0.30;
     }
   }
 
-  /* flame motion: rise, wander, and thin out as they cool */
   if(live){
     for(var fl=0;fl<MAX_FLAME;fl++){
       if(flLife[fl]<=0) continue;
       flLife[fl]-=dt;
       if(flLife[fl]<=0){ flPos[fl*3+1]=-999; flSize[fl]=0; flLifeA[fl]=0; continue; }
-      flVy[fl]+=2.4*dt;                 // hot air keeps accelerating upward
+      flVy[fl]+=2.4*dt;
       flVx[fl]*=0.965; flVz[fl]*=0.965;
-      var q=fl*3;
+      var q2=fl*3;
       var t01=flLife[fl]/flMax[fl];
-      // sideways wander makes a tongue lick instead of rising in a straight line
       var wob=Math.sin(now*7.5+flSeed[fl])*0.55+Math.sin(now*13.1+flSeed[fl]*1.7)*0.25;
-      flPos[q]  +=(flVx[fl]+wob*0.30)*dt;
-      flPos[q+1]+= flVy[fl]*dt;
-      flPos[q+2]+=(flVz[fl]+wob*0.18)*dt;
-      // fat through the middle of its life, thin at both ends
+      flPos[q2]  +=(flVx[fl]+wob*0.30)*dt;
+      flPos[q2+1]+= flVy[fl]*dt;
+      flPos[q2+2]+=(flVz[fl]+wob*0.18)*dt;
       flSize[fl]=flBase[fl]*(0.45+0.75*Math.sin(Math.min(1,(1-t01)*1.15)*Math.PI));
       flLifeA[fl]=t01;
     }
@@ -1516,12 +1679,46 @@ function step(dt,noDraw){
     smoke.geo.attributes.aSize.needsUpdate=true;
   }
 
-  /* the blaze throws one warm, unsteady light across the courtyard */
   var flick=0.82+0.18*(Math.sin(now*9.3)*0.6+Math.sin(now*17.7)*0.4);
   fireLight.intensity=Math.min(3.2,fireTotal*0.42)*flick;
   fireLight.distance=22+Math.min(30,fireTotal*3);
 
-  /* ---- spreading, capped so the fire cannot run away ---- */
+  /* ---- the people ---- */
+  var anyUrgent=false;
+  for(var li=0;li<lives.length;li++){
+    var L=lives[li], w2=wins[L.win];
+    if(L.state==="waiting"){
+      if(live&&w2.fire>0){
+        L.t-=dt;
+        if(L.t<=0){
+          L.state="lost"; L.t=0;
+          w2.dead=true;
+          Snd.lost();
+          toast(L.kind==="pet"?"Pet lost":(L.kind==="kid"?"Child lost":"Someone lost"));
+          livesPlate.className="plate urgent";
+        }
+      }
+      var frac=L.t/L.max;
+      if(frac<0.45) anyUrgent=true;
+      // waving harder as the time runs out
+      var urg=1+(1-frac)*2.2;
+      var bob=Math.sin(now*(3.2*urg)+L.seed);
+      L.fig.position.y = w2.y-WIN_HH+0.06+bob*0.045;
+      if(L.fig.userData.arm) L.fig.userData.arm.rotation.z=-0.5+bob*0.65;
+      if(L.fig.userData.halo) L.fig.userData.halo.material.opacity=0.24+0.22*(0.5+0.5*bob)*urg*0.5;
+    } else if(L.fade>0){
+      // saved or lost: sink away and fade out. No spectacle either way.
+      L.fade-=dt*(L.state==="lost"?0.9:1.6);
+      var f3=Math.max(0,L.fade);
+      L.fig.position.y -= dt*(L.state==="lost"?0.55:0.2);
+      if(L.state==="lost") L.fig.rotation.z += dt*1.1;
+      L.fig.userData.mats.forEach(function(mm){ mm.transparent=true; mm.opacity=f3*(mm===L.fig.userData.halo.material?0.3:1); });
+      if(f3<=0) L.fig.visible=false;
+    }
+  }
+  livesPlate.className="plate"+(anyUrgent?" urgent":"");
+
+  /* ---- spreading ---- */
   if(live&&hotCount>0){
     spreadClock-=dt*Math.min(hotCount,TUNE.spreadCap);
     if(spreadClock<=0){
@@ -1572,16 +1769,17 @@ function show(which){
 function startLevel(n){
   level=Math.max(1,Math.min(10,n));
   cfg=LEVELS[level-1];
-  wins.forEach(function(w){ w.fire=0; w.out=false; });
+  buildGeometry(cfg);
   saved=0; burning=0; finished=false; paused=false;
   elapsed=0; spreadClock=cfg.spreadEvery;
   yaw=0; pitch=TUNE.pitchStart; pressure=0.40; paintGauge();
   for(var i=0;i<MAX_DROPS;i++){ wlife[i]=0; water.alpha[i]=0; water.pos[i*3+1]=-999; }
   for(var f=0;f<MAX_FLAME;f++){ flLife[f]=0; flLifeA[f]=0; flSize[f]=0; flPos[f*3+1]=-999; }
   for(var s2=0;s2<MAX_SMOKE;s2++){ smLife[s2]=0; smoke.alpha[s2]=0; smoke.pos[s2*3+1]=-999; }
-  startingWindows(cfg.fires,1234+level*7919).forEach(ignite);
-  savedEl.textContent="0";
-  burningEl.textContent=cfg.fires;
+  var fireIdx=startingWindows(cfg.fires,1234+level*7919);
+  fireIdx.forEach(ignite);
+  placeLives(cfg,fireIdx);
+  burningEl.textContent=fireIdx.length;
   timeEl.innerHTML="0.0<em>s</em>";
   paintWins(0);
   running=true;
@@ -1592,6 +1790,7 @@ function startLevel(n){
 function finish(won){
   finished=true; running=false;
   var t=elapsed, best=save.best[level];
+  var got=rescuedCount(), lost=lostCount();
   if(won){
     if(level>=save.unlocked&&level<10) save.unlocked=level+1;
     if(best===undefined||t<best){ save.best[level]=Math.round(t*10)/10; best=save.best[level]; }
@@ -1599,16 +1798,20 @@ function finish(won){
   } else Snd.lose();
   $("endTitle").textContent=won?"Fire out":"Building lost";
   $("endTime").textContent=t.toFixed(1)+"s";
-  $("endBest").textContent=won?("Best "+best.toFixed(1)+"s  ·  Level "+level)
-                              :("Level "+level+"  ·  "+saved+" saved");
-  $("endSub").textContent=won?(level<10?"Every window clear.":"You cleared all ten levels.")
-                             :"The fire got away from you.";
+  $("endBest").textContent=(won?("Best "+best.toFixed(1)+"s  ·  "):"")+cfg.name;
+  var rescueLine = lives.length
+    ? (got+" of "+lives.length+" rescued"+(lost?"  ·  "+lost+" lost":""))
+    : "";
+  $("endSub").innerHTML=(won
+      ? (level<10?"Every window clear.":"You cleared all ten places.")
+      : "The fire got away from you.")
+    + (rescueLine?"<br><b>"+rescueLine+"</b>":"");
   $("nextBtn").style.display=(won&&level<10)?"block":"none";
   show("end");
   $("end").className="screen sheet on "+(won?"win":"lose");
 }
 
-/* ---- level map, drawn as a zigzag path ---- */
+/* ---- level map ---- */
 function buildMap(){
   var map=$("map");
   Array.prototype.slice.call(map.querySelectorAll(".nodeWrap")).forEach(function(n){ n.parentNode.removeChild(n); });
@@ -1623,16 +1826,16 @@ function buildMap(){
     wrap.style.cssText="position:absolute;left:"+x+"%;top:"+y+"%;";
     var b=document.createElement("button");
     b.className="node "+state;
-    b.setAttribute("aria-label","Level "+num+", "+lv.fires+" fires");
+    b.setAttribute("aria-label","Level "+num+", "+lv.name);
     if(state==="locked"){ b.disabled=true; b.textContent="•"; }
     else {
       b.textContent=num;
       b.addEventListener("click",(function(nn){ return function(){ Snd.init(); Snd.resume(); Snd.tap(); startLevel(nn); }; })(num));
     }
     wrap.appendChild(b);
-    var fires=document.createElement("div");
-    fires.className="nodeFires"; fires.textContent=lv.fires+" fires";
-    wrap.appendChild(fires);
+    var nm=document.createElement("div");
+    nm.className="nodeFires"; nm.textContent=lv.name;
+    wrap.appendChild(nm);
     if(save.best[num]!==undefined){
       var bt=document.createElement("div");
       bt.className="nodeTime"; bt.textContent=save.best[num].toFixed(1)+"s";
@@ -1652,11 +1855,9 @@ function buildMap(){
 
 function goStart(){ running=false; paused=false; finished=false; show("start"); Snd.suspend(); }
 
-/* ---- wiring ---- */
 $("playBtn").addEventListener("click",function(){ Snd.init(); Snd.resume(); Snd.tap(); startLevel(save.unlocked); });
 $("levelsBtn").addEventListener("click",function(){ Snd.init(); Snd.resume(); Snd.tap(); buildMap(); show("levels"); });
 $("levBack").addEventListener("click",function(){ Snd.tap(); show("start"); });
-
 $("pauseBtn").addEventListener("click",function(e){
   e.stopPropagation();
   if(!running||finished) return;
@@ -1665,7 +1866,6 @@ $("pauseBtn").addEventListener("click",function(e){
 $("resumeBtn").addEventListener("click",function(){ Snd.tap(); Snd.resume(); paused=false; show("game"); });
 $("quitBtn").addEventListener("click",function(){ Snd.tap(); goStart(); });
 $("pauseSettings").addEventListener("click",function(){ Snd.tap(); settingsFrom="pause"; show("settings"); });
-
 $("startGear").addEventListener("click",function(){ Snd.init(); Snd.tap(); settingsFrom="start"; show("settings"); });
 $("setBack").addEventListener("click",function(){ Snd.tap(); show(settingsFrom==="pause"?"pause":"start"); });
 $("setResume").addEventListener("click",function(){
@@ -1689,28 +1889,17 @@ $("retryBtn").addEventListener("click",function(){ Snd.tap(); startLevel(level);
 $("nextBtn").addEventListener("click",function(){ Snd.tap(); startLevel(Math.min(10,level+1)); });
 $("endMenu").addEventListener("click",function(){ Snd.tap(); goStart(); });
 
-/* Two separate things carry versions: the game (this file, updated silently)
-   and the Android app around it (updated with one tap). Showing only one of
-   them made an up-to-date phone look stale. The app passes its own version in
-   on the end of the address; in a browser there is no app, so only the game
-   number is shown. */
+/* two versions carry meaning: the game, and the app around it */
 (function showVersions(){
   var m=/(?:^|[#&])app=([^&]*)/.exec(location.hash||"");
   var appVer=m?decodeURIComponent(m[1]):null;
   $("verLabel").textContent = appVer
     ? ("game v"+GAME_VERSION+"  ·  app "+appVer)
     : ("game v"+GAME_VERSION);
-
-  /* Offer the real app only to someone playing in a browser on Android.
-     Inside the app it would be nonsense, and an iPhone cannot install it —
-     dangling it in front of them would just be a dead end. */
-  var inApp = !!appVer;
-  var onAndroid = /Android/i.test(navigator.userAgent || "");
   var link=$("getApp");
-  if(link && !inApp && onAndroid) link.hidden=false;
+  if(link && !appVer && /Android/i.test(navigator.userAgent||"")) link.hidden=false;
 })();
 
-/* pause automatically if the player leaves the app mid-level */
 document.addEventListener("visibilitychange",function(){
   if(document.hidden){
     Snd.suspend();
@@ -1732,16 +1921,16 @@ addEventListener("orientationchange",function(){ setTimeout(resize,220); });
 resize();
 
 /* ============================================================
-   TEST HANDLE — a hidden tab freezes requestAnimationFrame and
-   screenshots are unavailable, so the sim can be pumped by hand.
+   TEST HANDLE
    ============================================================ */
 window.__soak={
   step:step,
   state:function(){
-    return {level:level,yaw:+yaw.toFixed(3),pitch:+pitch.toFixed(3),pressure:+pressure.toFixed(3),
-            saved:saved,burning:burning,fireTotal:+fireTotal.toFixed(2),
-            finished:finished,paused:paused,running:running,screen:screenNow,
-            elapsed:+elapsed.toFixed(1),version:GAME_VERSION};
+    return {level:level,name:cfg.name,yaw:+yaw.toFixed(3),pitch:+pitch.toFixed(3),
+            pressure:+pressure.toFixed(3),saved:saved,burning:burning,
+            fireTotal:+fireTotal.toFixed(2),rescued:rescuedCount(),lost:lostCount(),
+            livesTotal:lives.length,finished:finished,paused:paused,running:running,
+            screen:screenNow,elapsed:+elapsed.toFixed(1),version:GAME_VERSION};
   },
   set:function(o){
     if(o.yaw!==undefined) yaw=o.yaw;
@@ -1751,27 +1940,38 @@ window.__soak={
   },
   level:startLevel,
   show:show,
-  wins:function(){ return wins.map(function(w,i){ return {i:i,face:w.face,x:+w.x.toFixed(1),y:w.y,z:+w.z.toFixed(1),fire:+w.fire.toFixed(2),out:w.out}; }); },
-  flamesAlive:function(){ var n=0; for(var i=0;i<MAX_FLAME;i++) if(flLife[i]>0) n++; return n; },
-  smokeAlive:function(){ var n=0; for(var i=0;i<MAX_SMOKE;i++) if(smLife[i]>0) n++; return n; },
   levels:LEVELS,
+  faces:function(){ return faces; },
+  wins:function(){ return wins.map(function(w,i){ return {i:i,ax:w.face.ax,along:w.along,x:+w.x.toFixed(2),y:w.y,z:+w.z.toFixed(2),fire:+w.fire.toFixed(2),out:w.out,dead:w.dead,life:!!w.life}; }); },
+  lives:function(){ return lives.map(function(L){ return {win:L.win,kind:L.kind,state:L.state,t:+L.t.toFixed(1)}; }); },
+  flamesAlive:function(){ var n=0; for(var i=0;i<MAX_FLAME;i++) if(flLife[i]>0) n++; return n; },
   saveData:function(){ return save; },
-  probe:function(pressureVal,pitchVal){
+  /* where does a shot land, for balance checks */
+  probe:function(pressureVal,pitchVal,yawVal){
     var sp=TUNE.speedMin+(TUNE.speedMax-TUNE.speedMin)*pressureVal;
-    var q=new THREE.Quaternion().setFromEuler(new THREE.Euler(pitchVal,0,0,"YXZ"));
+    var q=new THREE.Quaternion().setFromEuler(new THREE.Euler(pitchVal,-(yawVal||0),0,"YXZ"));
     var dir=new THREE.Vector3(0,0,-1).applyQuaternion(q);
-    var x=0.06,y=TUNE.eyeY-0.30,z=-1.00;
+    var tip=new THREE.Vector3(0.06,-0.30,-1.00).applyQuaternion(q);
+    var x=tip.x,y=tip.y+TUNE.eyeY,z=tip.z;
     var vx=dir.x*sp,vy=dir.y*sp,vz=dir.z*sp,h=1/240;
     for(var i=0;i<2400;i++){
       vy-=TUNE.gravity*h; var kk=1-TUNE.drag*h; vx*=kk; vy*=kk; vz*=kk;
-      var pz2=z; z+=vz*h; x+=vx*h; y+=vy*h;
-      if(pz2>WALL_Z&&z<=WALL_Z) return {face:"front",height:+y.toFixed(2),x:+x.toFixed(2)};
+      var px=x,pz=z; x+=vx*h; y+=vy*h; z+=vz*h;
       if(y<=0.03) return {face:"ground",dist:+Math.hypot(x,z).toFixed(2)};
+      for(var fj=0;fj<faces.length;fj++){
+        var f=faces[fj];
+        if(f.ax==="z"&&(pz-f.v)*(z-f.v)<0){
+          if(x>=f.lo&&x<=f.hi&&y<f.top) return {ax:"z",v:f.v,along:+x.toFixed(2),height:+y.toFixed(2)};
+        } else if(f.ax==="x"&&(px-f.v)*(x-f.v)<0){
+          if(z>=f.lo&&z<=f.hi&&y<f.top) return {ax:"x",v:f.v,along:+z.toFixed(2),height:+y.toFixed(2)};
+        }
+      }
     }
     return {face:"none"};
   }
 };
 
+buildGeometry(LEVELS[0]);
 buildMap();
 show("start");
 tick();
