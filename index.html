@@ -193,7 +193,9 @@
 
   /* version, deliberately quiet — it is for Taha, not for players */
   .version{
-    position:absolute;left:0;right:0;bottom:calc(10px + env(safe-area-inset-bottom));
+    position:absolute;left:50%;transform:translateX(-50%);
+    bottom:calc(6px + env(safe-area-inset-bottom));
+    padding:8px 22px;
     text-align:center;
     font-family:var(--cond);font-size:11px;font-weight:600;
     letter-spacing:.20em;color:rgba(233,241,246,.30);
@@ -1064,7 +1066,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 16;
+var GAME_VERSION = 17;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -2364,29 +2366,28 @@ var PLACES3={
     arch.position.set(c.x,3.4,c.z+0.4); envGroup.add(arch);
     upLight(c.x,3,c.z+7,0xFFD9A0,18,0.22);
 
-    // the fountain, right in front of you
-    var basin=new THREE.Mesh(new THREE.CylinderGeometry(4.2,4.4,1.0,24),
-      new THREE.MeshPhongMaterial({color:0x8C877A,shininess:16}));
-    basin.position.set(0,0.5,-5); envGroup.add(basin);
-    var pool=new THREE.Mesh(new THREE.CircleGeometry(3.7,24),
-      new THREE.MeshPhongMaterial({color:0x123244,shininess:160,specular:0x8FC6E0}));
-    pool.rotation.x=-Math.PI/2; pool.position.set(0,1.02,-5); envGroup.add(pool);
-    [[1.6,1.9,2.6],[2.6,0.9,1.5],[3.5,0.5,0.8]].forEach(function(t){
-      var tier=new THREE.Mesh(new THREE.CylinderGeometry(t[2],t[2]*1.1,0.35,18),
-        new THREE.MeshPhongMaterial({color:0xB9AC90,shininess:20}));
-      tier.position.set(0,t[0],-5); envGroup.add(tier);
+    /* No fountain in the middle: it stood between the player and the building
+       and hid the ground-floor windows. Everything here is kept out to the
+       sides so the square is dressed but the line of fire is clear. */
+    var townhouse=new THREE.MeshPhongMaterial({color:0x8A7A5E,shininess:10});
+    var tileRoof=new THREE.MeshPhongMaterial({color:0xA0472A,shininess:14});
+    [[-21,-13,10,7],[21,-13,10,7],[-26,-3,8,6],[26,-3,8,6]].forEach(function(h){
+      var body=new THREE.Mesh(new THREE.BoxGeometry(h[2],h[3],9),townhouse);
+      body.position.set(h[0],h[3]/2,h[1]); envGroup.add(body);
+      var roof=new THREE.Mesh(new THREE.ConeGeometry(h[2]*0.78,2.4,4),tileRoof);
+      roof.position.set(h[0],h[3]+1.2,h[1]); roof.rotation.y=Math.PI/4; envGroup.add(roof);
+      for(var w2=0;w2<2;w2++){
+        var lit=Math.random()<0.7;
+        var win=new THREE.Mesh(new THREE.PlaneGeometry(1.1,1.5),
+          litMat(lit?0xFFD79A:0x1A1E22, lit?0.95:1));
+        win.position.set(h[0]-2+w2*4, h[3]*0.5, h[1]+4.6); envGroup.add(win);
+        if(lit){ var gl=glowSprite(0xFFC98A,3.4,0.22); gl.position.copy(win.position); envGroup.add(gl); }
+      }
     });
-    var stem=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.5,3.4,12),
-      new THREE.MeshPhongMaterial({color:0xA8987A,shininess:20}));
-    stem.position.set(0,2.4,-5); envGroup.add(stem);
-    var finial=new THREE.Mesh(new THREE.SphereGeometry(0.42,12,9),litMat(0xE8C46A));
-    finial.position.set(0,4.3,-5); envGroup.add(finial);
-    upLight(0,1.6,-5,0x9FD8F0,9,0.24);
-
-    [-14,-7,7,14].forEach(function(x){ lampPost(x,-1.5,0xFFDCA0,4.8); });
-    [-17,-13,13,17].forEach(function(x){ cypress(x,-8,6.5); });
-    parasol(-9,-2.5,0xB8382C); parasol(9,-2.5,0xB8382C);
-    parasol(-13,-4,0xC96A2A); parasol(13,-4,0xC96A2A);
+    [-20,-14,14,20].forEach(function(x){ lampPost(x,-4,0xFFDCA0,4.8); });
+    [-24,-18,18,24].forEach(function(x){ cypress(x,-9,6.5); });
+    parasol(-17,-2,0xB8382C); parasol(17,-2,0xB8382C);
+    parasol(-22,-5,0xC96A2A); parasol(22,-5,0xC96A2A);
   },
 
   /* dawn coming up over a working harbour */
@@ -4155,6 +4156,30 @@ $("endMenu").addEventListener("click",function(){ Snd.tap(); goStart(); });
     : ("game v"+GAME_VERSION);
   var link=$("getApp");
   if(link && !appVer && /Android/i.test(navigator.userAgent||"")) link.hidden=false;
+})();
+
+/* A way in for the person who made the game.
+   There is no server, so this cannot be truly locked to one person — it is
+   hidden rather than secret. Hold the version label for two seconds. */
+(function ownerUnlock(){
+  var el=$("verLabel"), timer=null;
+  function grant(){
+    save.jits=999999;
+    ["nozzle","hose","water"].forEach(function(k){
+      SHOP[k].forEach(function(it){
+        if(save.owned[k].indexOf(it.id)<0) save.owned[k].push(it.id);
+      });
+    });
+    persist();
+    Snd.init(); Snd.resume(); Snd.clear();
+    toast("Owner unlocked");
+  }
+  function down(){ stop(); timer=setTimeout(grant,2000); }
+  function stop(){ if(timer){ clearTimeout(timer); timer=null; } }
+  el.addEventListener("pointerdown",down);
+  el.addEventListener("pointerup",stop);
+  el.addEventListener("pointercancel",stop);
+  el.addEventListener("pointerleave",stop);
 })();
 
 document.addEventListener("visibilitychange",function(){
