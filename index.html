@@ -1059,7 +1059,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 14;
+var GAME_VERSION = 15;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -1276,7 +1276,10 @@ var SHOP={
     {id:"chrome", name:"Chrome",   price:10, col:0xD8DEE6, spec:0xFFFFFF, shine:160},
     {id:"midnight",name:"Midnight",price:18, col:0x2A3038, spec:0x8899AA, shine:110},
     {id:"copper", name:"Copper",   price:28, col:0xB4622A, spec:0x8A4A20, shine:90},
-    {id:"gold",   name:"Gold",     price:40, col:0xFFC94A, spec:0xFFE9A8, shine:190}
+    {id:"gold",   name:"Gold",     price:40, col:0xFFC94A, spec:0xFFE9A8, shine:190},
+    /* Not a finish but a whole different nozzle: a fish, water out of its
+       mouth. Priced above the rest because it is the daft one. */
+    {id:"fish",   name:"Fish Head",price:60, col:0xE8632A, spec:0x8A3A18, shine:40, shape:"fish"}
   ],
   hose:[
     {id:"black",  name:"Black",    price:0,   col:0x1E2A33},
@@ -2508,7 +2511,18 @@ function lostCount(){ var n=0; for(var i=0;i<lives.length;i++) if(lives[i].state
    ============================================================ */
 var brass=new THREE.MeshPhongMaterial({color:0xC9922E,shininess:70,specular:0x6A5020});
 var rubber=new THREE.MeshPhongMaterial({color:0x1E2A33,shininess:12});
-(function(){
+/* Two nozzles hang off the camera; only the equipped one is shown. Both put
+   their opening at the same spot, so water always leaves from where it looks
+   like it should. */
+var nozzleStd=null, nozzleFish=null, fishParts=null;
+
+function hoseTail(){
+  var curve=new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0,0,0.14),new THREE.Vector3(0.02,-0.10,0.34),new THREE.Vector3(0.10,-0.34,0.52)]);
+  return new THREE.Mesh(new THREE.TubeGeometry(curve,10,0.045,7,false),rubber);
+}
+
+(function buildStandard(){
   var g=new THREE.Group();
   g.position.set(0.06,-0.34,-0.62);
   g.rotation.set(0.10,0,0.06);
@@ -2518,19 +2532,86 @@ var rubber=new THREE.MeshPhongMaterial({color:0x1E2A33,shininess:12});
   tip.rotation.x=-Math.PI/2; tip.position.z=-0.36; g.add(tip);
   var grip=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.20,10),rubber);
   grip.rotation.x=-Math.PI/2; grip.position.z=0.06; g.add(grip);
-  var curve=new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0,0,0.14),new THREE.Vector3(0.02,-0.10,0.34),new THREE.Vector3(0.10,-0.34,0.52)]);
-  g.add(new THREE.Mesh(new THREE.TubeGeometry(curve,10,0.045,7,false),rubber));
+  g.add(hoseTail());
   camera.add(g);
+  nozzleStd=g;
+})();
+
+/* A fish. The water comes out of its mouth. */
+(function buildFish(){
+  var g=new THREE.Group();
+  /* Sized and placed so its mouth sits where the water actually leaves, and
+     so a fish head does not eat half the screen you are aiming through. */
+  g.position.set(0.06,-0.30,-0.68);
+  g.rotation.set(0.10,0,0.06);
+  g.scale.setScalar(0.82);
+
+  var skin=new THREE.MeshPhongMaterial({color:0xE8632A,shininess:36,specular:0x7A3A18});
+  var belly=new THREE.MeshPhongMaterial({color:0xF39A5E,shininess:26,specular:0x6A3A20});
+  var dark=new THREE.MeshPhongMaterial({color:0x120A08,shininess:60});
+  var white=new THREE.MeshPhongMaterial({color:0xF6F2EA,shininess:40});
+  var hatM=new THREE.MeshPhongMaterial({color:0x7A6A46,shininess:14});
+
+  // head, a touch longer than it is wide so it reads as a fish
+  var head=new THREE.Mesh(new THREE.SphereGeometry(0.20,16,13),skin);
+  head.scale.set(1,0.92,1.22);
+  head.position.z=-0.20; g.add(head);
+  var chin=new THREE.Mesh(new THREE.SphereGeometry(0.145,14,11),belly);
+  chin.scale.set(1,0.62,1.15);
+  chin.position.set(0,-0.075,-0.215); g.add(chin);
+
+  // the mouth: a ring, wide open, and the water leaves from inside it
+  var lips=new THREE.Mesh(new THREE.TorusGeometry(0.088,0.030,10,18),belly);
+  lips.position.set(0,-0.028,-0.345); g.add(lips);
+  var gullet=new THREE.Mesh(new THREE.CylinderGeometry(0.070,0.048,0.12,14,1,true),dark);
+  gullet.rotation.x=Math.PI/2;
+  gullet.position.set(0,-0.028,-0.30); g.add(gullet);
+
+  // eyes, set wide on the sides, looking slightly forward
+  [-1,1].forEach(function(s){
+    var eye=new THREE.Mesh(new THREE.SphereGeometry(0.072,12,10),white);
+    eye.position.set(s*0.145,0.075,-0.235); g.add(eye);
+    var pupil=new THREE.Mesh(new THREE.SphereGeometry(0.032,10,8),dark);
+    pupil.position.set(s*0.176,0.078,-0.288); g.add(pupil);
+  });
+
+  // fins either side, and a little helmet on top
+  [-1,1].forEach(function(s){
+    var fin=new THREE.Mesh(new THREE.ConeGeometry(0.055,0.16,4),belly);
+    fin.position.set(s*0.185,-0.03,-0.13);
+    fin.rotation.set(Math.PI/2,0,s*0.6);
+    g.add(fin);
+  });
+  var hat=new THREE.Mesh(new THREE.SphereGeometry(0.115,14,8,0,Math.PI*2,0,Math.PI/2),hatM);
+  hat.position.set(0,0.155,-0.20); g.add(hat);
+  var brim=new THREE.Mesh(new THREE.TorusGeometry(0.115,0.020,8,16),hatM);
+  brim.rotation.x=Math.PI/2; brim.position.set(0,0.155,-0.20); g.add(brim);
+  var knob=new THREE.Mesh(new THREE.SphereGeometry(0.028,8,6),hatM);
+  knob.position.set(0,0.275,-0.20); g.add(knob);
+
+  var collar=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.075,0.10,12),rubber);
+  collar.rotation.x=Math.PI/2; collar.position.z=0.02; g.add(collar);
+  g.add(hoseTail());
+
+  g.visible=false;
+  camera.add(g);
+  nozzleFish=g;
+  fishParts={skin:skin,belly:belly};
 })();
 
 /* Put on whatever has been bought and equipped. Called at startup and every
    time something is changed in the shop, so it takes effect immediately. */
 function applyKit(){
   var n=shopItem("nozzle",save.kit.nozzle);
-  brass.color.setHex(n.col);
-  brass.specular.setHex(n.spec);
-  brass.shininess=n.shine;
+  var wantFish=(n.shape==="fish");
+  if(nozzleStd)  nozzleStd.visible=!wantFish;
+  if(nozzleFish) nozzleFish.visible=wantFish;
+  // the fish keeps its own colours; the finishes only apply to the metal one
+  if(!wantFish){
+    brass.color.setHex(n.col);
+    brass.specular.setHex(n.spec);
+    brass.shininess=n.shine;
+  }
   var h=shopItem("hose",save.kit.hose);
   rubber.color.setHex(h.col);
   var w=shopItem("water",save.kit.water);
@@ -3625,6 +3706,14 @@ window.__soak={
   lives:function(){ return lives.map(function(L){ return {win:L.win,kind:L.kind,state:L.state,t:+L.t.toFixed(1)}; }); },
   flamesAlive:function(){ var n=0; for(var i=0;i<MAX_FLAME;i++) if(flLife[i]>0) n++; return n; },
   saveData:function(){ return save; },
+  nozzleShown:function(){ return {
+    fishExists:!!nozzleFish, stdExists:!!nozzleStd,
+    fishVisible:nozzleFish?nozzleFish.visible:null,
+    stdVisible:nozzleStd?nozzleStd.visible:null,
+    fishInCamera:nozzleFish?(camera.children.indexOf(nozzleFish)>=0):null,
+    equipped:save.kit.nozzle,
+    shapeSeen:shopItem("nozzle",save.kit.nozzle).shape||"(none)"
+  }; },
   kitColors:function(){ return {
     nozzle:"#"+brass.color.getHexString(),
     hose:"#"+rubber.color.getHexString(),
