@@ -163,7 +163,11 @@
     letter-spacing:.26em;text-transform:uppercase;
     color:rgba(233,241,246,.5);margin:11px 0 0;
   }
-  .startBtns{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:11px;}
+  .startBtns{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+  /* every menu button the same size, so only Play stands out */
+  .startBtns .btn{width:250px;}
+  .startBtns .btn.ghost{padding:13px 0;font-size:15px;letter-spacing:.2em;}
+  .startBtns .btn.hot{padding:19px 0;font-size:23px;letter-spacing:.24em;}
   .hint{
     font-family:var(--body);font-size:12.5px;line-height:1.5;
     color:rgba(233,241,246,.42);margin:16px 0 0;
@@ -862,6 +866,7 @@
         <div class="seasonTabs">
           <button class="seasonTab on" data-season="1">Season 1</button>
           <button class="seasonTab" data-season="2">Season 2</button>
+          <button class="seasonTab" data-season="3">Season 3</button>
         </div>
         <div class="sub" id="levProgress">0 of 10 cleared</div>
       </div>
@@ -1059,7 +1064,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 15;
+var GAME_VERSION = 16;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -1236,8 +1241,67 @@ var LAYOUTS2=[
 /* Target times for the second star. Set at roughly four times what a clean
    run actually takes, so you only miss it by dawdling — Taha asked for these
    not to be hard at all. */
+/* ============================================================
+   SEASON 3 — places with a bit of beauty about them.
+   Fire counts are set from each place's window count (about 38%), because
+   density matters more than a rising number: a small building packed with
+   fire is unwinnable long before a big one is.
+   ============================================================ */
+var LAYOUTS3=[
+  { name:"Grand Station", env:"station", fires:11, lives:1, faces:[
+    {cx:0,   cz:-17, rot:0,   len:20, top:13, cols:[-8,-4.6,-1.2,2.2,5.6,9], rows:[3,6,9]},
+    {cx:-12, cz:-11, rot:46,  len:10, top:10, cols:[-3,0,3], rows:[2.8,5.6]},
+    {cx:12,  cz:-11, rot:-46, len:10, top:10, cols:[-3,0,3], rows:[2.8,5.6]}
+  ]},
+  { name:"Harbour Dawn", env:"harbour", fires:9, lives:2, faces:[
+    {cx:-6, cz:-15, rot:14,  len:14, top:11, cols:[-5,-1.7,1.7,5], rows:[2.8,5.4,8]},
+    {cx:9,  cz:-13, rot:-30, len:12, top:14, cols:[-4,0,4],        rows:[3,6,9,12]}
+  ]},
+  { name:"Snow Village", env:"snowvillage", fires:10, lives:2, faces:[
+    {cx:0,  cz:-13, rot:0,   len:11, top:10, cols:[-3.6,0,3.6], rows:[2.8,5.4,8]},
+    {cx:-9, cz:-10, rot:50,  len:9,  top:10, cols:[-2.8,0,2.8], rows:[2.8,5.4,8]},
+    {cx:9,  cz:-10, rot:-50, len:9,  top:10, cols:[-2.8,0,2.8], rows:[2.8,5.4,8]}
+  ]},
+  { name:"Temple Garden", env:"temple", fires:9, lives:3, faces:[
+    {cx:0,    cz:-14, rot:0,   len:9, top:18, cols:[-2.7,0,2.7], rows:[3,6.5,10,13.5]},
+    {cx:-8.5, cz:-11, rot:52,  len:9, top:9,  cols:[-2.8,0,2.8], rows:[2.8,5.6]},
+    {cx:8.5,  cz:-11, rot:-52, len:9, top:9,  cols:[-2.8,0,2.8], rows:[2.8,5.6]}
+  ]},
+  { name:"The Oasis", env:"oasis", fires:10, lives:3, faces:[
+    {cx:0,   cz:-15, rot:0,   len:16, top:9, cols:[-6,-3,0,3,6], rows:[2.6,5.2,7.8]},
+    {cx:-11, cz:-9,  rot:56,  len:8,  top:7, cols:[-2.4,0,2.4],  rows:[2.6,5.0]},
+    {cx:11,  cz:-9,  rot:-56, len:8,  top:7, cols:[-2.4,0,2.4],  rows:[2.6,5.0]}
+  ]},
+  { name:"Cathedral", env:"cathedral", fires:16, lives:4, faces:[
+    {cx:0,    cz:-16, rot:0,   len:14, top:20, cols:[-5,-1.7,1.7,5], rows:[3,6.5,10,13.5,17]},
+    {cx:-9.5, cz:-13, rot:34,  len:8,  top:24, cols:[-2.4,0,2.4],    rows:[3,7,11,15]},
+    {cx:9.5,  cz:-13, rot:-34, len:8,  top:24, cols:[-2.4,0,2.4],    rows:[3,7,11,15]}
+  ]},
+  { name:"Canal Town", env:"canal", fires:12, lives:4, faces:[
+    {cx:-7, cz:-14, rot:22,  len:13, top:13, cols:[-4.5,-1.5,1.5,4.5], rows:[3,6,9,12]},
+    {cx:7,  cz:-14, rot:-22, len:13, top:13, cols:[-4.5,-1.5,1.5,4.5], rows:[3,6,9,12]}
+  ]},
+  { name:"Lighthouse", env:"lighthouse", fires:12, lives:5, faces:[
+    {cx:-5,  cz:-12, rot:16,  len:12, top:9,  cols:[-4,-1.3,1.3,4], rows:[2.8,5.6]},
+    {cx:7,   cz:-15, rot:-20, len:8,  top:22, cols:[-2.4,0,2.4],    rows:[3,7,11,15,19]},
+    {cx:-11, cz:-7,  rot:66,  len:8,  top:9,  cols:[-2.4,0,2.4],    rows:[2.8,5.6]}
+  ]},
+  { name:"The Funfair", env:"funfair", fires:11, lives:5, faces:[
+    {cx:-10.5,cz:-11, rot:44,  len:8, top:9,  cols:[-2.6,0,2.6], rows:[2.8,5.6]},
+    {cx:-3.5, cz:-14, rot:16,  len:8, top:11, cols:[-2.6,0,2.6], rows:[2.8,5.6,8.4]},
+    {cx:4,    cz:-14, rot:-16, len:8, top:11, cols:[-2.6,0,2.6], rows:[2.8,5.6,8.4]},
+    {cx:10.5, cz:-11, rot:-44, len:8, top:9,  cols:[-2.6,0,2.6], rows:[2.8,5.6]}
+  ]},
+  { name:"The Glasshouse", env:"glasshouse", fires:14, lives:5, faces:[
+    {cx:0,     cz:-15, rot:0,   len:18, top:14, cols:[-7,-3.5,0,3.5,7], rows:[3,6,9,12]},
+    {cx:-11.5, cz:-10, rot:54,  len:9,  top:11, cols:[-2.8,0,2.8],      rows:[2.8,5.6,8.4]},
+    {cx:11.5,  cz:-10, rot:-54, len:9,  top:11, cols:[-2.8,0,2.8],      rows:[2.8,5.6,8.4]}
+  ]}
+];
+
 var PAR_S1=[30,32,45,50,90,85,100,140,110,160];
 var PAR_S2=[45,45,55,55,85,130,120,120,155,150];
+var PAR_S3=[55,50,60,55,60,120,90,95,90,120];
 
 function makeSeason(layouts, season, pars){
   return layouts.map(function(L,i){
@@ -1258,7 +1322,8 @@ function makeSeason(layouts, season, pars){
 }
 var SEASONS=[
   {n:1, title:"Season 1", levels:makeSeason(LAYOUTS,  1, PAR_S1)},
-  {n:2, title:"Season 2", levels:makeSeason(LAYOUTS2, 2, PAR_S2)}
+  {n:2, title:"Season 2", levels:makeSeason(LAYOUTS2, 2, PAR_S2)},
+  {n:3, title:"Season 3", levels:makeSeason(LAYOUTS3, 3, PAR_S3)}
 ];
 var LEVELS=SEASONS[0].levels;    // season 1 stays the default
 
@@ -1303,7 +1368,7 @@ function shopItem(kind,id){
 }
 
 /* Progress is per season. Best times are keyed "1-4" (season 1, level 4). */
-var save={unlocked:{1:1,2:1},best:{},stars:{},vol:0.7,seenHint:false,
+var save={unlocked:{1:1,2:1,3:1},best:{},stars:{},vol:0.7,seenHint:false,
           jits:0, owned:{nozzle:["brass"],hose:["black"],water:["clear"]},
           kit:{nozzle:"brass",hose:"black",water:"clear"}};
 try{
@@ -1313,10 +1378,11 @@ try{
     if(pp&&typeof pp==="object"){
       // anyone who played before seasons existed keeps everything they earned
       if(typeof pp.unlocked==="number"){
-        save.unlocked={1:Math.max(1,Math.min(10,pp.unlocked)),2:1};
+        save.unlocked={1:Math.max(1,Math.min(10,pp.unlocked)),2:1,3:1};
       } else if(pp.unlocked&&typeof pp.unlocked==="object"){
         save.unlocked={1:Math.max(1,Math.min(10,pp.unlocked[1]||1)),
-                       2:Math.max(1,Math.min(10,pp.unlocked[2]||1))};
+                       2:Math.max(1,Math.min(10,pp.unlocked[2]||1)),
+                       3:Math.max(1,Math.min(10,pp.unlocked[3]||1))};
       }
       var st=pp.stars||{};
       Object.keys(st).forEach(function(k){ save.stars[/-/.test(k)?k:("1-"+k)]=st[k]; });
@@ -1655,6 +1721,7 @@ function clearGroup(g){
    ============================================================ */
 var envGroup=new THREE.Group(); scene.add(envGroup);
 var planes=[], blinkers=[], swayers=[];
+var lightBeam=null, bigWheel=null;   // the lighthouse sweep and the big wheel
 
 var litMat=function(c,o){ return new THREE.MeshBasicMaterial({color:c,transparent:o!==undefined,opacity:o===undefined?1:o}); };
 function glowSprite(col,size,op){
@@ -2227,11 +2294,434 @@ Object.keys(LANDMARKS).forEach(function(k){ ENVS[k]=LANDMARKS[k]; });
 var WEATHER={bigben:"rain", city:"clear", villa:"clear", airport:"rain",
              jungle:"rain", beach:"clear", eiffel:"clear", liberty:"rain",
              colosseum:"clear", pyramids:"clear", taj:"clear",
-             goldengate:"rain", opera:"rain", redeemer:"clear", pisa:"clear"};
+             goldengate:"rain", opera:"rain", redeemer:"clear", pisa:"clear",
+             station:"clear", harbour:"rain", snowvillage:"snow", temple:"clear",
+             oasis:"clear", cathedral:"rain", canal:"rain", lighthouse:"rain",
+             funfair:"clear", glasshouse:"clear"};
 
+/* ============================================================
+   SEASON 3 — each place gets one thing worth looking at, built around
+   the walls that are actually burning.
+   ============================================================ */
+function cobbles(z,w,d,tint){
+  var m=new THREE.Mesh(new THREE.PlaneGeometry(w||60,d||40,1,1),
+    new THREE.MeshPhongMaterial({color:tint||0x3A3630,shininess:18,specular:0x2A2622}));
+  m.rotation.x=-Math.PI/2; m.position.set(0,0.03,z);
+  envGroup.add(m);
+  return m;
+}
+function lampPost(x,z,col,h){
+  var pole=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.11,h||4.6,7),trimMat);
+  pole.position.set(x,(h||4.6)/2,z); envGroup.add(pole);
+  var head=new THREE.Mesh(new THREE.SphereGeometry(0.26,10,8),litMat(col||0xFFDCA0,0.95));
+  head.position.set(x,(h||4.6)+0.2,z); envGroup.add(head);
+  var g=glowSprite(col||0xFFDCA0,3.2,0.55);
+  g.position.set(x,(h||4.6)+0.2,z); envGroup.add(g);
+}
+function cypress(x,z,h){
+  var t=new THREE.Mesh(new THREE.ConeGeometry((h||6)*0.17,h||6,8),
+    new THREE.MeshPhongMaterial({color:0x1C3323,shininess:4}));
+  t.position.set(x,(h||6)/2,z); envGroup.add(t);
+}
+function parasol(x,z,col){
+  var pole=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,2.2,6),trimMat);
+  pole.position.set(x,1.1,z); envGroup.add(pole);
+  var top=new THREE.Mesh(new THREE.ConeGeometry(1.25,0.7,8),
+    new THREE.MeshPhongMaterial({color:col||0xB8382C,shininess:8}));
+  top.position.set(x,2.3,z); envGroup.add(top);
+  for(var i=0;i<2;i++){
+    var ch=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.5),trimMat);
+    ch.position.set(x+(i?1:-1)*0.9,0.28,z+0.4); envGroup.add(ch);
+  }
+}
+function mountains(z,tint){
+  var m=new THREE.MeshPhongMaterial({color:tint||0x2A3240,shininess:3,flatShading:true});
+  var snow=new THREE.MeshPhongMaterial({color:0xBFCEDC,shininess:8,flatShading:true});
+  [[-52,44,34],[-14,58,44],[26,50,38],[62,40,30]].forEach(function(p){
+    var peak=new THREE.Mesh(new THREE.ConeGeometry(p[1]*0.55,p[2],5),m);
+    peak.position.set(p[0],p[2]/2-4,z); envGroup.add(peak);
+    var cap=new THREE.Mesh(new THREE.ConeGeometry(p[1]*0.20,p[2]*0.30,5),snow);
+    cap.position.set(p[0],p[2]-p[2]*0.15-4,z); envGroup.add(cap);
+  });
+}
+
+var PLACES3={
+  /* a station square: fountain, cobbles, café tables, mountains beyond */
+  station:function(){
+    ground.material.color.setHex(0x2B2823);
+    cobbles(-6,74,44,0x453F37);
+    mountains(-96,0x2E3746);
+    skylineBehind(-58);
+    var top=faceTop(), c=faceMid();
+    // the station roof: a long barrel vault over the burning frontage
+    var vault=new THREE.Mesh(new THREE.CylinderGeometry(7,7,22,16,1,false,0,Math.PI),
+      new THREE.MeshPhongMaterial({color:0xB8542C,shininess:22}));
+    vault.rotation.z=Math.PI/2; vault.rotation.y=Math.PI/2;
+    vault.position.set(c.x,top,c.z-5); envGroup.add(vault);
+    var arch=new THREE.Mesh(new THREE.CylinderGeometry(3.4,3.4,1.2,18,1,false,0,Math.PI),
+      litMat(0xFFE0AA,0.9));
+    arch.rotation.z=Math.PI/2; arch.rotation.x=Math.PI/2;
+    arch.position.set(c.x,3.4,c.z+0.4); envGroup.add(arch);
+    upLight(c.x,3,c.z+7,0xFFD9A0,18,0.22);
+
+    // the fountain, right in front of you
+    var basin=new THREE.Mesh(new THREE.CylinderGeometry(4.2,4.4,1.0,24),
+      new THREE.MeshPhongMaterial({color:0x8C877A,shininess:16}));
+    basin.position.set(0,0.5,-5); envGroup.add(basin);
+    var pool=new THREE.Mesh(new THREE.CircleGeometry(3.7,24),
+      new THREE.MeshPhongMaterial({color:0x123244,shininess:160,specular:0x8FC6E0}));
+    pool.rotation.x=-Math.PI/2; pool.position.set(0,1.02,-5); envGroup.add(pool);
+    [[1.6,1.9,2.6],[2.6,0.9,1.5],[3.5,0.5,0.8]].forEach(function(t){
+      var tier=new THREE.Mesh(new THREE.CylinderGeometry(t[2],t[2]*1.1,0.35,18),
+        new THREE.MeshPhongMaterial({color:0xB9AC90,shininess:20}));
+      tier.position.set(0,t[0],-5); envGroup.add(tier);
+    });
+    var stem=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.5,3.4,12),
+      new THREE.MeshPhongMaterial({color:0xA8987A,shininess:20}));
+    stem.position.set(0,2.4,-5); envGroup.add(stem);
+    var finial=new THREE.Mesh(new THREE.SphereGeometry(0.42,12,9),litMat(0xE8C46A));
+    finial.position.set(0,4.3,-5); envGroup.add(finial);
+    upLight(0,1.6,-5,0x9FD8F0,9,0.24);
+
+    [-14,-7,7,14].forEach(function(x){ lampPost(x,-1.5,0xFFDCA0,4.8); });
+    [-17,-13,13,17].forEach(function(x){ cypress(x,-8,6.5); });
+    parasol(-9,-2.5,0xB8382C); parasol(9,-2.5,0xB8382C);
+    parasol(-13,-4,0xC96A2A); parasol(13,-4,0xC96A2A);
+  },
+
+  /* dawn coming up over a working harbour */
+  harbour:function(){
+    ground.material.color.setHex(0x22262B);
+    scene.background.setHex(0x12161F);
+    seaPlane(-46,240,70);
+    skylineBehind(-52);
+    // the sky just starting to turn
+    var glow=glowSprite(0xFF9A5A,80,0.16);
+    glow.position.set(-16,10,-70); envGroup.add(glow);
+    var glow2=glowSprite(0xFFC98A,46,0.12);
+    glow2.position.set(-16,5,-66); envGroup.add(glow2);
+    // cranes along the quay
+    [-24,-8,16,30].forEach(function(x,i){
+      var leg=new THREE.Mesh(new THREE.BoxGeometry(1.2,20+i*2,1.2),trimMat);
+      leg.position.set(x,10+i,-30); envGroup.add(leg);
+      var jib=new THREE.Mesh(new THREE.BoxGeometry(16,0.9,0.9),trimMat);
+      jib.position.set(x+5,20+i*2,-30); jib.rotation.z=-0.22; envGroup.add(jib);
+      var lamp=glowSprite(0xFF5A4A,3,0.9);
+      lamp.position.set(x,21+i*2,-30); envGroup.add(lamp);
+      blinkers.push({s:lamp,rate:1.4,phase:i*0.3});
+    });
+    // boats tied up
+    [[-20,-22],[-6,-24],[12,-23],[26,-25]].forEach(function(b,i){
+      var hull=new THREE.Mesh(new THREE.BoxGeometry(7,1.6,2.6),
+        new THREE.MeshPhongMaterial({color:i%2?0x2A4A64:0x5A2A2A,shininess:30}));
+      hull.position.set(b[0],0.9,b[1]); envGroup.add(hull);
+      var mast=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.12,7,6),trimMat);
+      mast.position.set(b[0],4.4,b[1]); envGroup.add(mast);
+      var lit=glowSprite(0xFFD08A,2.2,0.8);
+      lit.position.set(b[0],8,b[1]); envGroup.add(lit);
+      blinkers.push({s:lit,rate:0.8+i*0.2,phase:i*0.25});
+    });
+    [-16,0,16].forEach(function(x){ lampPost(x,-16,0xFFD08A,5); });
+  },
+
+  /* chalets under falling snow */
+  snowvillage:function(){
+    ground.material.color.setHex(0xC9D4DE);
+    mountains(-78,0x39424F);
+    var top=faceTop();
+    var roofM=new THREE.MeshPhongMaterial({color:0xE8EEF4,shininess:10});
+    var woodM=new THREE.MeshPhongMaterial({color:0x4A3728,shininess:6});
+    // deep snowy roofs on top of the burning chalets
+    faces.forEach(function(f){
+      var roof=new THREE.Mesh(new THREE.ConeGeometry(f.len*0.78,3.4,4),roofM);
+      roof.position.set(f.cx-f.nx*1.4, f.top+1.4, f.cz-f.nz*1.4);
+      roof.rotation.y=f.rot+Math.PI/4; envGroup.add(roof);
+      var beam=new THREE.Mesh(new THREE.BoxGeometry(f.len+1.6,0.4,0.4),woodM);
+      beam.position.set(f.cx-f.nx*0.4, f.top-0.3, f.cz-f.nz*0.4);
+      beam.rotation.y=f.rot; envGroup.add(beam);
+    });
+    // pines, heavy with snow
+    for(var i=0;i<26;i++){
+      var a=Math.random()*Math.PI*2, r=20+Math.random()*34;
+      var x=Math.cos(a)*r, z=-Math.abs(Math.sin(a)*r)-6;
+      if(Math.abs(x)<14&&z>-20) continue;
+      var h=6+Math.random()*7;
+      var tr=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.32,h*0.3,6),woodM);
+      tr.position.set(x,h*0.15,z); envGroup.add(tr);
+      for(var t=0;t<3;t++){
+        var tier=new THREE.Mesh(new THREE.ConeGeometry(h*0.30-t*0.5,h*0.36,7),
+          new THREE.MeshPhongMaterial({color:t?0x1E3A2A:0xE8EEF4,shininess:5}));
+        tier.position.set(x,h*0.32+t*h*0.24,z); envGroup.add(tier);
+      }
+    }
+    [-15,-6,6,15].forEach(function(x){ lampPost(x,-4,0xFFD9A0,4.4); });
+  },
+
+  /* lanterns and blossom around a pagoda */
+  temple:function(){
+    ground.material.color.setHex(0x1E241E);
+    skylineBehind(-56);
+    var top=faceTop(), c=faceMid();
+    var redM=new THREE.MeshPhongMaterial({color:0x8E2B22,shininess:22});
+    // stacked pagoda roofs climbing the burning tower
+    for(var r=0;r<4;r++){
+      var w=9.5-r*1.7;
+      var roof=new THREE.Mesh(new THREE.ConeGeometry(w,2.0,4),redM);
+      roof.position.set(c.x, 5.2+r*4.3, c.z-1.6);
+      roof.rotation.y=Math.PI/4; envGroup.add(roof);
+    }
+    var spire=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.34,4,8),litMat(0xE8C46A));
+    spire.position.set(c.x, top+3.6, c.z-1.6); envGroup.add(spire);
+    // a still pond
+    var pond=new THREE.Mesh(new THREE.CircleGeometry(7,26),
+      new THREE.MeshPhongMaterial({color:0x0E2A2A,shininess:170,specular:0x7FC6C0}));
+    pond.rotation.x=-Math.PI/2; pond.position.set(0,0.05,-3.5); envGroup.add(pond);
+    var bridge=new THREE.Mesh(new THREE.BoxGeometry(2.2,0.3,9),redM);
+    bridge.position.set(0,1.1,-3.5); envGroup.add(bridge);
+    // hanging lanterns
+    for(var i=0;i<12;i++){
+      var x=-17+i*3.1;
+      var lan=new THREE.Mesh(new THREE.SphereGeometry(0.42,10,8),litMat(0xFF8A4A,0.95));
+      lan.scale.y=1.3;
+      lan.position.set(x, 4.2+Math.sin(i)*0.3, 1.5); envGroup.add(lan);
+      var g=glowSprite(0xFF9A5A,3.4,0.6);
+      g.position.copy(lan.position); envGroup.add(g);
+      blinkers.push({s:g,rate:2.4+i*0.11,phase:i*0.17});
+      swayers.push({m:lan,base:0,amp:0.06,seed:i,rot:"z"});
+    }
+    // blossom
+    for(var b=0;b<9;b++){
+      var bx=-24+b*6, bz=-8-Math.random()*8;
+      if(Math.abs(bx)<11&&bz>-13) continue;
+      var trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.3,4,6),
+        new THREE.MeshPhongMaterial({color:0x3A2A22,shininess:4}));
+      trunk.position.set(bx,2,bz); envGroup.add(trunk);
+      var can=new THREE.Mesh(new THREE.IcosahedronGeometry(2.6,0),
+        new THREE.MeshPhongMaterial({color:0xE8A8C0,shininess:6,flatShading:true}));
+      can.position.set(bx,5,bz); can.scale.y=0.7; envGroup.add(can);
+      swayers.push({m:can,base:0,amp:0.035,seed:b,rot:"z"});
+    }
+  },
+
+  /* a spring in the desert, under a sky full of stars */
+  oasis:function(){
+    ground.material.color.setHex(0x4A3F26);
+    var sand=stone(0x8A7A52,3);
+    for(var d=0;d<12;d++){
+      var dune=new THREE.Mesh(new THREE.SphereGeometry(11+Math.random()*9,7,5),sand);
+      dune.position.set(-76+d*14,-6,-52-Math.random()*24);
+      dune.scale.y=0.24; envGroup.add(dune);
+    }
+    var pool=new THREE.Mesh(new THREE.CircleGeometry(8,28),
+      new THREE.MeshPhongMaterial({color:0x0C3040,shininess:180,specular:0x8FD8F0}));
+    pool.rotation.x=-Math.PI/2; pool.position.set(0,0.05,-4); envGroup.add(pool);
+    for(var p=0;p<12;p++){
+      var a=p/12*Math.PI*2;
+      palm(Math.cos(a)*11.5, -4+Math.sin(a)*9, 1.0+Math.random()*0.5);
+    }
+    // firepit by the water
+    var pit=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.3,0.5,12),stone(0x54483A,5));
+    pit.position.set(-7,0.25,2); envGroup.add(pit);
+    var fl=glowSprite(0xFF9A3A,6,0.85);
+    fl.position.set(-7,1.1,2); envGroup.add(fl);
+    blinkers.push({s:fl,rate:0.5,phase:0.2});
+    // an unusually generous sky
+    var stars=[];
+    for(var s=0;s<90;s++){
+      var st=glowSprite(0xEAF2FF,0.9+Math.random()*0.7,0.5+Math.random()*0.5);
+      var ang=Math.random()*Math.PI*2, el=0.25+Math.random()*0.9;
+      st.position.set(Math.cos(ang)*Math.cos(el)*80, Math.sin(el)*80, -Math.abs(Math.sin(ang)*Math.cos(el)*80)-10);
+      envGroup.add(st);
+    }
+  },
+
+  /* a lit gothic front with a rose window */
+  cathedral:function(){
+    ground.material.color.setHex(0x24232A);
+    cobbles(-6,66,40,0x3E3A38);
+    skylineBehind(-50);
+    var top=faceTop(), c=faceMid();
+    var pale=stone(0x9A9184,10);
+    // spires on the two burning towers
+    faces.forEach(function(f,i){
+      if(i===0) return;
+      var sp=new THREE.Mesh(new THREE.ConeGeometry(f.len*0.52,12,8),pale);
+      sp.position.set(f.cx-f.nx*1.6, f.top+6, f.cz-f.nz*1.6); envGroup.add(sp);
+      var tipL=glowSprite(0xFFE0AA,3,0.8);
+      tipL.position.set(f.cx-f.nx*1.6, f.top+12.5, f.cz-f.nz*1.6); envGroup.add(tipL);
+    });
+    // rose window over the main front
+    var rose=new THREE.Mesh(new THREE.CircleGeometry(3.2,22),litMat(0xFFCF7A,0.95));
+    rose.position.set(c.x,top-3.5,c.z+0.35); envGroup.add(rose);
+    var roseGlow=glowSprite(0xFFB85A,14,0.45);
+    roseGlow.position.copy(rose.position); envGroup.add(roseGlow);
+    for(var sp2=0;sp2<10;sp2++){
+      var bar=new THREE.Mesh(new THREE.BoxGeometry(0.16,6.4,0.1),pale);
+      bar.position.set(c.x,top-3.5,c.z+0.4);
+      bar.rotation.z=sp2/10*Math.PI; envGroup.add(bar);
+    }
+    var gable=new THREE.Mesh(new THREE.ConeGeometry(8,5,3),pale);
+    gable.position.set(c.x,top+2.4,c.z-1.4); gable.rotation.y=Math.PI/2; envGroup.add(gable);
+    for(var u=0;u<5;u++) upLight(c.x+(u-2)*5,2.5,c.z+7,0xFFDCA8,15,0.22);
+    [-16,-9,9,16].forEach(function(x){ lampPost(x,-3,0xFFDCA0,4.6); });
+  },
+
+  /* water between the houses, bridges over it */
+  canal:function(){
+    ground.material.color.setHex(0x262A2E);
+    skylineBehind(-46);
+    var canalW=new THREE.Mesh(new THREE.PlaneGeometry(9,64),
+      new THREE.MeshPhongMaterial({color:0x0E2632,shininess:170,specular:0x7FB8D8}));
+    canalW.rotation.x=-Math.PI/2; canalW.position.set(0,0.05,-16); envGroup.add(canalW);
+    // quay walls
+    [-4.8,4.8].forEach(function(x){
+      var q=new THREE.Mesh(new THREE.BoxGeometry(0.8,1.4,64),stone(0x4A4640,8));
+      q.position.set(x,0.7,-16); envGroup.add(q);
+    });
+    // bridges
+    [-4,-20,-34].forEach(function(z,i){
+      var deck=new THREE.Mesh(new THREE.BoxGeometry(13,0.5,2.4),stone(0x6A6058,10));
+      deck.position.set(0,2.2,z); envGroup.add(deck);
+      var arc=new THREE.Mesh(new THREE.TorusGeometry(4.6,0.42,7,18,Math.PI),stone(0x6A6058,10));
+      arc.position.set(0,1.0,z); arc.rotation.y=Math.PI/2; envGroup.add(arc);
+      lampPost(0,z+1.6,0xFFD9A0,3.2);
+    });
+    // little boats
+    [[-2,-10],[2.2,-24],[-2.4,-30]].forEach(function(b,i){
+      var hull=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.6,5.2),
+        new THREE.MeshPhongMaterial({color:0x241C18,shininess:26}));
+      hull.position.set(b[0],0.4,b[1]); envGroup.add(hull);
+      var lit=glowSprite(0xFFD08A,2,0.8);
+      lit.position.set(b[0],1.5,b[1]-2.2); envGroup.add(lit);
+      swayers.push({m:hull,base:b[1],amp:0.5,seed:i*1.3,axis:"z"});
+    });
+    faces.forEach(function(f){
+      lampPost(f.cx+f.nx*3.4, f.cz+f.nz*3.4, 0xFFDCA0, 4.2);
+    });
+  },
+
+  /* the light going round, out over a black sea */
+  lighthouse:function(){
+    ground.material.color.setHex(0x232A2E);
+    seaPlane(-44,260,80);
+    var top=faceTop();
+    var tf=faces[1];
+    // the lantern room on top of the burning tower, and its turning beam
+    var lamp=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.4,2.6,14),litMat(0xFFF0C0,0.95));
+    lamp.position.set(tf.cx-tf.nx*1.4, tf.top+1.5, tf.cz-tf.nz*1.4); envGroup.add(lamp);
+    var cap=new THREE.Mesh(new THREE.ConeGeometry(3,2,14),new THREE.MeshPhongMaterial({color:0x8E2B22,shininess:20}));
+    cap.position.set(tf.cx-tf.nx*1.4, tf.top+3.8, tf.cz-tf.nz*1.4); envGroup.add(cap);
+    var halo=glowSprite(0xFFF0C0,22,0.55);
+    halo.position.copy(lamp.position); envGroup.add(halo);
+    // the beam itself, swung round by the frame loop
+    var beam=new THREE.Mesh(new THREE.ConeGeometry(4.5,58,10,1,true),
+      new THREE.MeshBasicMaterial({color:0xFFEEC0,transparent:true,opacity:0.10,
+        blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+    beam.position.copy(lamp.position);
+    beam.rotation.z=Math.PI/2;
+    envGroup.add(beam);
+    lightBeam={m:beam, at:lamp.position.clone()};
+    // rocks below
+    for(var r=0;r<14;r++){
+      var rock=new THREE.Mesh(new THREE.IcosahedronGeometry(1.4+Math.random()*2.4,0),
+        new THREE.MeshPhongMaterial({color:0x2E3238,shininess:8,flatShading:true}));
+      rock.position.set(-30+Math.random()*60, 0.4, -20-Math.random()*14);
+      rock.scale.y=0.6; envGroup.add(rock);
+    }
+    var rail=new THREE.Mesh(new THREE.BoxGeometry(50,0.7,0.3),trimMat);
+    rail.position.set(0,1.1,-4); envGroup.add(rail);
+  },
+
+  /* a wheel that actually turns, and a lot of bulbs */
+  funfair:function(){
+    ground.material.color.setHex(0x2A2730);
+    cobbles(-6,62,38,0x3A3440);
+    skylineBehind(-48);
+    // the big wheel
+    var wheel=new THREE.Group();
+    wheel.position.set(-1,16,-38);
+    var rim=new THREE.Mesh(new THREE.TorusGeometry(13,0.35,7,44),
+      new THREE.MeshPhongMaterial({color:0x6A7280,shininess:40}));
+    wheel.add(rim);
+    for(var s=0;s<12;s++){
+      var a=s/12*Math.PI*2;
+      var spoke=new THREE.Mesh(new THREE.BoxGeometry(0.18,26,0.18),
+        new THREE.MeshPhongMaterial({color:0x6A7280,shininess:40}));
+      spoke.rotation.z=a; wheel.add(spoke);
+      var car=new THREE.Mesh(new THREE.BoxGeometry(1.7,1.5,1.5),
+        litMat([0xFF6A4A,0xFFD24A,0x5AC8FF,0x9A6AFF][s%4],0.95));
+      car.position.set(Math.cos(a)*13, Math.sin(a)*13, 0);
+      wheel.add(car);
+      var b=glowSprite([0xFF6A4A,0xFFD24A,0x5AC8FF,0x9A6AFF][s%4],4,0.8);
+      b.position.copy(car.position); wheel.add(b);
+    }
+    var hub=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.1,1.6,12),
+      new THREE.MeshPhongMaterial({color:0x8A93A0,shininess:60}));
+    hub.rotation.x=Math.PI/2; wheel.add(hub);
+    envGroup.add(wheel);
+    bigWheel=wheel;
+    [-6,4].forEach(function(x){
+      var leg=new THREE.Mesh(new THREE.BoxGeometry(1,20,1),
+        new THREE.MeshPhongMaterial({color:0x5A626E,shininess:30}));
+      leg.position.set(-1+x,8,-38); leg.rotation.z=x>0?0.2:-0.2; envGroup.add(leg);
+    });
+    // bunting between the stalls
+    for(var i=0;i<28;i++){
+      var t=i/27, x=-22+t*44;
+      var y=6.4-Math.sin(t*Math.PI)*1.6;
+      var bulb=glowSprite([0xFF6A4A,0xFFD24A,0x5AC8FF,0x9AFF8A][i%4],1.7,0.9);
+      bulb.position.set(x,y,-3); envGroup.add(bulb);
+      blinkers.push({s:bulb,rate:0.8+((i%5)*0.13),phase:i*0.09});
+    }
+    // striped stall roofs over the burning stalls
+    faces.forEach(function(f,i){
+      var roof=new THREE.Mesh(new THREE.ConeGeometry(f.len*0.72,2.2,8),
+        litMat([0xE8442C,0xF0F0E8,0x2A6ABF,0xF0C020][i%4],1));
+      roof.position.set(f.cx-f.nx*1.2, f.top+1.0, f.cz-f.nz*1.2);
+      roof.rotation.y=f.rot; envGroup.add(roof);
+    });
+  },
+
+  /* glass, ironwork and a jungle inside it */
+  glasshouse:function(){
+    ground.material.color.setHex(0x1E2620);
+    skylineBehind(-52);
+    var top=faceTop(), c=faceMid();
+    var glass=new THREE.MeshPhongMaterial({color:0x9FD8E0,shininess:120,
+      transparent:true,opacity:0.28,specular:0xFFFFFF,side:THREE.DoubleSide});
+    var iron=new THREE.MeshPhongMaterial({color:0x2A3A34,shininess:26});
+    // a long glazed vault over the burning frontage
+    var vault=new THREE.Mesh(new THREE.CylinderGeometry(9,9,20,20,1,true,0,Math.PI),glass);
+    vault.rotation.z=Math.PI/2; vault.rotation.y=Math.PI/2;
+    vault.position.set(c.x,top-1,c.z-6); envGroup.add(vault);
+    for(var r=0;r<9;r++){
+      var rib=new THREE.Mesh(new THREE.TorusGeometry(9,0.16,6,20,Math.PI),iron);
+      rib.rotation.y=Math.PI/2;
+      rib.position.set(c.x-9+r*2.3, top-1, c.z-6); envGroup.add(rib);
+    }
+    var dome=new THREE.Mesh(new THREE.SphereGeometry(6,18,12,0,Math.PI*2,0,Math.PI/2),glass);
+    dome.position.set(c.x,top+1,c.z-6); envGroup.add(dome);
+    var domeRib=new THREE.Mesh(new THREE.TorusGeometry(6,0.16,6,22),iron);
+    domeRib.rotation.x=Math.PI/2; domeRib.position.set(c.x,top+1,c.z-6); envGroup.add(domeRib);
+    // planting, inside and out
+    for(var p=0;p<22;p++){
+      var px2=-20+Math.random()*40, pz=-20+Math.random()*22;
+      if(Math.abs(px2)<3&&pz>-6) continue;
+      var leaf=new THREE.Mesh(new THREE.IcosahedronGeometry(1.2+Math.random()*1.6,0),
+        new THREE.MeshPhongMaterial({color:[0x1E4A2A,0x2A5E34,0x143A22][p%3],shininess:14,flatShading:true}));
+      leaf.position.set(px2,1.2+Math.random()*2,pz); envGroup.add(leaf);
+      swayers.push({m:leaf,base:0,amp:0.05,seed:p,rot:"z"});
+    }
+    for(var pl=0;pl<5;pl++) palm(-18+pl*9,1,0.75);
+    [-15,15].forEach(function(x){ lampPost(x,-2,0xCFE9C0,4.4); });
+    upLight(c.x,4,c.z+8,0xAFE0C8,20,0.20);
+  }
+};
+Object.keys(PLACES3).forEach(function(k){ ENVS[k]=PLACES3[k]; });
 function buildEnv(name){
   clearGroup(envGroup);
   planes.length=0; blinkers.length=0; swayers.length=0;
+  lightBeam=null; bigWheel=null;
   (ENVS[name]||ENVS.city)();
 }
 
@@ -2731,7 +3221,7 @@ function splashDrops(x,y,z,n){
    same dry night. Kept light: it must never hide a window.
    ============================================================ */
 var MAX_RAIN=700;
-var rain=null, rainOn=false, rainVy=new Float32Array(MAX_RAIN);
+var rain=null, rainOn=false, snowOn=false, rainVy=new Float32Array(MAX_RAIN);
 (function(){
   var geo=new THREE.BufferGeometry();
   var pos=new Float32Array(MAX_RAIN*3);
@@ -2748,11 +3238,15 @@ var rain=null, rainOn=false, rainVy=new Float32Array(MAX_RAIN);
   scene.add(rain);
 })();
 function setWeather(kind){
-  rainOn=(kind==="rain");
+  rainOn=(kind==="rain"||kind==="snow");
+  snowOn=(kind==="snow");
   rain.visible=rainOn;
-  // wet ground throws the fire and the beacons back at you
-  ground.material.shininess = rainOn?130:26;
-  ground.material.specular.setHex(rainOn?0x54708C:0x28323E);
+  rain.material.color.setHex(snowOn?0xEAF2FA:0x9FC4DE);
+  rain.material.size=snowOn?0.20:0.10;
+  rain.material.opacity=snowOn?0.85:0.5;
+  // wet ground throws the fire and the beacons back at you; snow just sits
+  ground.material.shininess = snowOn?12:(rainOn?130:26);
+  ground.material.specular.setHex(snowOn?0x20262E:(rainOn?0x54708C:0x28323E));
 }
 
 /* Thin haze drifting across the whole scene. Enough to feel like there is
@@ -2974,9 +3468,10 @@ function step(dt,noDraw){
 
   if(rainOn){
     var rp=rain.geometry.attributes.position.array;
+    var fall=snowOn?0.16:1, drift=snowOn?1.4:2.2;
     for(var ri=0;ri<MAX_RAIN;ri++){
-      rp[ri*3+1]-=rainVy[ri]*dt;
-      rp[ri*3]-=2.2*dt;
+      rp[ri*3+1]-=rainVy[ri]*fall*dt;
+      rp[ri*3]-=(drift+(snowOn?Math.sin(now*0.7+ri)*1.6:0))*dt;
       if(rp[ri*3+1]<0){ rp[ri*3+1]=30+Math.random()*6; rp[ri*3]=(Math.random()-0.5)*90; }
     }
     rain.geometry.attributes.position.needsUpdate=true;
@@ -3000,6 +3495,8 @@ function step(dt,noDraw){
     var B=blinkers[bl];
     B.s.material.opacity=(((now/B.rate+B.phase)%1)<0.42)?0.95:0.06;
   }
+  if(bigWheel) bigWheel.rotation.z=now*0.12;
+  if(lightBeam){ lightBeam.m.rotation.y=now*0.55; }
   for(var sw=0;sw<swayers.length;sw++){
     var S=swayers[sw];
     if(S.axis==="z") S.m.position.z=S.base+Math.sin(now*0.55+S.seed)*S.amp;
@@ -3407,7 +3904,8 @@ function buildMap(season){
   });
   $("levProgress").textContent=done+" of 10 cleared  ·  ★ "+got+"/30";
   // highlight the season tab we are looking at
-  Array.prototype.slice.call(document.querySelectorAll(".seasonTab")).forEach(function(t){
+  // scoped to the levels screen: the shop reuses this class for its own tabs
+  Array.prototype.slice.call(document.querySelectorAll("#levels .seasonTab")).forEach(function(t){
     t.classList.toggle("on", parseInt(t.getAttribute("data-season"),10)===mapSeason);
   });
 }
@@ -3417,7 +3915,7 @@ function goStart(){ running=false; paused=false; finished=false; show("start"); 
 $("playBtn").addEventListener("click",function(){ Snd.init(); Snd.resume(); Snd.tap(); startLevel(save.unlocked[seasonNow]||1, seasonNow); });
 $("levelsBtn").addEventListener("click",function(){ Snd.init(); Snd.resume(); Snd.tap(); buildMap(mapSeason); show("levels"); });
 $("levBack").addEventListener("click",function(){ Snd.tap(); show("start"); });
-Array.prototype.slice.call(document.querySelectorAll(".seasonTab")).forEach(function(t){
+Array.prototype.slice.call(document.querySelectorAll("#levels .seasonTab")).forEach(function(t){
   t.addEventListener("click",function(){
     Snd.tap();
     buildMap(parseInt(t.getAttribute("data-season"),10));
