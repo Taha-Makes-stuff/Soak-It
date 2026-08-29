@@ -342,6 +342,16 @@
     font-family:var(--cond);font-weight:800;font-style:italic;
     font-size:30px;letter-spacing:.03em;text-transform:uppercase;margin:0;
   }
+  .seasonTabs{display:flex;gap:4px;background:rgba(8,13,20,.6);
+    border:1px solid var(--glass-line);border-radius:999px;padding:3px;}
+  .seasonTab{
+    font-family:var(--cond);font-size:13px;font-weight:800;letter-spacing:.14em;
+    text-transform:uppercase;color:rgba(233,241,246,.5);
+    background:transparent;border:0;border-radius:999px;
+    padding:7px 15px;cursor:pointer;white-space:nowrap;
+  }
+  .seasonTab.on{color:#07101A;background:linear-gradient(160deg,var(--brass-hi),var(--brass) 60%);}
+  .seasonTab:focus-visible{outline:3px solid var(--water);outline-offset:2px;}
   .levHead .sub{
     font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:.2em;
     text-transform:uppercase;color:rgba(233,241,246,.42);
@@ -633,13 +643,13 @@
     </button>
 
     <div id="gauge">
-      <div id="psi">45<em>PSI</em></div>
+      <div id="psi">40<em>POWER</em></div>
       <div id="gaugeBody">
         <div id="gaugeFill"></div>
         <div id="gaugeTicks"></div>
         <div id="gaugeMarker"></div>
       </div>
-      <div class="gcap">PRESSURE</div>
+      <div class="gcap">POWER</div>
     </div>
   </div>
 </div>
@@ -747,7 +757,10 @@
     <div class="levHead">
       <div style="flex:1"></div>
       <div style="text-align:center">
-        <h2>Levels</h2>
+        <div class="seasonTabs">
+          <button class="seasonTab on" data-season="1">Season 1</button>
+          <button class="seasonTab" data-season="2">Season 2</button>
+        </div>
         <div class="sub" id="levProgress">0 of 10 cleared</div>
       </div>
       <div style="flex:1"></div>
@@ -903,7 +916,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 10;
+var GAME_VERSION = 11;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -937,7 +950,7 @@ var TUNE = {
   pitchMax: 1.15,
   pitchStart: 0.72,
   douse: 0.017,        // fires give up quicker than they used to
-  fireGrow: 0.035,
+  fireGrow: 0.030,
   spreadAt: 0.60,
   spreadCap: 2,
   eyeY: 1.70,
@@ -1001,29 +1014,114 @@ var LAYOUTS=[
     {ax:"x", v:11,  lo:-14, hi:2,  top:17, cols:[-2,-6,-10,-13],          rows:[3,5.8,8.6,11.4,14.2]}
   ]}
 ];
-var LEVELS=LAYOUTS.map(function(L,i){
-  return {
-    n:i+1, name:L.name, env:L.env, faces:L.faces,
-    fires:L.fires,
-    lives:L.lives,
-    loseAt:L.fires+12,
-    spreadEvery:13.0-i*0.45,
-    // less time to reach someone as the levels get harder
-    rescueTime:15.0-i*0.75
-  };
-});
+/* ============================================================
+   SEASON 2 — famous places.
+   These walls are written at angles (cx, cz, rot) rather than square-on,
+   which is what makes them feel like different buildings instead of the
+   same shapes moved about. `cols` are offsets along the wall from its centre.
+   ============================================================ */
+var LAYOUTS2=[
+  { name:"Big Ben", env:"bigben", fires:6, lives:1, faces:[
+    {cx:2, cz:-15, rot:-14, len:18, top:16,
+     cols:[-7,-3.5,0,3.5,7], rows:[3,6,9,12]}
+  ]},
+  { name:"Eiffel Tower", env:"eiffel", fires:7, lives:2, faces:[
+    {cx:-6.5, cz:-15, rot:22,  len:14, top:15, cols:[-5,-1.7,1.7,5], rows:[3,5.9,8.8,11.7]},
+    {cx:7.5,  cz:-14, rot:-26, len:13, top:15, cols:[-4.5,-1.5,1.5,4.5], rows:[3,5.9,8.8,11.7]}
+  ]},
+  { name:"Liberty", env:"liberty", fires:9, lives:2, faces:[
+    {cx:-8, cz:-16, rot:12,  len:15, top:9, cols:[-5.5,-2,1.5,5], rows:[2.6,5.0,7.4]},
+    {cx:9,  cz:-15, rot:-16, len:14, top:9, cols:[-5,-1.7,1.7,5],  rows:[2.6,5.0,7.4]}
+  ]},
+  /* A genuine curve: five walls swung round the player. The arc has to stay
+     open enough that no wall hides the next one's far end — a curved building
+     will happily occlude itself and make those windows impossible to hit. */
+  { name:"Colosseum", env:"colosseum", fires:10, lives:3, faces:[
+    {cx:-11.15, cz:-10.04, rot:48,  len:6.5, top:11, cols:[-2.1,0,2.1], rows:[2.6,5.4,8.2]},
+    {cx:-6.10,  cz:-13.70, rot:24,  len:6.5, top:11, cols:[-2.1,0,2.1], rows:[2.6,5.4,8.2]},
+    {cx:0,      cz:-15.0,  rot:0,   len:6.5, top:11, cols:[-2.1,0,2.1], rows:[2.6,5.4,8.2]},
+    {cx:6.10,   cz:-13.70, rot:-24, len:6.5, top:11, cols:[-2.1,0,2.1], rows:[2.6,5.4,8.2]},
+    {cx:11.15,  cz:-10.04, rot:-48, len:6.5, top:11, cols:[-2.1,0,2.1], rows:[2.6,5.4,8.2]}
+  ]},
+  { name:"The Pyramids", env:"pyramids", fires:12, lives:3, faces:[
+    {cx:0,   cz:-17, rot:0,   len:26, top:8.5, cols:[-11,-7.3,-3.6,0,3.6,7.3,11], rows:[2.6,5.0,7.4]},
+    {cx:-14, cz:-11, rot:48,  len:10, top:8.5, cols:[-3,0,3], rows:[2.6,5.0]},
+    {cx:14,  cz:-11, rot:-48, len:10, top:8.5, cols:[-3,0,3], rows:[2.6,5.0]}
+  ]},
+  /* the wings are pulled wide and shortened so they stop shadowing the
+     back wall behind them */
+  { name:"Taj Mahal", env:"taj", fires:13, lives:4, faces:[
+    {cx:-9.5, cz:-15.5, rot:32,  len:11, top:13, cols:[-3.8,-1.3,1.3,3.8], rows:[3,5.7,8.4,11.1]},
+    {cx:9.5,  cz:-15.5, rot:-32, len:11, top:13, cols:[-3.8,-1.3,1.3,3.8], rows:[3,5.7,8.4,11.1]},
+    {cx:0,    cz:-20,   rot:0,   len:10, top:13, cols:[-2.8,0,2.8],        rows:[3,5.7,8.4,11.1]}
+  ]},
+  { name:"Golden Gate", env:"goldengate", fires:15, lives:4, faces:[
+    {cx:-9, cz:-15, rot:18,  len:8, top:20, cols:[-2.4,0,2.4], rows:[3,6,9,12,15]},
+    {cx:9,  cz:-15, rot:-18, len:8, top:20, cols:[-2.4,0,2.4], rows:[3,6,9,12,15]}
+  ]},
+  { name:"Opera House", env:"opera", fires:16, lives:5, faces:[
+    {cx:-6.5, cz:-13, rot:35,  len:11, top:11, cols:[-3.6,0,3.6], rows:[2.8,5.4,8.0]},
+    {cx:3,    cz:-16, rot:-10, len:12, top:14, cols:[-4,0,4],     rows:[2.8,5.4,8.0,10.6]},
+    {cx:12,   cz:-12, rot:-42, len:10, top:9,  cols:[-3,0,3],     rows:[2.8,5.4]}
+  ]},
+  { name:"Redeemer", env:"redeemer", fires:17, lives:5, faces:[
+    {cx:-8, cz:-14, rot:25,  len:12, top:10, cols:[-4,-1,2,4.5],  rows:[2.6,5.0,7.4]},
+    {cx:5,  cz:-17, rot:-12, len:14, top:16, cols:[-5,-1.7,1.7,5], rows:[3,6,9,12,15]}
+  ]},
+  { name:"Leaning Tower", env:"pisa", fires:19, lives:5, faces:[
+    {cx:-8, cz:-11, rot:38,  len:9,  top:12, cols:[-2.8,0,2.8], rows:[2.8,5.4,8.0,10.6]},
+    {cx:0,  cz:-16, rot:0,   len:10, top:21, cols:[-3,0,3],     rows:[3,6,9,12,15,18]},
+    {cx:9,  cz:-11, rot:-38, len:9,  top:12, cols:[-2.8,0,2.8], rows:[2.8,5.4,8.0,10.6]}
+  ]}
+];
+
+var PAR_S1=[26,24,40,42,52,58,66,72,80,105];
+var PAR_S2=[28,34,38,48,56,62,70,74,86,110];
+
+function makeSeason(layouts, season, pars){
+  return layouts.map(function(L,i){
+    return {
+      n:i+1, season:season, id:season+"-"+(i+1),
+      name:L.name, env:L.env, faces:L.faces,
+      fires:L.fires,
+      lives:L.lives,
+      loseAt:L.fires+12,
+      spreadEvery:14.5-i*0.40,
+      // less time to reach someone as the levels get harder
+      rescueTime:22.0-i*0.70,
+      /* Second star. Set from watching a competent run and then given room,
+         so it rewards working briskly rather than playing perfectly. */
+      parTime:pars[i]
+    };
+  });
+}
+var SEASONS=[
+  {n:1, title:"Season 1", levels:makeSeason(LAYOUTS,  1, PAR_S1)},
+  {n:2, title:"Season 2", levels:makeSeason(LAYOUTS2, 2, PAR_S2)}
+];
+var LEVELS=SEASONS[0].levels;    // season 1 stays the default
 
 /* ============================================================
    SAVED PROGRESS
    ============================================================ */
-var save={unlocked:1,best:{},vol:0.7,seenHint:false};
+/* Progress is per season. Best times are keyed "1-4" (season 1, level 4). */
+var save={unlocked:{1:1,2:1},best:{},vol:0.7,seenHint:false};
 try{
   var raw=localStorage.getItem("soakit.save");
   if(raw){
     var pp=JSON.parse(raw);
     if(pp&&typeof pp==="object"){
-      save.unlocked=Math.max(1,Math.min(10,pp.unlocked||1));
-      save.best=pp.best||{};
+      // anyone who played before seasons existed keeps everything they earned
+      if(typeof pp.unlocked==="number"){
+        save.unlocked={1:Math.max(1,Math.min(10,pp.unlocked)),2:1};
+      } else if(pp.unlocked&&typeof pp.unlocked==="object"){
+        save.unlocked={1:Math.max(1,Math.min(10,pp.unlocked[1]||1)),
+                       2:Math.max(1,Math.min(10,pp.unlocked[2]||1))};
+      }
+      var b=pp.best||{};
+      Object.keys(b).forEach(function(k){
+        save.best[/-/.test(k) ? k : ("1-"+k)] = b[k];
+      });
       save.vol=(typeof pp.vol==="number")?pp.vol:0.7;
       save.seenHint=!!pp.seenHint;
     }
@@ -1527,6 +1625,309 @@ var ENVS={
   }
 };
 
+/* ============================================================
+   SEASON 2 — the famous places.
+   Each is a silhouette with light on it, standing behind the fire.
+   ============================================================ */
+function stone(c,sh){ return new THREE.MeshPhongMaterial({color:c||0x8A8578,shininess:sh||6}); }
+function seaPlane(z,w,d){
+  var m=new THREE.Mesh(new THREE.PlaneGeometry(w||240,d||120),
+    new THREE.MeshPhongMaterial({color:0x08182A,shininess:130,specular:0x4A7FA8}));
+  m.rotation.x=-Math.PI/2; m.position.set(0,0.04,z); envGroup.add(m);
+}
+/* a light that washes up a landmark from below — what actually makes these read at night */
+function upLight(x,y,z,col,size,op){
+  var s=glowSprite(col||0xFFD79A,size||9,op===undefined?0.30:op);
+  s.position.set(x,y,z); envGroup.add(s);
+}
+function skylineBehind(depth){
+  [[-46,-14,26],[-28,-12,20],[30,-13,24],[48,-15,30],[-62,-16,22],[64,-14,27]]
+    .forEach(function(t){ tower(t[0],depth+t[1],t[2]*0.55,t[2]); });
+}
+
+var LANDMARKS={
+  bigben:function(){
+    ground.material.color.setHex(0x151A20);
+    seaPlane(-58,240,60);
+    skylineBehind(-40);
+    var shaft=new THREE.Mesh(new THREE.BoxGeometry(7,44,7),stone(0x9C8A63,10));
+    shaft.position.set(-26,22,-46); envGroup.add(shaft);
+    // the clock face, which is the whole point
+    [[0,1],[1,0],[0,-1],[-1,0]].forEach(function(d){
+      var f=new THREE.Mesh(new THREE.CircleGeometry(2.6,18),litMat(0xFFE9A8,0.95));
+      f.position.set(-26+d[0]*3.6,38,-46+d[1]*3.6);
+      f.lookAt(-26+d[0]*40,38,-46+d[1]*40);
+      envGroup.add(f);
+      var g=glowSprite(0xFFD98A,11,0.35); g.position.copy(f.position); envGroup.add(g);
+    });
+    var belfry=new THREE.Mesh(new THREE.BoxGeometry(8.4,6,8.4),stone(0x8B7A55,8));
+    belfry.position.set(-26,47,-46); envGroup.add(belfry);
+    var spire=new THREE.Mesh(new THREE.ConeGeometry(5.6,12,4),stone(0x5E7A6A,14));
+    spire.position.set(-26,56,-46); spire.rotation.y=Math.PI/4; envGroup.add(spire);
+    upLight(-26,6,-42,0xFFD79A,16,0.22);
+    // the river frontage
+    var wall=new THREE.Mesh(new THREE.BoxGeometry(180,2.4,1.2),stone(0x6E6A5E,4));
+    wall.position.set(0,1.2,-30); envGroup.add(wall);
+    streetlights(-27,[-40,-18,18,40]);
+  },
+
+  eiffel:function(){
+    ground.material.color.setHex(0x171A1E);
+    skylineBehind(-46);
+    var m=stone(0x6B5B44,20);
+    // four legs leaning in, then two tapering stages
+    [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(function(s){
+      var leg=new THREE.Mesh(new THREE.CylinderGeometry(0.55,1.5,26,6),m);
+      leg.position.set(6+s[0]*4.2,13,-50+s[1]*4.2);
+      leg.rotation.z=-s[0]*0.14; leg.rotation.x=s[1]*0.14;
+      envGroup.add(leg);
+    });
+    var mid=new THREE.Mesh(new THREE.CylinderGeometry(1.4,3.4,20,6),m);
+    mid.position.set(6,34,-50); envGroup.add(mid);
+    var top=new THREE.Mesh(new THREE.CylinderGeometry(0.4,1.4,14,6),m);
+    top.position.set(6,50,-50); envGroup.add(top);
+    [ [22,5.2],[34,3.0] ].forEach(function(d){
+      var deck=new THREE.Mesh(new THREE.BoxGeometry(d[1]*2.4,0.7,d[1]*2.4),stone(0x7A6950,14));
+      deck.position.set(6,d[0],-50); envGroup.add(deck);
+    });
+    var beaconTop=glowSprite(0xFFF0C0,7,0.95);
+    beaconTop.position.set(6,58,-50); envGroup.add(beaconTop);
+    blinkers.push({s:beaconTop,rate:1.3,phase:0});
+    // the warm floodlighting it is known for
+    for(var i=0;i<7;i++) upLight(6,6+i*8,-46,0xFFC46A,14,0.16);
+    road(-24,4.4,true);
+    streetlights(-21,[-32,-12,12,32]);
+  },
+
+  liberty:function(){
+    ground.material.color.setHex(0x141A1E);
+    seaPlane(-60,240,90);
+    skylineBehind(-52);
+    var base=new THREE.Mesh(new THREE.BoxGeometry(13,9,13),stone(0x5E5A50,6));
+    base.position.set(-24,4.5,-48); envGroup.add(base);
+    var ped=new THREE.Mesh(new THREE.BoxGeometry(8.5,13,8.5),stone(0x6E6A5E,8));
+    ped.position.set(-24,15.5,-48); envGroup.add(ped);
+    var green=stone(0x4E9C86,26);
+    var body=new THREE.Mesh(new THREE.CylinderGeometry(1.9,3.2,13,10),green);
+    body.position.set(-24,28,-48); envGroup.add(body);
+    var head=new THREE.Mesh(new THREE.SphereGeometry(1.5,10,8),green);
+    head.position.set(-24,35.5,-48); envGroup.add(head);
+    for(var s=0;s<7;s++){
+      var sp=new THREE.Mesh(new THREE.ConeGeometry(0.32,2.4,4),green);
+      var a=s/7*Math.PI*2;
+      sp.position.set(-24+Math.cos(a)*2.0,37.4,-48+Math.sin(a)*2.0);
+      sp.rotation.z=-Math.cos(a)*0.4; sp.rotation.x=Math.sin(a)*0.4;
+      envGroup.add(sp);
+    }
+    var arm=new THREE.Mesh(new THREE.CylinderGeometry(0.6,0.8,9,7),green);
+    arm.position.set(-21.4,33,-48); arm.rotation.z=-0.42; envGroup.add(arm);
+    var torch=new THREE.Mesh(new THREE.ConeGeometry(1.1,2.2,8),litMat(0xFFD27A));
+    torch.position.set(-19.6,38.4,-48); envGroup.add(torch);
+    var flame=glowSprite(0xFFC864,10,0.9);
+    flame.position.set(-19.6,39.6,-48); envGroup.add(flame);
+    blinkers.push({s:flame,rate:2.4,phase:0.1});
+    upLight(-24,7,-43,0xBFE3C8,15,0.20);
+    for(var b=0;b<4;b++){
+      var lit=glowSprite(b%2?0xFFD08A:0x8AC6FF,2.4,0.7);
+      lit.position.set(-60+b*40,1.6,-72-Math.random()*20);
+      envGroup.add(lit);
+      blinkers.push({s:lit,rate:0.6+Math.random()*0.6,phase:Math.random()});
+    }
+  },
+
+  colosseum:function(){
+    ground.material.color.setHex(0x1B1913);
+    skylineBehind(-44);
+    // a great broken ring of arches behind the fire
+    var m=stone(0x8A7A5E,6), dark=stone(0x4A4234,4);
+    for(var i=0;i<30;i++){
+      var a=(i/30)*Math.PI*2;
+      var R=17;
+      var x=-2+Math.cos(a)*R, z=-42+Math.sin(a)*R;
+      var broken=(i>10&&i<16);
+      var h=broken?9:17;
+      var pier=new THREE.Mesh(new THREE.BoxGeometry(2.4,h,3.2),m);
+      pier.position.set(x,h/2,z); pier.rotation.y=-a; envGroup.add(pier);
+      if(!broken){
+        var arch=new THREE.Mesh(new THREE.BoxGeometry(2.0,3.4,2.0),dark);
+        arch.position.set(x*0.94-0.12,6,z*0.94-2.5); arch.rotation.y=-a; envGroup.add(arch);
+      }
+    }
+    var rim=new THREE.Mesh(new THREE.TorusGeometry(17,0.7,6,40),m);
+    rim.rotation.x=-Math.PI/2; rim.position.set(-2,17.4,-42); envGroup.add(rim);
+    for(var u=0;u<6;u++){
+      var ang=u/6*Math.PI*2;
+      upLight(-2+Math.cos(ang)*19,4,-42+Math.sin(ang)*19,0xFFC98A,13,0.18);
+    }
+    road(-24,4.4,true);
+  },
+
+  pyramids:function(){
+    ground.material.color.setHex(0x35301F);
+    var sand=stone(0x8A7A52,3);
+    [[-30,-52,20,26],[6,-62,26,34],[40,-50,16,20]].forEach(function(p){
+      var py=new THREE.Mesh(new THREE.ConeGeometry(p[2],p[3],4),sand);
+      py.position.set(p[0],p[3]/2,p[1]); py.rotation.y=Math.PI/4;
+      envGroup.add(py);
+      upLight(p[0],3,p[1]+p[2]*0.7,0xFFCE8A,18,0.20);
+    });
+    // a sphinx, roughly
+    var bodyS=new THREE.Mesh(new THREE.BoxGeometry(11,4.5,4),sand);
+    bodyS.position.set(-6,2.25,-30); envGroup.add(bodyS);
+    var headS=new THREE.Mesh(new THREE.BoxGeometry(3.2,4,3.2),sand);
+    headS.position.set(-11,6,-30); envGroup.add(headS);
+    for(var d=0;d<9;d++){
+      var dune=new THREE.Mesh(new THREE.SphereGeometry(9+Math.random()*7,7,5),sand);
+      dune.position.set(-70+d*18,-4,-72-Math.random()*18);
+      dune.scale.y=0.28; envGroup.add(dune);
+    }
+  },
+
+  taj:function(){
+    ground.material.color.setHex(0x1A1C1A);
+    var white=stone(0xC9C2AE,26);
+    var plinth=new THREE.Mesh(new THREE.BoxGeometry(30,3,22),white);
+    plinth.position.set(0,1.5,-52); envGroup.add(plinth);
+    var hall=new THREE.Mesh(new THREE.BoxGeometry(20,12,16),white);
+    hall.position.set(0,9,-52); envGroup.add(hall);
+    var dome=new THREE.Mesh(new THREE.SphereGeometry(7,16,12),white);
+    dome.position.set(0,17,-52); dome.scale.y=1.25; envGroup.add(dome);
+    var finial=new THREE.Mesh(new THREE.ConeGeometry(0.8,3.4,8),litMat(0xE8D9A8));
+    finial.position.set(0,26,-52); envGroup.add(finial);
+    [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(function(s){
+      var min=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.4,22,10),white);
+      min.position.set(s[0]*13,11,-52+s[1]*9); envGroup.add(min);
+      var cap=new THREE.Mesh(new THREE.SphereGeometry(1.6,10,8),white);
+      cap.position.set(s[0]*13,22.5,-52+s[1]*9); envGroup.add(cap);
+    });
+    // the long reflecting pool
+    var pool=new THREE.Mesh(new THREE.PlaneGeometry(5,30),
+      new THREE.MeshPhongMaterial({color:0x0C2230,shininess:150,specular:0x6FA8C8}));
+    pool.rotation.x=-Math.PI/2; pool.position.set(0,0.06,-34); envGroup.add(pool);
+    upLight(0,5,-42,0xFFE0B0,20,0.24);
+    for(var p2=0;p2<6;p2++){ palm(-22+p2*9,-30,0.8); }
+  },
+
+  goldengate:function(){
+    ground.material.color.setHex(0x141920);
+    seaPlane(-70,260,110);
+    skylineBehind(-58);
+    var red=new THREE.MeshPhongMaterial({color:0xA33520,shininess:18});
+    [-24,26].forEach(function(tx){
+      var t1=new THREE.Mesh(new THREE.BoxGeometry(3,46,3),red);
+      t1.position.set(tx-3,23,-46); envGroup.add(t1);
+      var t2=new THREE.Mesh(new THREE.BoxGeometry(3,46,3),red);
+      t2.position.set(tx+3,23,-46); envGroup.add(t2);
+      for(var b=0;b<4;b++){
+        var cross=new THREE.Mesh(new THREE.BoxGeometry(9,1.6,2.4),red);
+        cross.position.set(tx,10+b*11,-46); envGroup.add(cross);
+      }
+      var lamp=glowSprite(0xFF5A4A,4,0.9);
+      lamp.position.set(tx,47,-46); envGroup.add(lamp);
+      blinkers.push({s:lamp,rate:1.5,phase:tx>0?0.5:0});
+    });
+    // deck and the sweep of the main cables
+    var deck=new THREE.Mesh(new THREE.BoxGeometry(120,1.4,7),red);
+    deck.position.set(0,12,-46); envGroup.add(deck);
+    for(var s2=-1;s2<=1;s2+=2){
+      for(var i2=0;i2<26;i2++){
+        var t=i2/25, x=-56+t*112;
+        var sag=Math.abs(x)<26 ? 12+18*(1-Math.cos((x/26)*Math.PI/2)) : 12+18+ (Math.abs(x)-26)*0.30;
+        var seg=new THREE.Mesh(new THREE.BoxGeometry(5,0.5,0.5),red);
+        seg.position.set(x,Math.min(46,sag),-46+s2*3);
+        envGroup.add(seg);
+      }
+    }
+    road(-26,5,true);
+  },
+
+  opera:function(){
+    ground.material.color.setHex(0x141A1E);
+    seaPlane(-62,240,90);
+    skylineBehind(-54);
+    var shell=new THREE.MeshPhongMaterial({color:0xD8D3C4,shininess:40,side:THREE.DoubleSide});
+    var podium=new THREE.Mesh(new THREE.BoxGeometry(34,4,18),stone(0x6E6A5E,8));
+    podium.position.set(-4,2,-46); envGroup.add(podium);
+    [[-12,7,10,0.5],[-4,9,13,0.35],[4,8,11,0.2],[11,6,8,0.1]].forEach(function(s){
+      var sh=new THREE.Mesh(new THREE.SphereGeometry(s[2],14,10,0,Math.PI*0.85,0,Math.PI*0.5),shell);
+      sh.position.set(s[0]-4,s[1],-46);
+      sh.rotation.set(-0.35,s[3],0);
+      sh.scale.set(0.55,1,0.9);
+      envGroup.add(sh);
+      upLight(s[0]-4,4,-40,0xFFE6C0,12,0.20);
+    });
+    for(var b2=0;b2<5;b2++){
+      var lit=glowSprite(b2%2?0xFFD08A:0x8AC6FF,2.2,0.7);
+      lit.position.set(-60+b2*30,1.4,-74-Math.random()*16);
+      envGroup.add(lit);
+      blinkers.push({s:lit,rate:0.6+Math.random()*0.7,phase:Math.random()});
+    }
+  },
+
+  redeemer:function(){
+    ground.material.color.setHex(0x161C16);
+    // the hill
+    var hill=new THREE.Mesh(new THREE.ConeGeometry(34,30,16),
+      new THREE.MeshPhongMaterial({color:0x24301F,shininess:3,flatShading:true}));
+    hill.position.set(-2,8,-64); envGroup.add(hill);
+    var ped=new THREE.Mesh(new THREE.BoxGeometry(7,7,7),stone(0x7A7568,6));
+    ped.position.set(-2,26,-64); envGroup.add(ped);
+    var white=stone(0xC6C6BE,20);
+    var bodyR=new THREE.Mesh(new THREE.CylinderGeometry(1.7,2.6,13,10),white);
+    bodyR.position.set(-2,36,-64); envGroup.add(bodyR);
+    var headR=new THREE.Mesh(new THREE.SphereGeometry(1.5,10,8),white);
+    headR.position.set(-2,43.6,-64); envGroup.add(headR);
+    var arms=new THREE.Mesh(new THREE.BoxGeometry(19,1.8,1.8),white);
+    arms.position.set(-2,40.5,-64); envGroup.add(arms);
+    [-9.5,9.5].forEach(function(ax2){
+      var hand=new THREE.Mesh(new THREE.BoxGeometry(1.8,3.2,1.8),white);
+      hand.position.set(-2+ax2,39.4,-64); envGroup.add(hand);
+    });
+    for(var u2=0;u2<5;u2++) upLight(-2+(u2-2)*5,29,-59,0xEAF0FF,14,0.22);
+    for(var j=0;j<26;j++){
+      var a3=Math.random()*Math.PI*2, r3=36+Math.random()*30;
+      var x3=Math.cos(a3)*r3, z3=-Math.abs(Math.sin(a3)*r3)-24;
+      if(Math.abs(x3)<16&&z3>-30) continue;
+      var t3=new THREE.Mesh(new THREE.IcosahedronGeometry(3+Math.random()*2.4,0),
+        new THREE.MeshPhongMaterial({color:0x1B2E1C,shininess:2,flatShading:true}));
+      t3.position.set(x3,4+Math.random()*4,z3); t3.scale.y=0.8; envGroup.add(t3);
+    }
+  },
+
+  pisa:function(){
+    ground.material.color.setHex(0x1D2018);
+    var white=stone(0xCFC7B0,18);
+    // the tower, leaning
+    var lean=new THREE.Group();
+    lean.position.set(-22,0,-42); lean.rotation.z=0.10;
+    for(var s3=0;s3<7;s3++){
+      var ring=new THREE.Mesh(new THREE.CylinderGeometry(3.4,3.4,4,14,1,true),white);
+      ring.position.y=2+s3*4; lean.add(ring);
+      var band=new THREE.Mesh(new THREE.CylinderGeometry(3.7,3.7,0.5,14),white);
+      band.position.y=4+s3*4; lean.add(band);
+    }
+    var cap2=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.6,3,14),white);
+    cap2.position.y=31; lean.add(cap2);
+    envGroup.add(lean);
+    upLight(-22,4,-37,0xFFE2B0,15,0.24);
+    // the cathedral beside it
+    var nave=new THREE.Mesh(new THREE.BoxGeometry(24,11,13),white);
+    nave.position.set(4,5.5,-48); envGroup.add(nave);
+    var dome2=new THREE.Mesh(new THREE.SphereGeometry(5,14,10),white);
+    dome2.position.set(4,12,-48); dome2.scale.y=0.95; envGroup.add(dome2);
+    var roof=new THREE.Mesh(new THREE.BoxGeometry(24.6,0.8,13.6),stone(0x7A4A34,6));
+    roof.position.set(4,11.2,-48); envGroup.add(roof);
+    upLight(4,4,-41,0xFFE2B0,16,0.20);
+    for(var g2=0;g2<8;g2++){
+      var cyp=new THREE.Mesh(new THREE.ConeGeometry(1.2,7,7),
+        new THREE.MeshPhongMaterial({color:0x1E3320,shininess:3}));
+      cyp.position.set(-40+g2*11,3.5,-30); envGroup.add(cyp);
+    }
+    road(-24,4.4,true);
+  }
+};
+Object.keys(LANDMARKS).forEach(function(k){ ENVS[k]=LANDMARKS[k]; });
+
 function buildEnv(name){
   clearGroup(envGroup);
   planes.length=0; blinkers.length=0; swayers.length=0;
@@ -1550,57 +1951,80 @@ var glowMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(WIN_W*3.4,WIN_H*3.0
 winMesh.frustumCulled=false; glowMesh.frustumCulled=false;
 scene.add(winMesh); scene.add(glowMesh);
 
-/* a wall's normal always points back toward the player at the origin */
-function faceNormal(f){ return (f.v<0)?1:-1; }
+/**
+ * Every wall is turned into the same shape before use: a centre point, the
+ * way it faces, the way it runs, and how long it is. Season 1 walls are
+ * written square-on (ax/v/lo/hi) and converted here; Season 2 walls are
+ * written at any angle (cx/cz/rot), which is what makes those places feel
+ * different rather than just rearranged.
+ *
+ *   n = (sin rot, cos rot)   the way it faces
+ *   d = (cos rot, -sin rot)  the way it runs
+ * so rot 0 faces the player down +Z, and rot 90 faces +X from the left side.
+ */
+function normalizeFace(f){
+  var rot, cx, cz, len;
+  if(f.rot!==undefined){
+    rot=f.rot*Math.PI/180; cx=f.cx; cz=f.cz; len=f.len;
+  } else if(f.ax==="z"){
+    rot=(f.v<0)?0:Math.PI; cx=(f.lo+f.hi)/2; cz=f.v; len=f.hi-f.lo;
+  } else {
+    rot=(f.v<0)?Math.PI/2:-Math.PI/2; cx=f.v; cz=(f.lo+f.hi)/2; len=f.hi-f.lo;
+  }
+  var nx=Math.sin(rot), nz=Math.cos(rot);
+  var dx=Math.cos(rot), dz=-Math.sin(rot);
+
+  // where each window sits along the wall, measured from its centre
+  var cols=f.cols.map(function(a){
+    if(f.rot!==undefined) return a;                 // already an offset
+    if(f.ax==="z") return a-cx;                     // a is an x position
+    return (a-cz)*dz;                               // a is a z position
+  });
+
+  return {src:f, rot:rot, cx:cx, cz:cz, len:len, half:len/2, top:f.top,
+          nx:nx, nz:nz, dx:dx, dz:dz, cols:cols, rows:f.rows};
+}
 
 function buildGeometry(cfg){
   clearGroup(levelGroup);
   wins.length=0;
-  faces=cfg.faces;
+  faces=cfg.faces.map(normalizeFace);
 
   var m=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),
       s=new THREE.Vector3(1,1,1),p=new THREE.Vector3();
   var n=0;
 
-  cfg.faces.forEach(function(f){
-    var width=f.hi-f.lo, mid=(f.lo+f.hi)/2, nrm=faceNormal(f);
-    var rotY = (f.ax==="z") ? 0 : (nrm>0 ? Math.PI/2 : -Math.PI/2);
-
+  faces.forEach(function(f,faceIndex){
     // the wall itself
-    var wall=new THREE.Mesh(new THREE.PlaneGeometry(width,f.top,8,6),wallMat);
-    if(f.ax==="z") wall.position.set(mid,f.top/2,f.v);
-    else           wall.position.set(f.v,f.top/2,mid);
-    wall.rotation.y=rotY;
+    var wall=new THREE.Mesh(new THREE.PlaneGeometry(f.len,f.top,8,6),wallMat);
+    wall.position.set(f.cx,f.top/2,f.cz);
+    wall.rotation.y=f.rot;
     levelGroup.add(wall);
 
-    // a blank back so it reads as a solid block from the side
-    var back=new THREE.Mesh(new THREE.PlaneGeometry(width,f.top,1,1),wallMat);
-    if(f.ax==="z") back.position.set(mid,f.top/2,f.v-1.6*nrm);
-    else           back.position.set(f.v-1.6*nrm,f.top/2,mid);
-    back.rotation.y=rotY+Math.PI;
+    // a blank back, so it reads as a solid block from the side
+    var back=new THREE.Mesh(new THREE.PlaneGeometry(f.len,f.top,1,1),wallMat);
+    back.position.set(f.cx-f.nx*1.6, f.top/2, f.cz-f.nz*1.6);
+    back.rotation.y=f.rot+Math.PI;
     levelGroup.add(back);
 
     // roof parapet
-    var cap=new THREE.Mesh(new THREE.BoxGeometry(width+1.0,0.7,2.0),trimMat);
-    if(f.ax==="z") cap.position.set(mid,f.top+0.35,f.v-0.8*nrm);
-    else           cap.position.set(f.v-0.8*nrm,f.top+0.35,mid);
-    cap.rotation.y=rotY;
+    var cap=new THREE.Mesh(new THREE.BoxGeometry(f.len+1.0,0.7,2.0),trimMat);
+    cap.position.set(f.cx-f.nx*0.8, f.top+0.35, f.cz-f.nz*0.8);
+    cap.rotation.y=f.rot;
     levelGroup.add(cap);
 
-    // the windows on this wall
     f.cols.forEach(function(a){
       f.rows.forEach(function(y){
         if(n>=MAX_WINDOWS) return;
-        var w={face:f, along:a, y:y, fire:0, out:false, dead:false,
-               flick:Math.random()*6.28, life:null, x:0, z:0, nrm:nrm, rotY:rotY};
-        if(f.ax==="z"){ w.x=a; w.z=f.v+0.10*nrm; }
-        else          { w.x=f.v+0.10*nrm; w.z=a; }
+        var wx=f.cx+f.dx*a+f.nx*0.10, wz=f.cz+f.dz*a+f.nz*0.10;
+        var w={face:f, fi:faceIndex, along:a, y:y, fire:0, out:false, dead:false,
+               flick:Math.random()*6.28, life:null, x:wx, z:wz, rotY:f.rot,
+               nx:f.nx, nz:f.nz};
         wins.push(w);
 
-        p.set(w.x,y,w.z); e.set(0,rotY,0); q.setFromEuler(e); m.compose(p,q,s);
+        p.set(wx,y,wz); e.set(0,f.rot,0); q.setFromEuler(e); m.compose(p,q,s);
         winMesh.setMatrixAt(n,m);
-        if(f.ax==="z") p.set(w.x,y,w.z+0.05*nrm);
-        else           p.set(w.x+0.05*nrm,y,w.z);
+        p.set(wx+f.nx*0.05, y, wz+f.nz*0.05);
         m.compose(p,q,s); glowMesh.setMatrixAt(n,m);
         n++;
       });
@@ -1707,9 +2131,8 @@ function placeLives(cfg,fireIdx){
     var kind=LIFE_KINDS[i%LIFE_KINDS.length];
     var fig=makeFigure(kind);
     // stand them at the window, just proud of the glass, facing out
-    fig.position.set(w.x + (w.face.ax==="x" ? 0.22*w.nrm : 0),
-                     w.y - WIN_HH + 0.06,
-                     w.z + (w.face.ax==="z" ? 0.22*w.nrm : 0));
+    // stand them just proud of the glass, whichever way the wall faces
+    fig.position.set(w.x + w.nx*0.22, w.y - WIN_HH + 0.06, w.z + w.nz*0.22);
     fig.rotation.y=w.rotY;
     lifeGroup.add(fig);
 
@@ -1882,12 +2305,13 @@ var haze=[];
 var yaw=0, pitch=TUNE.pitchStart, pressure=0.40;
 var running=false, paused=false, finished=false;
 var saved=0, burning=0, emitCarry=0, frame=0, elapsed=0, spreadClock=8;
-var level=1, cfg=LEVELS[0], fireTotal=0, screenNow="start", settingsFrom="start";
+var level=1, seasonNow=1, mapSeason=1;
+var cfg=LEVELS[0], fireTotal=0, screenNow="start", settingsFrom="start";
 
 function paintGauge(){
   var pct=(pressure*100).toFixed(1)+"%";
   gFill.style.height=pct; gMark.style.bottom=pct;
-  psiEl.innerHTML=Math.round(15+pressure*75)+"<em>PSI</em>";
+  psiEl.innerHTML=Math.round(pressure*100)+"<em>POWER</em>";
 }
 (function(){
   var h="";
@@ -2133,23 +2557,22 @@ function step(dt,noDraw){
       var px=water.pos[i3],py=water.pos[i3+1],pz=water.pos[i3+2];
       var nx=px+wvx[d]*dt,ny=py+wvy[d]*dt,nz=pz+wvz[d]*dt;
 
-      /* walls are all axis aligned, so a crossing test is exact and cheap */
+      /* Each wall is a flat plane at some angle. Measure which side of it the
+         droplet was on before and after: if it crossed from the front, work
+         out where, and whether that point is actually on the wall. */
       var hitFace=null,hAlong=0,hy=0,hx=0,hz=0;
       for(var fj=0;fj<faces.length&&!hitFace;fj++){
         var f=faces[fj];
-        if(f.ax==="z"){
-          if((pz-f.v)*(nz-f.v)<0){
-            var t=(f.v-pz)/(nz-pz);
-            var cx=px+(nx-px)*t, cy=py+(ny-py)*t;
-            if(cx>=f.lo&&cx<=f.hi&&cy<f.top&&cy>0){ hitFace=f; hAlong=cx; hy=cy; hx=cx; hz=f.v; }
-          }
-        } else {
-          if((px-f.v)*(nx-f.v)<0){
-            var t2=(f.v-px)/(nx-px);
-            var cz=pz+(nz-pz)*t2, cy2=py+(ny-py)*t2;
-            if(cz>=f.lo&&cz<=f.hi&&cy2<f.top&&cy2>0){ hitFace=f; hAlong=cz; hy=cy2; hx=f.v; hz=cz; }
-          }
-        }
+        var dA=(px-f.cx)*f.nx+(pz-f.cz)*f.nz;
+        if(dA<=0) continue;                                  // already behind it
+        var dB=(nx-f.cx)*f.nx+(nz-f.cz)*f.nz;
+        if(dB>0) continue;                                   // has not reached it
+        var t=dA/(dA-dB);
+        var cx=px+(nx-px)*t, cy=py+(ny-py)*t, cz=pz+(nz-pz)*t;
+        if(cy<=0||cy>=f.top) continue;
+        var al=(cx-f.cx)*f.dx+(cz-f.cz)*f.dz;
+        if(al<-f.half||al>f.half) continue;
+        hitFace=f; hAlong=al; hy=cy; hx=cx; hz=cz;
       }
       if(hitFace){
         var wi=winAt(hitFace,hAlong,hy);
@@ -2199,17 +2622,18 @@ function step(dt,noDraw){
     var want=(0.30+lvl*1.15)*flameShare*dt*60;
     var count=want|0;
     if(Math.random()<(want-count)) count++;
-    var side=(w.face.ax==="z")?0:w.nrm;
-    var frontal=(w.face.ax==="z")?w.nrm:0;
+    // spread the flames along the wall and push them out along its normal —
+    // works whatever angle the wall sits at
+    var wf=w.face;
     for(var c=0;c<count;c++){
       var k2=flHead; flHead=(flHead+1)%MAX_FLAME;
       var ox=(Math.random()-0.5)*WIN_W*0.8;
-      flPos[k2*3]  = w.x+((w.face.ax==="z")?ox:side*0.16);
+      flPos[k2*3]  = w.x+wf.dx*ox+wf.nx*0.12;
       flPos[k2*3+1]= w.y-WIN_HH*0.75+Math.random()*0.25;
-      flPos[k2*3+2]= w.z+((w.face.ax==="z")?frontal*0.12:ox);
-      flVx[k2]=(Math.random()-0.5)*0.35+side*0.5*lvl;
+      flPos[k2*3+2]= w.z+wf.dz*ox+wf.nz*0.12;
+      flVx[k2]=(Math.random()-0.5)*0.35+wf.nx*0.5*lvl;
       flVy[k2]=1.5+Math.random()*1.5+lvl*1.3;
-      flVz[k2]=(Math.random()-0.5)*0.35+frontal*0.5*lvl;
+      flVz[k2]=(Math.random()-0.5)*0.35+wf.nz*0.5*lvl;
       flMax[k2]=flLife[k2]=0.42+Math.random()*0.42+lvl*0.25;
       flBase[k2]=(0.46+Math.random()*0.40)*(0.58+lvl*0.66);
       flSize[k2]=flBase[k2]; flLifeA[k2]=1;
@@ -2217,12 +2641,13 @@ function step(dt,noDraw){
 
     if(w.fire>0.5&&frame%3===0&&Math.random()<0.30*lvl){
       var k3=smHead; smHead=(smHead+1)%MAX_SMOKE;
-      smoke.pos[k3*3]=w.x+((w.face.ax==="z")?(Math.random()-0.5)*WIN_W:side*0.3);
+      var sox=(Math.random()-0.5)*WIN_W;
+      smoke.pos[k3*3]=w.x+wf.dx*sox+wf.nx*0.3;
       smoke.pos[k3*3+1]=w.y+WIN_HH*0.9;
-      smoke.pos[k3*3+2]=w.z+((w.face.ax==="z")?frontal*0.3:(Math.random()-0.5)*WIN_W);
-      smVx[k3]=(Math.random()-0.5)*0.5+side*0.6;
+      smoke.pos[k3*3+2]=w.z+wf.dz*sox+wf.nz*0.3;
+      smVx[k3]=(Math.random()-0.5)*0.5+wf.nx*0.6;
       smVy[k3]=1.3+Math.random()*1.1;
-      smVz[k3]=(Math.random()-0.5)*0.5+frontal*0.6;
+      smVz[k3]=(Math.random()-0.5)*0.5+wf.nz*0.6;
       smMax[k3]=smLife[k3]=1.6+Math.random()*1.6;
       smGrow[k3]=0.7+Math.random()*1.1;
       smoke.size[k3]=0.5; smoke.alpha[k3]=0.30;
@@ -2358,7 +2783,9 @@ function show(which){
   screenNow=which;
 }
 
-function startLevel(n){
+function startLevel(n,season){
+  seasonNow=season||seasonNow||1;
+  LEVELS=SEASONS[seasonNow-1].levels;
   level=Math.max(1,Math.min(10,n));
   cfg=LEVELS[level-1];
   buildGeometry(cfg);
@@ -2382,11 +2809,11 @@ function startLevel(n){
 
 function finish(won){
   finished=true; running=false;
-  var t=elapsed, best=save.best[level];
+  var t=elapsed, key=cfg.id, best=save.best[key];
   var got=rescuedCount(), lost=lostCount();
   if(won){
-    if(level>=save.unlocked&&level<10) save.unlocked=level+1;
-    if(best===undefined||t<best){ save.best[level]=Math.round(t*10)/10; best=save.best[level]; }
+    if(level>=save.unlocked[seasonNow]&&level<10) save.unlocked[seasonNow]=level+1;
+    if(best===undefined||t<best){ save.best[key]=Math.round(t*10)/10; best=save.best[key]; }
     persist(); Snd.win();
   } else Snd.lose();
   var who=profile.name.trim();
@@ -2408,15 +2835,18 @@ function finish(won){
 }
 
 /* ---- level map ---- */
-function buildMap(){
+function buildMap(season){
+  mapSeason=season||mapSeason||1;
+  var levels=SEASONS[mapSeason-1].levels;
+  var unlocked=save.unlocked[mapSeason]||1;
   var map=$("map");
   Array.prototype.slice.call(map.querySelectorAll(".nodeWrap")).forEach(function(n){ n.parentNode.removeChild(n); });
   var pts=[];
   for(var i=0;i<10;i++){
-    var num=i+1, lv=LEVELS[i];
+    var num=i+1, lv=levels[i];
     var x=(i%2===0)?26:74, y=7+i*9.5;
     pts.push([x,y]);
-    var state=(num<save.unlocked)?"done":(num===save.unlocked?"open next":"locked");
+    var state=(num<unlocked)?"done":(num===unlocked?"open next":"locked");
     var wrap=document.createElement("div");
     wrap.className="nodeWrap";
     wrap.style.cssText="position:absolute;left:"+x+"%;top:"+y+"%;";
@@ -2426,15 +2856,17 @@ function buildMap(){
     if(state==="locked"){ b.disabled=true; b.textContent="•"; }
     else {
       b.textContent=num;
-      b.addEventListener("click",(function(nn){ return function(){ Snd.init(); Snd.resume(); Snd.tap(); startLevel(nn); }; })(num));
+      b.addEventListener("click",(function(nn,ss){ return function(){
+        Snd.init(); Snd.resume(); Snd.tap(); startLevel(nn,ss);
+      }; })(num,mapSeason));
     }
     wrap.appendChild(b);
     var nm=document.createElement("div");
     nm.className="nodeFires "+((i%2===0)?"right":"left"); nm.textContent=lv.name;
     wrap.appendChild(nm);
-    if(save.best[num]!==undefined){
+    if(save.best[lv.id]!==undefined){
       var bt=document.createElement("div");
-      bt.className="nodeTime"; bt.textContent=save.best[num].toFixed(1)+"s";
+      bt.className="nodeTime"; bt.textContent=save.best[lv.id].toFixed(1)+"s";
       wrap.appendChild(bt);
     }
     map.appendChild(wrap);
@@ -2445,15 +2877,25 @@ function buildMap(){
     '" fill="none" stroke="rgba(201,146,46,0.32)" stroke-width="2" stroke-linecap="round" '+
     'stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>';
   var done=0;
-  for(var q=1;q<=10;q++) if(save.best[q]!==undefined) done++;
+  levels.forEach(function(lv){ if(save.best[lv.id]!==undefined) done++; });
   $("levProgress").textContent=done+" of 10 cleared";
+  // highlight the season tab we are looking at
+  Array.prototype.slice.call(document.querySelectorAll(".seasonTab")).forEach(function(t){
+    t.classList.toggle("on", parseInt(t.getAttribute("data-season"),10)===mapSeason);
+  });
 }
 
 function goStart(){ running=false; paused=false; finished=false; show("start"); Snd.suspend(); }
 
-$("playBtn").addEventListener("click",function(){ Snd.init(); Snd.resume(); Snd.tap(); startLevel(save.unlocked); });
-$("levelsBtn").addEventListener("click",function(){ Snd.init(); Snd.resume(); Snd.tap(); buildMap(); show("levels"); });
+$("playBtn").addEventListener("click",function(){ Snd.init(); Snd.resume(); Snd.tap(); startLevel(save.unlocked[seasonNow]||1, seasonNow); });
+$("levelsBtn").addEventListener("click",function(){ Snd.init(); Snd.resume(); Snd.tap(); buildMap(mapSeason); show("levels"); });
 $("levBack").addEventListener("click",function(){ Snd.tap(); show("start"); });
+Array.prototype.slice.call(document.querySelectorAll(".seasonTab")).forEach(function(t){
+  t.addEventListener("click",function(){
+    Snd.tap();
+    buildMap(parseInt(t.getAttribute("data-season"),10));
+  });
+});
 $("pauseBtn").addEventListener("click",function(e){
   e.stopPropagation();
   if(!running||finished) return;
@@ -2560,8 +3002,8 @@ $("profSave").addEventListener("click",function(){
   saveProfile(); paintChip(); Snd.tap(); show("start");
 });
 
-$("retryBtn").addEventListener("click",function(){ Snd.tap(); startLevel(level); });
-$("nextBtn").addEventListener("click",function(){ Snd.tap(); startLevel(Math.min(10,level+1)); });
+$("retryBtn").addEventListener("click",function(){ Snd.tap(); startLevel(level, seasonNow); });
+$("nextBtn").addEventListener("click",function(){ Snd.tap(); startLevel(Math.min(10,level+1), seasonNow); });
 $("endMenu").addEventListener("click",function(){ Snd.tap(); goStart(); });
 
 /* two versions carry meaning: the game, and the app around it */
@@ -2614,10 +3056,11 @@ window.__soak={
     if(o.paused!==undefined) paused=o.paused;
   },
   level:startLevel,
+  seasons:SEASONS,
   show:show,
   levels:LEVELS,
   faces:function(){ return faces; },
-  wins:function(){ return wins.map(function(w,i){ return {i:i,ax:w.face.ax,along:w.along,x:+w.x.toFixed(2),y:w.y,z:+w.z.toFixed(2),fire:+w.fire.toFixed(2),out:w.out,dead:w.dead,life:!!w.life}; }); },
+  wins:function(){ return wins.map(function(w,i){ return {i:i,fi:w.fi,along:+w.along.toFixed(2),x:+w.x.toFixed(2),y:w.y,z:+w.z.toFixed(2),fire:+w.fire.toFixed(2),out:w.out,dead:w.dead,life:!!w.life}; }); },
   lives:function(){ return lives.map(function(L){ return {win:L.win,kind:L.kind,state:L.state,t:+L.t.toFixed(1)}; }); },
   flamesAlive:function(){ var n=0; for(var i=0;i<MAX_FLAME;i++) if(flLife[i]>0) n++; return n; },
   saveData:function(){ return save; },
@@ -2635,11 +3078,16 @@ window.__soak={
       if(y<=0.03) return {face:"ground",dist:+Math.hypot(x,z).toFixed(2)};
       for(var fj=0;fj<faces.length;fj++){
         var f=faces[fj];
-        if(f.ax==="z"&&(pz-f.v)*(z-f.v)<0){
-          if(x>=f.lo&&x<=f.hi&&y<f.top) return {ax:"z",v:f.v,along:+x.toFixed(2),height:+y.toFixed(2)};
-        } else if(f.ax==="x"&&(px-f.v)*(x-f.v)<0){
-          if(z>=f.lo&&z<=f.hi&&y<f.top) return {ax:"x",v:f.v,along:+z.toFixed(2),height:+y.toFixed(2)};
-        }
+        var dA=(px-f.cx)*f.nx+(pz-f.cz)*f.nz;
+        if(dA<=0) continue;
+        var dB=(x-f.cx)*f.nx+(z-f.cz)*f.nz;
+        if(dB>0) continue;
+        var tt=dA/(dA-dB);
+        var hxx=px+(x-px)*tt, hyy=y, hzz=pz+(z-pz)*tt;
+        if(hyy<=0||hyy>=f.top) continue;
+        var al=(hxx-f.cx)*f.dx+(hzz-f.cz)*f.dz;
+        if(al<-f.half||al>f.half) continue;
+        return {fi:fj, along:+al.toFixed(2), height:+hyy.toFixed(2)};
       }
     }
     return {face:"none"};
