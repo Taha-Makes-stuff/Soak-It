@@ -41,7 +41,7 @@
     -webkit-user-select:none;
     user-select:none;
     -webkit-tap-highlight-color:transparent;
-    touch-action:none;
+    touch-action:manipulation;
     overscroll-behavior:none;
   }
 
@@ -57,6 +57,7 @@
       linear-gradient(#070B11, #0D1520 62%, #131C28);
   }
   .screen.on{display:grid;place-items:center;}
+  #news.on, #shop.on, #board.on, #profile.on{place-items:stretch;}
   .screen.sheet{
     background:rgba(6,10,16,.88);
     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
@@ -240,7 +241,7 @@
     text-shadow:0 0 12px rgba(139,63,224,.55);
   }
   .shopTabs{margin:0 auto 12px;width:fit-content;}
-  #shopList{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #shopList{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
   .kit{
     display:flex;align-items:center;gap:13px;
     background:rgba(14,22,34,.7);border:1px solid var(--glass-line);
@@ -269,7 +270,7 @@
   .kit.on .kitTag{color:var(--jit-hi);}
 
   /* ============ leaderboard ============ */
-  #boardList{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #boardList{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
   .rank{
     display:flex;align-items:center;gap:12px;
     background:rgba(14,22,34,.7);border:1px solid var(--glass-line);
@@ -304,8 +305,8 @@
     text-shadow:0 0 12px rgba(139,63,224,.5);
   }
   #news .wrap, #profile .wrap, #board .wrap, #shop .wrap{
-    width:100%;max-width:460px;height:100%;
-    display:flex;flex-direction:column;
+    width:100%;max-width:460px;height:100%;margin-inline:auto;
+    display:flex;flex-direction:column;min-height:0;
     padding:calc(14px + env(safe-area-inset-top)) 16px calc(14px + env(safe-area-inset-bottom));
   }
   .sheetHead{
@@ -316,7 +317,7 @@
     font-family:var(--cond);font-weight:800;font-style:italic;
     font-size:28px;letter-spacing:.03em;text-transform:uppercase;margin:0;
   }
-  #newsList{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  #newsList{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
   .post{
     background:rgba(14,22,34,.72);
     border:1px solid var(--glass-line);
@@ -1066,7 +1067,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 19;
+var GAME_VERSION = 20;
 
 (function meta(){
   var m=document.createElement("meta");
