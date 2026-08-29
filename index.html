@@ -1066,7 +1066,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 17;
+var GAME_VERSION = 18;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -1121,44 +1121,44 @@ var MAX_DROPS=1100, MAX_STEAM=380, MAX_FLAME=900, MAX_SMOKE=260, MAX_WINDOWS=80;
    the wall, `rows` are floor heights.
    ============================================================ */
 var LAYOUTS=[
-  { name:"Courtyard", env:"city", fires:5, lives:1, faces:[
+  { name:"Courtyard", env:"city", style:"greyStone", fires:5, lives:1, faces:[
     {ax:"z", v:-16, lo:-9,  hi:9,  top:13.5, cols:[-7.2,-4.32,-1.44,1.44,4.32,7.2], rows:[2.8,5.4,8.0,10.6]},
     {ax:"x", v:-9,  lo:-11, hi:3,  top:13.5, cols:[-2.5,-6.5,-10.5],                rows:[2.8,5.4,8.0,10.6]},
     {ax:"x", v:9,   lo:-11, hi:3,  top:13.5, cols:[-2.5,-6.5,-10.5],                rows:[2.8,5.4,8.0,10.6]}
   ]},
-  { name:"The Tower", env:"city", fires:6, lives:1, faces:[
+  { name:"The Tower", env:"city", style:"concrete", fires:6, lives:1, faces:[
     {ax:"z", v:-11, lo:-5, hi:5, top:19, cols:[-3.2,0,3.2], rows:[2.8,5.6,8.4,11.2,14.0]}
   ]},
-  { name:"Wide Block", env:"villa", fires:8, lives:2, faces:[
+  { name:"Wide Block", env:"villa", style:"whiteModern", fires:8, lives:2, faces:[
     {ax:"z", v:-16, lo:-13, hi:13, top:9.6,
      cols:[-11.5,-8.2,-4.9,-1.6,1.7,5.0,8.3,11.6], rows:[2.8,5.4,8.0]}
   ]},
-  { name:"The Corner", env:"jungle", fires:9, lives:2, faces:[
+  { name:"The Corner", env:"jungle", style:"ochreStucco", fires:9, lives:2, faces:[
     {ax:"z", v:-14, lo:-11, hi:5,  top:12, cols:[-9,-6,-3,0,3],   rows:[2.8,5.4,8.0,10.6]},
     {ax:"x", v:5,   lo:-14, hi:-3, top:12, cols:[-5,-8,-11.5],    rows:[2.8,5.4,8.0,10.6]}
   ]},
-  { name:"Twin Towers", env:"airport", fires:11, lives:3, faces:[
+  { name:"Twin Towers", env:"airport", style:"glassIron", fires:11, lives:3, faces:[
     {ax:"z", v:-15, lo:-12, hi:-3, top:16, cols:[-10.5,-7.5,-4.5], rows:[3,6,9,12]},
     {ax:"z", v:-15, lo:3,   hi:12, top:16, cols:[4.5,7.5,10.5],    rows:[3,6,9,12]}
   ]},
-  { name:"The Alley", env:"city", fires:12, lives:3, faces:[
+  { name:"The Alley", env:"city", style:"canalBrick", fires:12, lives:3, faces:[
     {ax:"x", v:-6, lo:-20, hi:1, top:11, cols:[-2,-6,-10,-14,-18], rows:[2.8,5.4,8.0]},
     {ax:"x", v:6,  lo:-20, hi:1, top:11, cols:[-2,-6,-10,-14,-18], rows:[2.8,5.4,8.0]}
   ]},
-  { name:"Stepped", env:"villa", fires:14, lives:4, faces:[
+  { name:"Stepped", env:"villa", style:"clapboard", fires:14, lives:4, faces:[
     {ax:"z", v:-15, lo:-8,  hi:8, top:11, cols:[-6,-3,0,3,6],   rows:[2.8,5.4,8.0]},
     {ax:"x", v:-8,  lo:-15, hi:1, top:17, cols:[-2,-6,-10,-13.5], rows:[2.8,5.4,8.0,10.6,13.2]}
   ]},
-  { name:"Long Facade", env:"airport", fires:15, lives:4, faces:[
+  { name:"Long Facade", env:"airport", style:"concrete", fires:15, lives:4, faces:[
     {ax:"z", v:-17, lo:-12, hi:12, top:14,
      cols:[-11,-8.25,-5.5,-2.75,0,2.75,5.5,8.25,11], rows:[3,5.9,8.8,11.7]}
   ]},
-  { name:"Horseshoe", env:"jungle", fires:17, lives:5, faces:[
+  { name:"Horseshoe", env:"jungle", style:"mudbrick", fires:17, lives:5, faces:[
     {ax:"z", v:-11, lo:-7,  hi:7, top:14, cols:[-5.2,-2.6,0,2.6,5.2], rows:[2.8,5.4,8.0,10.6]},
     {ax:"x", v:-7,  lo:-11, hi:1, top:14, cols:[-2,-5.5,-9],          rows:[2.8,5.4,8.0,10.6]},
     {ax:"x", v:7,   lo:-11, hi:1, top:14, cols:[-2,-5.5,-9],          rows:[2.8,5.4,8.0,10.6]}
   ]},
-  { name:"The Block", env:"beach", fires:18, lives:5, faces:[
+  { name:"The Block", env:"beach", style:"marble", fires:18, lives:5, faces:[
     {ax:"z", v:-17, lo:-11, hi:11, top:17, cols:[-9,-5.4,-1.8,1.8,5.4,9], rows:[3,5.8,8.6,11.4,14.2]},
     {ax:"x", v:-11, lo:-14, hi:2,  top:17, cols:[-2,-6,-10,-13],          rows:[3,5.8,8.6,11.4,14.2]},
     {ax:"x", v:11,  lo:-14, hi:2,  top:17, cols:[-2,-6,-10,-13],          rows:[3,5.8,8.6,11.4,14.2]}
@@ -1173,70 +1173,66 @@ var LAYOUTS=[
 /* In Season 2 the landmark IS the building that is burning — each layout is
    shaped like the real thing, and the landmark geometry is then built around
    these very walls (see LANDMARKS, which reads `faces` directly). */
+/* ============================================================
+   SEASON 2 — ordinary houses, somewhere famous.
+   The landmark stands on the skyline behind; what burns is a normal
+   building of that country, in the style people there actually build in.
+   ============================================================ */
 var LAYOUTS2=[
-  // a clock tower: narrow and tall, seen close
-  { name:"Big Ben", env:"bigben", fires:6, lives:1, faces:[
-    {cx:0, cz:-12.5, rot:0,   len:8, top:21, cols:[-2.4,0,2.4], rows:[3,6.5,10,13.5,17]},
-    // the side walls stop a floor lower: at 8m away, 17m up is steeper than
-    // the hose can be aimed, so those windows would be impossible
-    {cx:-4, cz:-8.5, rot:70,  len:8, top:21, cols:[-2.4,0,2.4], rows:[3,6.5,10,13.5]},
-    {cx:4,  cz:-8.5, rot:-70, len:8, top:21, cols:[-2.4,0,2.4], rows:[3,6.5,10,13.5]}
+  // a London terrace, brick, three floors, with a side return
+  { name:"Big Ben", env:"bigben", style:"ukBrick", fires:9, lives:1, faces:[
+    {cx:0,  cz:-14, rot:0,  len:16, top:11, cols:[-6,-3,0,3,6],  rows:[2.8,5.6,8.4]},
+    {cx:-9, cz:-9,  rot:62, len:8,  top:11, cols:[-2.4,0,2.4],   rows:[2.8,5.6,8.4]}
   ]},
-  // the tower's decks, with the legs straddling them
-  { name:"Eiffel Tower", env:"eiffel", fires:7, lives:2, faces:[
-    {cx:0,  cz:-13, rot:0, len:15, top:19, cols:[-5.4,-1.8,1.8,5.4], rows:[3.2,7.2,11.2,15.2]},
-    {cx:-8, cz:-9,  rot:60,  len:7, top:12, cols:[-2,0,2], rows:[3.2,7.2]},
-    {cx:8,  cz:-9,  rot:-60, len:7, top:12, cols:[-2,0,2], rows:[3.2,7.2]}
+  // a Paris apartment block with iron balconies and a mansard roof
+  { name:"Eiffel Tower", env:"eiffel", style:"frenchStone", fires:11, lives:2, faces:[
+    {cx:0,   cz:-15, rot:0,   len:15, top:14, cols:[-5.4,-1.8,1.8,5.4], rows:[3,6,9,12]},
+    {cx:9.5, cz:-11, rot:-48, len:9,  top:14, cols:[-2.8,0,2.8],        rows:[3,6,9,12]}
   ]},
-  // the pedestal she stands on
-  { name:"Liberty", env:"liberty", fires:9, lives:2, faces:[
-    {cx:0,   cz:-13,  rot:0,   len:11, top:15, cols:[-3.5,0,3.5], rows:[2.8,5.8,8.8,11.8]},
-    {cx:-5.5,cz:-9.5, rot:64,  len:9,  top:15, cols:[-2.6,0,2.6], rows:[2.8,5.8,8.8,11.8]},
-    {cx:5.5, cz:-9.5, rot:-64, len:9,  top:15, cols:[-2.6,0,2.6], rows:[2.8,5.8,8.8,11.8]}
+  // a New York brownstone row
+  { name:"Liberty", env:"liberty", style:"canalBrick", fires:8, lives:2, faces:[
+    {cx:-5, cz:-14, rot:12,  len:13, top:12, cols:[-4.5,-1.5,1.5,4.5], rows:[3,6,9]},
+    {cx:8,  cz:-13, rot:-24, len:11, top:12, cols:[-3.5,0,3.5],        rows:[3,6,9]}
   ]},
-  /* A genuine curve: five walls swung round the player. The arc has to stay
-     open enough that no wall hides the next one's far end — a curved building
-     will happily occlude itself and make those windows impossible to hit. */
-  { name:"Colosseum", env:"colosseum", fires:10, lives:3, faces:[
-    {cx:-11.15, cz:-10.04, rot:48,  len:6.5, top:11, cols:[-2.1,0,2.1], rows:[2.6,5.4,8.2]},
-    {cx:-6.10,  cz:-13.70, rot:24,  len:6.5, top:11, cols:[-2.1,0,2.1], rows:[2.6,5.4,8.2]},
-    {cx:0,      cz:-15.0,  rot:0,   len:6.5, top:11, cols:[-2.1,0,2.1], rows:[2.6,5.4,8.2]},
-    {cx:6.10,   cz:-13.70, rot:-24, len:6.5, top:11, cols:[-2.1,0,2.1], rows:[2.6,5.4,8.2]},
-    {cx:11.15,  cz:-10.04, rot:-48, len:6.5, top:11, cols:[-2.1,0,2.1], rows:[2.6,5.4,8.2]}
+  // a Roman block in ochre stucco with pantiles
+  { name:"Colosseum", env:"colosseum", style:"ochreStucco", fires:12, lives:3, faces:[
+    {cx:0,   cz:-15, rot:0,   len:17, top:12, cols:[-6.5,-3.2,0,3.2,6.5], rows:[3,6,9]},
+    {cx:-11, cz:-10, rot:52,  len:9,  top:12, cols:[-2.8,0,2.8],          rows:[3,6,9]},
+    {cx:11,  cz:-10, rot:-52, len:9,  top:12, cols:[-2.8,0,2.8],          rows:[3,6,9]}
   ]},
-  // the temple at the foot of the great pyramid, which rises right behind it
-  { name:"The Pyramids", env:"pyramids", fires:12, lives:3, faces:[
-    {cx:0,   cz:-15, rot:0,   len:22, top:9, cols:[-9,-5.4,-1.8,1.8,5.4,9], rows:[2.6,5.2,7.8]},
-    {cx:-12, cz:-10, rot:52,  len:9,  top:9, cols:[-2.8,0,2.8], rows:[2.6,5.2]},
-    {cx:12,  cz:-10, rot:-52, len:9,  top:9, cols:[-2.8,0,2.8], rows:[2.6,5.2]}
+  // a low mudbrick house with a flat roof
+  { name:"The Pyramids", env:"pyramids", style:"mudbrick", fires:10, lives:3, faces:[
+    {cx:0,     cz:-14, rot:0,   len:16, top:9, cols:[-6,-3,0,3,6], rows:[2.6,5.2,7.8]},
+    {cx:-10.5, cz:-9,  rot:54,  len:8,  top:7, cols:[-2.4,0,2.4],  rows:[2.6,5.0]},
+    {cx:10.5,  cz:-9,  rot:-54, len:8,  top:7, cols:[-2.4,0,2.4],  rows:[2.6,5.0]}
   ]},
-  /* the wings are pulled wide and shortened so they stop shadowing the
-     back wall behind them */
-  { name:"Taj Mahal", env:"taj", fires:13, lives:4, faces:[
-    {cx:-9.5, cz:-15.5, rot:32,  len:11, top:13, cols:[-3.8,-1.3,1.3,3.8], rows:[3,5.7,8.4,11.1]},
-    {cx:9.5,  cz:-15.5, rot:-32, len:11, top:13, cols:[-3.8,-1.3,1.3,3.8], rows:[3,5.7,8.4,11.1]},
-    {cx:0,    cz:-20,   rot:0,   len:10, top:13, cols:[-2.8,0,2.8],        rows:[3,5.7,8.4,11.1]}
+  // pale stone with a little dome
+  { name:"Taj Mahal", env:"taj", style:"marble", fires:9, lives:4, faces:[
+    {cx:0,   cz:-15, rot:0,   len:15, top:12, cols:[-5.4,-1.8,1.8,5.4], rows:[3,6,9]},
+    {cx:-10, cz:-10, rot:50,  len:9,  top:10, cols:[-2.8,0,2.8],        rows:[3,6]},
+    {cx:10,  cz:-10, rot:-50, len:9,  top:10, cols:[-2.8,0,2.8],        rows:[3,6]}
   ]},
-  { name:"Golden Gate", env:"goldengate", fires:15, lives:4, faces:[
-    {cx:-9, cz:-15, rot:18,  len:8, top:20, cols:[-2.4,0,2.4], rows:[3,6,9,12,15]},
-    {cx:9,  cz:-15, rot:-18, len:8, top:20, cols:[-2.4,0,2.4], rows:[3,6,9,12,15]}
+  // two tall San Francisco timber houses
+  { name:"Golden Gate", env:"goldengate", style:"clapboard", fires:9, lives:4, faces:[
+    {cx:-4, cz:-13, rot:10,  len:11, top:14, cols:[-3.6,0,3.6], rows:[3,6,9,12]},
+    {cx:7,  cz:-14, rot:-18, len:11, top:14, cols:[-3.6,0,3.6], rows:[3,6,9,12]}
   ]},
-  { name:"Opera House", env:"opera", fires:16, lives:5, faces:[
-    {cx:-6.5, cz:-13, rot:35,  len:11, top:11, cols:[-3.6,0,3.6], rows:[2.8,5.4,8.0]},
-    {cx:3,    cz:-16, rot:-10, len:12, top:14, cols:[-4,0,4],     rows:[2.8,5.4,8.0,10.6]},
-    {cx:12,   cz:-12, rot:-42, len:10, top:9,  cols:[-3,0,3],     rows:[2.8,5.4]}
+  // a low white Sydney house
+  { name:"Opera House", env:"opera", style:"whiteModern", fires:10, lives:5, faces:[
+    {cx:0,     cz:-15, rot:0,   len:18, top:11, cols:[-7,-3.5,0,3.5,7], rows:[3,6,9]},
+    {cx:-11.5, cz:-9,  rot:56,  len:8,  top:8,  cols:[-2.4,0,2.4],      rows:[2.8,5.6]},
+    {cx:11.5,  cz:-9,  rot:-56, len:8,  top:8,  cols:[-2.4,0,2.4],      rows:[2.8,5.6]}
   ]},
-  // the great plinth he stands on, with the hill falling away behind
-  { name:"Redeemer", env:"redeemer", fires:17, lives:5, faces:[
-    {cx:0,    cz:-14,  rot:0,   len:14, top:15, cols:[-5,-1.7,1.7,5], rows:[3,6,9,12]},
-    {cx:-7.5, cz:-10,  rot:58,  len:9,  top:15, cols:[-2.6,0,2.6],    rows:[3,6,9,12]},
-    {cx:7.5,  cz:-10,  rot:-58, len:9,  top:15, cols:[-2.6,0,2.6],    rows:[3,6,9,12]}
+  // a Rio apartment in bare concrete
+  { name:"Redeemer", env:"redeemer", style:"concrete", fires:9, lives:5, faces:[
+    {cx:0,   cz:-14,  rot:0,  len:15, top:13, cols:[-5.4,-1.8,1.8,5.4], rows:[3,6.2,9.4,12.2]},
+    {cx:-10, cz:-9.5, rot:52, len:9,  top:10, cols:[-2.8,0,2.8],        rows:[3,6,9]}
   ]},
-  // the tower itself burns, with the cathedral beside it
-  { name:"Leaning Tower", env:"pisa", fires:19, lives:5, faces:[
-    {cx:-4,  cz:-12, rot:8,   len:9,  top:22, cols:[-2.7,0,2.7], rows:[3,6.5,10,13.5,17,20]},
-    {cx:-9,  cz:-8,  rot:66,  len:8,  top:22, cols:[-2.4,0,2.4], rows:[3,6.5,10,13.5,17]},
-    {cx:9,   cz:-14, rot:-24, len:13, top:11, cols:[-4.5,-1.5,1.5,4.5], rows:[2.8,5.4,8.0]}
+  // a Tuscan house under pantiles
+  { name:"Leaning Tower", env:"pisa", style:"ochreStucco", fires:12, lives:5, faces:[
+    {cx:0,   cz:-15, rot:0,   len:17, top:13, cols:[-6.5,-3.2,0,3.2,6.5], rows:[3,6.3,9.6]},
+    {cx:-11, cz:-10, rot:50,  len:9,  top:13, cols:[-2.8,0,2.8],          rows:[3,6.3,9.6]},
+    {cx:11,  cz:-10, rot:-50, len:9,  top:13, cols:[-2.8,0,2.8],          rows:[3,6.3,9.6]}
   ]}
 ];
 
@@ -1250,51 +1246,51 @@ var LAYOUTS2=[
    fire is unwinnable long before a big one is.
    ============================================================ */
 var LAYOUTS3=[
-  { name:"Grand Station", env:"station", fires:11, lives:1, faces:[
+  { name:"Grand Station", env:"station", style:"ochreStucco", fires:11, lives:1, faces:[
     {cx:0,   cz:-17, rot:0,   len:20, top:13, cols:[-8,-4.6,-1.2,2.2,5.6,9], rows:[3,6,9]},
     {cx:-12, cz:-11, rot:46,  len:10, top:10, cols:[-3,0,3], rows:[2.8,5.6]},
     {cx:12,  cz:-11, rot:-46, len:10, top:10, cols:[-3,0,3], rows:[2.8,5.6]}
   ]},
-  { name:"Harbour Dawn", env:"harbour", fires:9, lives:2, faces:[
+  { name:"Harbour Dawn", env:"harbour", style:"warehouse", fires:9, lives:2, faces:[
     {cx:-6, cz:-15, rot:14,  len:14, top:11, cols:[-5,-1.7,1.7,5], rows:[2.8,5.4,8]},
     {cx:9,  cz:-13, rot:-30, len:12, top:14, cols:[-4,0,4],        rows:[3,6,9,12]}
   ]},
-  { name:"Snow Village", env:"snowvillage", fires:10, lives:2, faces:[
+  { name:"Snow Village", env:"snowvillage", style:"chalet", fires:10, lives:2, faces:[
     {cx:0,  cz:-13, rot:0,   len:11, top:10, cols:[-3.6,0,3.6], rows:[2.8,5.4,8]},
     {cx:-9, cz:-10, rot:50,  len:9,  top:10, cols:[-2.8,0,2.8], rows:[2.8,5.4,8]},
     {cx:9,  cz:-10, rot:-50, len:9,  top:10, cols:[-2.8,0,2.8], rows:[2.8,5.4,8]}
   ]},
-  { name:"Temple Garden", env:"temple", fires:9, lives:3, faces:[
+  { name:"Temple Garden", env:"temple", style:"temple", fires:9, lives:3, faces:[
     {cx:0,    cz:-14, rot:0,   len:9, top:18, cols:[-2.7,0,2.7], rows:[3,6.5,10,13.5]},
     {cx:-8.5, cz:-11, rot:52,  len:9, top:9,  cols:[-2.8,0,2.8], rows:[2.8,5.6]},
     {cx:8.5,  cz:-11, rot:-52, len:9, top:9,  cols:[-2.8,0,2.8], rows:[2.8,5.6]}
   ]},
-  { name:"The Oasis", env:"oasis", fires:10, lives:3, faces:[
+  { name:"The Oasis", env:"oasis", style:"mudbrick", fires:10, lives:3, faces:[
     {cx:0,   cz:-15, rot:0,   len:16, top:9, cols:[-6,-3,0,3,6], rows:[2.6,5.2,7.8]},
     {cx:-11, cz:-9,  rot:56,  len:8,  top:7, cols:[-2.4,0,2.4],  rows:[2.6,5.0]},
     {cx:11,  cz:-9,  rot:-56, len:8,  top:7, cols:[-2.4,0,2.4],  rows:[2.6,5.0]}
   ]},
-  { name:"Cathedral", env:"cathedral", fires:16, lives:4, faces:[
+  { name:"Cathedral", env:"cathedral", style:"greyStone", fires:16, lives:4, faces:[
     {cx:0,    cz:-16, rot:0,   len:14, top:20, cols:[-5,-1.7,1.7,5], rows:[3,6.5,10,13.5,17]},
     {cx:-9.5, cz:-13, rot:34,  len:8,  top:24, cols:[-2.4,0,2.4],    rows:[3,7,11,15]},
     {cx:9.5,  cz:-13, rot:-34, len:8,  top:24, cols:[-2.4,0,2.4],    rows:[3,7,11,15]}
   ]},
-  { name:"Canal Town", env:"canal", fires:12, lives:4, faces:[
+  { name:"Canal Town", env:"canal", style:"canalBrick", fires:12, lives:4, faces:[
     {cx:-7, cz:-14, rot:22,  len:13, top:13, cols:[-4.5,-1.5,1.5,4.5], rows:[3,6,9,12]},
     {cx:7,  cz:-14, rot:-22, len:13, top:13, cols:[-4.5,-1.5,1.5,4.5], rows:[3,6,9,12]}
   ]},
-  { name:"Lighthouse", env:"lighthouse", fires:12, lives:5, faces:[
+  { name:"Lighthouse", env:"lighthouse", style:"clapboard", fires:12, lives:5, faces:[
     {cx:-5,  cz:-12, rot:16,  len:12, top:9,  cols:[-4,-1.3,1.3,4], rows:[2.8,5.6]},
     {cx:7,   cz:-15, rot:-20, len:8,  top:22, cols:[-2.4,0,2.4],    rows:[3,7,11,15,19]},
     {cx:-11, cz:-7,  rot:66,  len:8,  top:9,  cols:[-2.4,0,2.4],    rows:[2.8,5.6]}
   ]},
-  { name:"The Funfair", env:"funfair", fires:11, lives:5, faces:[
+  { name:"The Funfair", env:"funfair", style:"whiteModern", fires:11, lives:5, faces:[
     {cx:-10.5,cz:-11, rot:44,  len:8, top:9,  cols:[-2.6,0,2.6], rows:[2.8,5.6]},
     {cx:-3.5, cz:-14, rot:16,  len:8, top:11, cols:[-2.6,0,2.6], rows:[2.8,5.6,8.4]},
     {cx:4,    cz:-14, rot:-16, len:8, top:11, cols:[-2.6,0,2.6], rows:[2.8,5.6,8.4]},
     {cx:10.5, cz:-11, rot:-44, len:8, top:9,  cols:[-2.6,0,2.6], rows:[2.8,5.6]}
   ]},
-  { name:"The Glasshouse", env:"glasshouse", fires:14, lives:5, faces:[
+  { name:"The Glasshouse", env:"glasshouse", style:"glassIron", fires:14, lives:5, faces:[
     {cx:0,     cz:-15, rot:0,   len:18, top:14, cols:[-7,-3.5,0,3.5,7], rows:[3,6,9,12]},
     {cx:-11.5, cz:-10, rot:54,  len:9,  top:11, cols:[-2.8,0,2.8],      rows:[2.8,5.6,8.4]},
     {cx:11.5,  cz:-10, rot:-54, len:9,  top:11, cols:[-2.8,0,2.8],      rows:[2.8,5.6,8.4]}
@@ -1309,7 +1305,7 @@ function makeSeason(layouts, season, pars){
   return layouts.map(function(L,i){
     return {
       n:i+1, season:season, id:season+"-"+(i+1),
-      name:L.name, env:L.env, faces:L.faces,
+      name:L.name, env:L.env, style:L.style, faces:L.faces,
       fires:L.fires,
       lives:L.lives,
       loseAt:L.fires+12,
@@ -1339,28 +1335,47 @@ var LEVELS=SEASONS[0].levels;    // season 1 stays the default
    ============================================================ */
 var SHOP={
   nozzle:[
-    {id:"brass",  name:"Brass",    price:0,   col:0xC9922E, spec:0x6A5020, shine:70},
-    {id:"chrome", name:"Chrome",   price:10, col:0xD8DEE6, spec:0xFFFFFF, shine:160},
-    {id:"midnight",name:"Midnight",price:18, col:0x2A3038, spec:0x8899AA, shine:110},
-    {id:"copper", name:"Copper",   price:28, col:0xB4622A, spec:0x8A4A20, shine:90},
-    {id:"gold",   name:"Gold",     price:40, col:0xFFC94A, spec:0xFFE9A8, shine:190},
-    /* Not a finish but a whole different nozzle: a fish, water out of its
-       mouth. Priced above the rest because it is the daft one. */
-    {id:"fish",   name:"Fish Head",price:60, col:0xE8632A, spec:0x8A3A18, shine:40, shape:"fish"}
+    {id:"brass",   name:"Brass",     price:0,  col:0xC9922E, spec:0x6A5020, shine:70},
+    {id:"chrome",  name:"Chrome",    price:10, col:0xD8DEE6, spec:0xFFFFFF, shine:160},
+    {id:"midnight",name:"Midnight",  price:18, col:0x2A3038, spec:0x8899AA, shine:110},
+    {id:"copper",  name:"Copper",    price:28, col:0xB4622A, spec:0x8A4A20, shine:90},
+    {id:"mint",    name:"Mint",      price:34, col:0x7FE0C0, spec:0xCFFFF0, shine:120},
+    {id:"gold",    name:"Gold",      price:40, col:0xFFC94A, spec:0xFFE9A8, shine:190},
+    {id:"rose",    name:"Rose Gold", price:48, col:0xE8A08A, spec:0xFFD8C8, shine:170},
+    {id:"candy",   name:"Bubblegum", price:52, col:0xFF8AC8, spec:0xFFD0E8, shine:140},
+    /* these are not finishes but different nozzles entirely */
+    {id:"fish",    name:"Fish Head", price:60, col:0xE8632A, spec:0x8A3A18, shine:40, shape:"fish"},
+    {id:"duck",    name:"Rubber Duck",price:80,col:0xFFD23A, spec:0xFFF0A0, shine:60, shape:"duck"},
+    {id:"dragon",  name:"Dragon",    price:110,col:0x3AA05A, spec:0x8AE0A0, shine:80, shape:"dragon"},
+    {id:"boot",    name:"Old Boot",  price:70, col:0x6A4A32, spec:0x3A2A1C, shine:20, shape:"boot"}
   ],
   hose:[
-    {id:"black",  name:"Black",    price:0,   col:0x1E2A33},
-    {id:"red",    name:"Red",      price:8, col:0xB8232C},
-    {id:"yellow", name:"Yellow",   price:15, col:0xD8A32A},
-    {id:"blue",   name:"Blue",     price:22, col:0x2A5FA8},
-    {id:"white",  name:"White",    price:32, col:0xD6DCE2}
+    {id:"black",   name:"Black",     price:0,  col:0x1E2A33},
+    {id:"red",     name:"Red",       price:8,  col:0xB8232C},
+    {id:"yellow",  name:"Yellow",    price:15, col:0xD8A32A},
+    {id:"blue",    name:"Blue",      price:22, col:0x2A5FA8},
+    {id:"white",   name:"White",     price:32, col:0xD6DCE2},
+    {id:"lime",    name:"Lime",      price:26, col:0x8ADC2A},
+    {id:"purple",  name:"Purple",    price:30, col:0x8A4ACF},
+    {id:"orange",  name:"Orange",    price:24, col:0xE8752A},
+    {id:"stripe",  name:"Candy Cane",price:45, col:0xE83A4A, stripe:0xF4F4F0},
+    {id:"tiger",   name:"Tiger",     price:55, col:0xE8952A, stripe:0x201810},
+    {id:"snake",   name:"Snake",     price:62, col:0x3A8A4A, stripe:0xD8D040},
+    {id:"rainbow", name:"Rainbow",   price:90, col:0xFF4A6A, rainbow:true}
   ],
   water:[
-    {id:"clear",  name:"Clear",    price:0,   col:0xCFE9FF},
-    {id:"ice",    name:"Ice",      price:12, col:0x8FD4FF},
-    {id:"emerald",name:"Emerald",  price:20, col:0x8FFFC4},
-    {id:"sunset", name:"Sunset",   price:30, col:0xFFB08A},
-    {id:"violet", name:"Violet",   price:42, col:0xC9A8FF}
+    {id:"clear",   name:"Clear",     price:0,  col:0xCFE9FF},
+    {id:"ice",     name:"Ice",       price:12, col:0x8FD4FF},
+    {id:"emerald", name:"Emerald",   price:20, col:0x8FFFC4},
+    {id:"sunset",  name:"Sunset",    price:30, col:0xFFB08A},
+    {id:"violet",  name:"Violet",    price:42, col:0xC9A8FF},
+    {id:"lemonade",name:"Lemonade",  price:26, col:0xFFEE7A},
+    {id:"bubblegum",name:"Bubblegum",price:36, col:0xFF9AD8},
+    {id:"slime",   name:"Slime",     price:48, col:0xA8FF3A},
+    {id:"lava",    name:"Lava",      price:58, col:0xFF6A2A},
+    {id:"midnightw",name:"Midnight", price:50, col:0x6A7AD8},
+    {id:"ghost",   name:"Ghost",     price:66, col:0xE8F4FF},
+    {id:"gold-w",  name:"Liquid Gold",price:100,col:0xFFD24A}
   ]
 };
 function shopItem(kind,id){
@@ -1944,13 +1959,16 @@ var ENVS={
    SEASON 2 — the famous places.
    Each is a silhouette with light on it, standing behind the fire.
    ============================================================ */
+/* ============================================================
+   SEASON 2 SCENERY — the landmark stands well back on the skyline,
+   lit up, while an ordinary house of that country burns in front of you.
+   ============================================================ */
 function stone(c,sh){ return new THREE.MeshPhongMaterial({color:c||0x8A8578,shininess:sh||6}); }
 function seaPlane(z,w,d){
   var m=new THREE.Mesh(new THREE.PlaneGeometry(w||240,d||120),
     new THREE.MeshPhongMaterial({color:0x08182A,shininess:130,specular:0x4A7FA8}));
   m.rotation.x=-Math.PI/2; m.position.set(0,0.04,z); envGroup.add(m);
 }
-/* a light that washes up a landmark from below — what actually makes these read at night */
 function upLight(x,y,z,col,size,op){
   var s=glowSprite(col||0xFFD79A,size||9,op===undefined?0.30:op);
   s.position.set(x,y,z); envGroup.add(s);
@@ -1959,334 +1977,316 @@ function skylineBehind(depth){
   [[-46,-14,26],[-28,-12,20],[30,-13,24],[48,-15,30],[-62,-16,22],[64,-14,27]]
     .forEach(function(t){ tower(t[0],depth+t[1],t[2]*0.55,t[2]); });
 }
-
-/* Each of these is built AROUND the walls that are actually on fire, which is
-   why they read as the landmark burning rather than a landmark standing behind
-   a fire. `faces` is already filled in by the time these run. */
+/* the tallest wall, and the middle of the burning building - Season 3 builds
+   its centrepieces relative to these */
 function faceTop(){ var t=0; faces.forEach(function(f){ if(f.top>t) t=f.top; }); return t; }
 function faceMid(){
   var x=0,z=0; faces.forEach(function(f){ x+=f.cx; z+=f.cz; });
   return faces.length?{x:x/faces.length,z:z/faces.length}:{x:0,z:-14};
 }
-/* solid sides and a back, so the burning walls look like one building */
-function shellAround(colour,shine,extraBack){
-  var m=stone(colour,shine);
-  faces.forEach(function(f){
-    var side=new THREE.Mesh(new THREE.PlaneGeometry(f.len,f.top,1,1),m);
-    side.position.set(f.cx-f.nx*(extraBack||2.6), f.top/2, f.cz-f.nz*(extraBack||2.6));
-    side.rotation.y=f.rot+Math.PI;
-    envGroup.add(side);
+
+/* a row of ordinary neighbours, so the burning house sits in a street */
+function neighbours2(wallCol,roofCol,z){
+  var wm=new THREE.MeshPhongMaterial({color:wallCol,shininess:8});
+  var rm=new THREE.MeshPhongMaterial({color:roofCol,shininess:10});
+  [-30,-22,22,30,-38,38].forEach(function(x,i){
+    var h=7+((i*3)%5);
+    var b=new THREE.Mesh(new THREE.BoxGeometry(8,h,9),wm);
+    b.position.set(x,h/2,z); envGroup.add(b);
+    var r=new THREE.Mesh(new THREE.ConeGeometry(6.2,2.6,4),rm);
+    r.position.set(x,h+1.3,z); r.rotation.y=Math.PI/4; envGroup.add(r);
+    for(var w2=0;w2<2;w2++){
+      if(Math.random()<0.35) continue;
+      var win=new THREE.Mesh(new THREE.PlaneGeometry(1.0,1.4),litMat(0xFFD79A,0.9));
+      win.position.set(x-2+w2*4,h*0.5,z+4.6); envGroup.add(win);
+      var gl=glowSprite(0xFFC98A,3,0.18); gl.position.copy(win.position); envGroup.add(gl);
+    }
   });
-  var c=faceMid();
-  var core=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),m);
-  return {mat:m, mid:c};
 }
 
 var LANDMARKS={
   bigben:function(){
-    ground.material.color.setHex(0x151A20);
-    seaPlane(-46,240,44);
-    skylineBehind(-34);
-    var top=faceTop(), c=faceMid();
+    ground.material.color.setHex(0x1B1E22);
+    road(-26,4.6,true);
+    streetlights(-23,[-30,-14,14,30]);
+    neighbours2(0x5E3A30,0x39414A,-15);
+    skylineBehind(-46);
+    seaPlane(-64,240,50);
+    // the tower, well back across the river
     var m=stone(0x9C8A63,10);
-    // the tower body closes in behind the burning walls
-    var body=new THREE.Mesh(new THREE.BoxGeometry(9.6,top,9.6),m);
-    body.position.set(c.x,top/2,c.z-2.2); envGroup.add(body);
-    // clock faces, above the fire, on all four sides
+    var shaft=new THREE.Mesh(new THREE.BoxGeometry(7,44,7),m);
+    shaft.position.set(-27,22,-58); envGroup.add(shaft);
     [[0,1],[1,0],[0,-1],[-1,0]].forEach(function(d){
-      var f=new THREE.Mesh(new THREE.CircleGeometry(2.7,20),litMat(0xFFE9A8,0.96));
-      f.position.set(c.x+d[0]*4.95, top+4.2, c.z-2.2+d[1]*4.95);
-      f.lookAt(c.x+d[0]*40, top+4.2, c.z-2.2+d[1]*40);
+      var f=new THREE.Mesh(new THREE.CircleGeometry(2.6,18),litMat(0xFFE9A8,0.95));
+      f.position.set(-27+d[0]*3.6,38,-58+d[1]*3.6);
+      f.lookAt(-27+d[0]*40,38,-58+d[1]*40);
       envGroup.add(f);
-      var g=glowSprite(0xFFD98A,12,0.40); g.position.copy(f.position); envGroup.add(g);
+      var g=glowSprite(0xFFD98A,12,0.38); g.position.copy(f.position); envGroup.add(g);
     });
-    var belfry=new THREE.Mesh(new THREE.BoxGeometry(10.4,9,10.4),stone(0x8B7A55,8));
-    belfry.position.set(c.x,top+4.5,c.z-2.2); envGroup.add(belfry);
-    var spire=new THREE.Mesh(new THREE.ConeGeometry(6.6,14,4),stone(0x5E7A6A,14));
-    spire.position.set(c.x,top+16,c.z-2.2); spire.rotation.y=Math.PI/4; envGroup.add(spire);
-    var tip=glowSprite(0xFFE7B0,4,0.9); tip.position.set(c.x,top+23.5,c.z-2.2); envGroup.add(tip);
+    var belfry=new THREE.Mesh(new THREE.BoxGeometry(8.4,6,8.4),stone(0x8B7A55,8));
+    belfry.position.set(-27,47,-58); envGroup.add(belfry);
+    var spire=new THREE.Mesh(new THREE.ConeGeometry(5.6,13,4),stone(0x5E7A6A,14));
+    spire.position.set(-27,56.5,-58); spire.rotation.y=Math.PI/4; envGroup.add(spire);
+    var tip=glowSprite(0xFFE7B0,4,0.9); tip.position.set(-27,64,-58); envGroup.add(tip);
     blinkers.push({s:tip,rate:1.8,phase:0});
-    var wall=new THREE.Mesh(new THREE.BoxGeometry(180,2.4,1.2),stone(0x6E6A5E,4));
-    wall.position.set(0,1.2,-27); envGroup.add(wall);
-    streetlights(-24,[-34,-16,16,34]);
+    upLight(-27,8,-52,0xFFD79A,20,0.20);
+    // the houses of parliament alongside
+    var hop=new THREE.Mesh(new THREE.BoxGeometry(34,14,10),m);
+    hop.position.set(-4,7,-60); envGroup.add(hop);
   },
 
   eiffel:function(){
-    ground.material.color.setHex(0x171A1E);
-    skylineBehind(-42);
-    var top=faceTop(), c=faceMid();
+    ground.material.color.setHex(0x1D2024);
+    road(-25,4.4,true);
+    streetlights(-22,[-28,-12,12,28]);
+    neighbours2(0xA89C82,0x4A5058,-16);
+    skylineBehind(-50);
     var m=stone(0x6B5B44,20);
-    // the legs straddle the burning decks
     [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(function(s){
-      var leg=new THREE.Mesh(new THREE.CylinderGeometry(0.7,1.9,top+6,6),m);
-      leg.position.set(c.x+s[0]*8.5,(top+6)/2,c.z-1+s[1]*7);
-      leg.rotation.z=-s[0]*0.20; leg.rotation.x=s[1]*0.20;
+      var leg=new THREE.Mesh(new THREE.CylinderGeometry(0.6,1.7,28,6),m);
+      leg.position.set(16+s[0]*4.6,14,-62+s[1]*4.6);
+      leg.rotation.z=-s[0]*0.15; leg.rotation.x=s[1]*0.15;
       envGroup.add(leg);
     });
-    var mid=new THREE.Mesh(new THREE.CylinderGeometry(1.8,4.6,20,6),m);
-    mid.position.set(c.x,top+14,c.z-1); envGroup.add(mid);
-    var spire=new THREE.Mesh(new THREE.CylinderGeometry(0.4,1.8,14,6),m);
-    spire.position.set(c.x,top+31,c.z-1); envGroup.add(spire);
-    [top+3.5, top+13].forEach(function(y,i){
-      var deck=new THREE.Mesh(new THREE.BoxGeometry(15-i*6,0.9,15-i*6),stone(0x7A6950,14));
-      deck.position.set(c.x,y,c.z-1); envGroup.add(deck);
+    var mid=new THREE.Mesh(new THREE.CylinderGeometry(1.5,3.8,22,6),m);
+    mid.position.set(16,37,-62); envGroup.add(mid);
+    var top=new THREE.Mesh(new THREE.CylinderGeometry(0.4,1.5,16,6),m);
+    top.position.set(16,55,-62); envGroup.add(top);
+    [[24,5.6],[37,3.2]].forEach(function(d){
+      var deck=new THREE.Mesh(new THREE.BoxGeometry(d[1]*2.5,0.8,d[1]*2.5),stone(0x7A6950,14));
+      deck.position.set(16,d[0],-62); envGroup.add(deck);
     });
     var tip=glowSprite(0xFFF0C0,7,0.95);
-    tip.position.set(c.x,top+38,c.z-1); envGroup.add(tip);
+    tip.position.set(16,64,-62); envGroup.add(tip);
     blinkers.push({s:tip,rate:1.3,phase:0});
-    for(var i=0;i<6;i++) upLight(c.x,4+i*7,c.z+5,0xFFC46A,15,0.15);
-    road(-24,4.4,true);
-    streetlights(-21,[-30,-12,12,30]);
+    for(var i=0;i<7;i++) upLight(16,6+i*8,-56,0xFFC46A,15,0.14);
   },
 
   liberty:function(){
-    ground.material.color.setHex(0x141A1E);
-    seaPlane(-50,260,80);
-    skylineBehind(-44);
-    var top=faceTop(), c=faceMid();
-    // the star-shaped fort under the burning pedestal
-    var fort=new THREE.Mesh(new THREE.CylinderGeometry(13,15,3,8),stone(0x5E5A50,6));
-    fort.position.set(c.x,1.5,c.z-1); envGroup.add(fort);
-    var core=new THREE.Mesh(new THREE.BoxGeometry(11,top,11),stone(0x6E6A5E,8));
-    core.position.set(c.x,top/2,c.z-2.5); envGroup.add(core);
+    ground.material.color.setHex(0x1C2024);
+    road(-25,4.4,true);
+    streetlights(-22,[-28,-12,12,28]);
+    neighbours2(0x6A4436,0x4A423C,-16);
+    skylineBehind(-52);
+    seaPlane(-72,260,70);
+    var base=new THREE.Mesh(new THREE.BoxGeometry(12,8,12),stone(0x5E5A50,6));
+    base.position.set(26,4,-66); envGroup.add(base);
+    var ped=new THREE.Mesh(new THREE.BoxGeometry(8,13,8),stone(0x6E6A5E,8));
+    ped.position.set(26,14.5,-66); envGroup.add(ped);
     var green=stone(0x4E9C86,26);
-    var body=new THREE.Mesh(new THREE.CylinderGeometry(2.2,3.8,15,10),green);
-    body.position.set(c.x,top+7.5,c.z-2.5); envGroup.add(body);
-    var head=new THREE.Mesh(new THREE.SphereGeometry(1.8,12,9),green);
-    head.position.set(c.x,top+16.5,c.z-2.5); envGroup.add(head);
+    var body=new THREE.Mesh(new THREE.CylinderGeometry(1.8,3.0,13,10),green);
+    body.position.set(26,27,-66); envGroup.add(body);
+    var head=new THREE.Mesh(new THREE.SphereGeometry(1.5,10,8),green);
+    head.position.set(26,34.5,-66); envGroup.add(head);
     for(var s=0;s<7;s++){
-      var sp=new THREE.Mesh(new THREE.ConeGeometry(0.36,2.8,4),green);
+      var sp=new THREE.Mesh(new THREE.ConeGeometry(0.3,2.2,4),green);
       var a=s/7*Math.PI*2;
-      sp.position.set(c.x+Math.cos(a)*2.3, top+18.6, c.z-2.5+Math.sin(a)*2.3);
-      sp.rotation.z=-Math.cos(a)*0.45; sp.rotation.x=Math.sin(a)*0.45;
+      sp.position.set(26+Math.cos(a)*1.9,36.2,-66+Math.sin(a)*1.9);
+      sp.rotation.z=-Math.cos(a)*0.4; sp.rotation.x=Math.sin(a)*0.4;
       envGroup.add(sp);
     }
-    var arm=new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.9,10,7),green);
-    arm.position.set(c.x+3,top+12,c.z-2.5); arm.rotation.z=-0.45; envGroup.add(arm);
-    var torch=new THREE.Mesh(new THREE.ConeGeometry(1.3,2.6,8),litMat(0xFFD27A));
-    torch.position.set(c.x+5.2,top+18,c.z-2.5); envGroup.add(torch);
-    var flame=glowSprite(0xFFC864,13,0.95);
-    flame.position.set(c.x+5.2,top+19.4,c.z-2.5); envGroup.add(flame);
-    blinkers.push({s:flame,rate:2.6,phase:0.1});
-    upLight(c.x,3,c.z+6,0xBFE3C8,16,0.22);
-    for(var b=0;b<4;b++){
-      var lit=glowSprite(b%2?0xFFD08A:0x8AC6FF,2.6,0.7);
-      lit.position.set(-56+b*38,1.6,-58-Math.random()*18);
-      envGroup.add(lit);
-      blinkers.push({s:lit,rate:0.6+Math.random()*0.6,phase:Math.random()});
-    }
+    var arm=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.75,8.5,7),green);
+    arm.position.set(28.4,32,-66); arm.rotation.z=-0.42; envGroup.add(arm);
+    var torch=new THREE.Mesh(new THREE.ConeGeometry(1.0,2.1,8),litMat(0xFFD27A));
+    torch.position.set(30.2,37.2,-66); envGroup.add(torch);
+    var flame=glowSprite(0xFFC864,11,0.9);
+    flame.position.set(30.2,38.4,-66); envGroup.add(flame);
+    blinkers.push({s:flame,rate:2.4,phase:0.1});
+    upLight(26,7,-60,0xBFE3C8,16,0.20);
   },
 
   colosseum:function(){
-    ground.material.color.setHex(0x1B1913);
-    skylineBehind(-40);
-    var top=faceTop();
+    ground.material.color.setHex(0x201D18);
+    road(-25,4.4,true);
+    streetlights(-22,[-28,-12,12,28]);
+    neighbours2(0x9A6A3A,0xA04A28,-16);
+    skylineBehind(-50);
     var m=stone(0x8A7A5E,6), dark=stone(0x4A4234,4);
-    // arches wrap the burning arc and carry on round the back
-    for(var i=0;i<34;i++){
-      var a=(i/34)*Math.PI*2;
-      var R=15.6, x=Math.cos(a)*R, z=-11.5+Math.sin(a)*R;
-      if(z>-4) continue;                       // leave the front open to the player
-      var broken=(i>14&&i<19);
-      var h=broken?9:top+3;
-      var pier=new THREE.Mesh(new THREE.BoxGeometry(2.2,h,3.4),m);
+    for(var i=0;i<28;i++){
+      var a=(i/28)*Math.PI*2, R=15;
+      var x=-24+Math.cos(a)*R, z=-58+Math.sin(a)*R;
+      var broken=(i>9&&i<14);
+      var h=broken?8:16;
+      var pier=new THREE.Mesh(new THREE.BoxGeometry(2.2,h,3.2),m);
       pier.position.set(x,h/2,z); pier.rotation.y=-a; envGroup.add(pier);
       if(!broken){
         var arch=new THREE.Mesh(new THREE.BoxGeometry(1.8,3.2,1.8),dark);
-        arch.position.set(x*0.93,6,z*0.93-0.8); arch.rotation.y=-a; envGroup.add(arch);
+        arch.position.set(-24+Math.cos(a)*R*0.93, 6, -58+Math.sin(a)*R*0.93);
+        arch.rotation.y=-a; envGroup.add(arch);
       }
     }
-    var rim=new THREE.Mesh(new THREE.TorusGeometry(15.6,0.8,6,44),m);
-    rim.rotation.x=-Math.PI/2; rim.position.set(0,top+3,-11.5); envGroup.add(rim);
-    for(var u=0;u<6;u++){
-      var ang=Math.PI*(0.15+u*0.14);
-      upLight(Math.cos(ang)*18,4,-11.5+Math.sin(ang)*18,0xFFC98A,14,0.18);
+    var rim=new THREE.Mesh(new THREE.TorusGeometry(15,0.7,6,40),m);
+    rim.rotation.x=-Math.PI/2; rim.position.set(-24,16.4,-58); envGroup.add(rim);
+    for(var u=0;u<5;u++){
+      var ang=u/5*Math.PI*2;
+      upLight(-24+Math.cos(ang)*17,4,-58+Math.sin(ang)*17,0xFFC98A,13,0.16);
     }
-    road(-26,4.4,true);
   },
 
   pyramids:function(){
-    ground.material.color.setHex(0x35301F);
+    ground.material.color.setHex(0x3A3222);
     var sand=stone(0x8A7A52,3);
-    var top=faceTop(), c=faceMid();
-    // the great pyramid rises directly behind the burning temple
-    var big=new THREE.Mesh(new THREE.ConeGeometry(26,34,4),sand);
-    big.position.set(c.x+2,17,c.z-26); big.rotation.y=Math.PI/4; envGroup.add(big);
-    upLight(c.x+2,6,c.z-8,0xFFCE8A,22,0.22);
-    [[-34,-46,15,19],[36,-44,13,16]].forEach(function(p){
+    neighbours2(0x9A8258,0x8A7048,-16);
+    [[-30,-62,24,32],[10,-72,28,36],[44,-58,17,21]].forEach(function(p){
       var py=new THREE.Mesh(new THREE.ConeGeometry(p[2],p[3],4),sand);
       py.position.set(p[0],p[3]/2,p[1]); py.rotation.y=Math.PI/4; envGroup.add(py);
-      upLight(p[0],3,p[1]+p[2]*0.7,0xFFCE8A,15,0.18);
+      upLight(p[0],4,p[1]+p[2]*0.7,0xFFCE8A,20,0.20);
     });
-    // the temple roof, sitting on top of the burning walls
-    var roof=new THREE.Mesh(new THREE.BoxGeometry(24,1.4,14),stone(0x9A8A60,4));
-    roof.position.set(c.x,top+0.7,c.z-3); envGroup.add(roof);
-    var sphinxBody=new THREE.Mesh(new THREE.BoxGeometry(12,4.5,4.2),sand);
-    sphinxBody.position.set(-20,2.25,-8); sphinxBody.rotation.y=0.3; envGroup.add(sphinxBody);
-    var sphinxHead=new THREE.Mesh(new THREE.BoxGeometry(3.4,4.2,3.4),sand);
-    sphinxHead.position.set(-14.6,6.2,-9.6); sphinxHead.rotation.y=0.3; envGroup.add(sphinxHead);
+    var sb=new THREE.Mesh(new THREE.BoxGeometry(12,4.5,4.2),sand);
+    sb.position.set(-14,2.25,-40); sb.rotation.y=0.3; envGroup.add(sb);
+    var sh=new THREE.Mesh(new THREE.BoxGeometry(3.4,4.2,3.4),sand);
+    sh.position.set(-8.6,6.2,-41.6); sh.rotation.y=0.3; envGroup.add(sh);
     for(var d=0;d<10;d++){
-      var dune=new THREE.Mesh(new THREE.SphereGeometry(10+Math.random()*8,7,5),sand);
-      dune.position.set(-72+d*17,-5,-64-Math.random()*20);
-      dune.scale.y=0.26; envGroup.add(dune);
+      var dune=new THREE.Mesh(new THREE.SphereGeometry(11+Math.random()*8,7,5),sand);
+      dune.position.set(-76+d*17,-5,-84-Math.random()*18);
+      dune.scale.y=0.24; envGroup.add(dune);
     }
   },
 
   taj:function(){
-    ground.material.color.setHex(0x1A1C1A);
+    ground.material.color.setHex(0x1E211D);
+    neighbours2(0xB8AC92,0xA0765A,-16);
     var white=stone(0xC9C2AE,26);
-    var top=faceTop(), c=faceMid();
-    var plinth=new THREE.Mesh(new THREE.BoxGeometry(34,2.6,26),white);
-    plinth.position.set(c.x,1.3,c.z-2); envGroup.add(plinth);
-    // the great dome sits straight on top of the burning hall
-    var dome=new THREE.Mesh(new THREE.SphereGeometry(7.6,18,14),white);
-    dome.position.set(c.x,top+3.5,c.z-4); dome.scale.y=1.3; envGroup.add(dome);
-    var neck=new THREE.Mesh(new THREE.CylinderGeometry(7.8,8.4,3,16),white);
-    neck.position.set(c.x,top+1,c.z-4); envGroup.add(neck);
-    var finial=new THREE.Mesh(new THREE.ConeGeometry(0.9,4,8),litMat(0xE8D9A8));
-    finial.position.set(c.x,top+14.5,c.z-4); envGroup.add(finial);
+    var plinth=new THREE.Mesh(new THREE.BoxGeometry(30,3,22),white);
+    plinth.position.set(4,1.5,-64); envGroup.add(plinth);
+    var hall=new THREE.Mesh(new THREE.BoxGeometry(20,12,16),white);
+    hall.position.set(4,9,-64); envGroup.add(hall);
+    var dome=new THREE.Mesh(new THREE.SphereGeometry(7,16,12),white);
+    dome.position.set(4,17,-64); dome.scale.y=1.25; envGroup.add(dome);
+    var fin=new THREE.Mesh(new THREE.ConeGeometry(0.8,3.4,8),litMat(0xE8D9A8));
+    fin.position.set(4,26,-64); envGroup.add(fin);
     [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(function(s){
-      var min=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.5,top+7,10),white);
-      min.position.set(c.x+s[0]*16,(top+7)/2,c.z-2+s[1]*11); envGroup.add(min);
-      var cap=new THREE.Mesh(new THREE.SphereGeometry(1.8,10,8),white);
-      cap.position.set(c.x+s[0]*16,top+7.6,c.z-2+s[1]*11); envGroup.add(cap);
+      var min=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.4,22,10),white);
+      min.position.set(4+s[0]*13,11,-64+s[1]*9); envGroup.add(min);
+      var cap=new THREE.Mesh(new THREE.SphereGeometry(1.6,10,8),white);
+      cap.position.set(4+s[0]*13,22.5,-64+s[1]*9); envGroup.add(cap);
     });
-    var pool=new THREE.Mesh(new THREE.PlaneGeometry(5,22),
+    var pool=new THREE.Mesh(new THREE.PlaneGeometry(5,26),
       new THREE.MeshPhongMaterial({color:0x0C2230,shininess:150,specular:0x6FA8C8}));
-    pool.rotation.x=-Math.PI/2; pool.position.set(c.x,0.06,c.z+13); envGroup.add(pool);
-    upLight(c.x,4,c.z+8,0xFFE0B0,22,0.24);
-    for(var p2=0;p2<6;p2++) palm(-24+p2*10,2,0.8);
+    pool.rotation.x=-Math.PI/2; pool.position.set(4,0.06,-44); envGroup.add(pool);
+    upLight(4,5,-52,0xFFE0B0,22,0.22);
+    for(var p2=0;p2<6;p2++) palm(-20+p2*9,-38,0.8);
   },
 
   goldengate:function(){
-    ground.material.color.setHex(0x141920);
-    seaPlane(-52,280,90);
-    skylineBehind(-48);
+    ground.material.color.setHex(0x1A1F26);
+    road(-25,4.6,true);
+    streetlights(-22,[-28,-12,12,28]);
+    neighbours2(0xB8BEC0,0x5A5148,-16);
+    seaPlane(-74,280,80);
+    skylineBehind(-56);
     var red=new THREE.MeshPhongMaterial({color:0xA33520,shininess:18});
-    var top=faceTop();
-    // the burning walls are the bridge towers; build the rest of them round it
-    faces.forEach(function(f){
-      for(var s=-1;s<=1;s+=2){
-        var col=new THREE.Mesh(new THREE.BoxGeometry(2.6,top+14,2.6),red);
-        col.position.set(f.cx+f.dx*s*4.4-f.nx*2.4,(top+14)/2,f.cz+f.dz*s*4.4-f.nz*2.4);
-        envGroup.add(col);
+    [-26,24].forEach(function(tx){
+      [-3,3].forEach(function(o){
+        var t1=new THREE.Mesh(new THREE.BoxGeometry(3,44,3),red);
+        t1.position.set(tx+o,22,-68); envGroup.add(t1);
+      });
+      for(var b=0;b<4;b++){
+        var cross=new THREE.Mesh(new THREE.BoxGeometry(9,1.6,2.4),red);
+        cross.position.set(tx,12+b*10,-68); envGroup.add(cross);
       }
-      for(var b=0;b<5;b++){
-        var cross=new THREE.Mesh(new THREE.BoxGeometry(f.len+2,1.5,2.2),red);
-        cross.position.set(f.cx-f.nx*2.4, 6+b*((top+10)/5), f.cz-f.nz*2.4);
-        cross.rotation.y=f.rot; envGroup.add(cross);
-      }
-      var lamp=glowSprite(0xFF5A4A,5,0.9);
-      lamp.position.set(f.cx-f.nx*2.4, top+15, f.cz-f.nz*2.4); envGroup.add(lamp);
-      blinkers.push({s:lamp,rate:1.5,phase:f.cx>0?0.5:0});
+      var lamp=glowSprite(0xFF5A4A,4,0.9);
+      lamp.position.set(tx,45,-68); envGroup.add(lamp);
+      blinkers.push({s:lamp,rate:1.5,phase:tx>0?0.5:0});
     });
-    var deck=new THREE.Mesh(new THREE.BoxGeometry(140,1.6,8),red);
-    deck.position.set(0,10,-16); envGroup.add(deck);
+    var deck=new THREE.Mesh(new THREE.BoxGeometry(130,1.4,7),red);
+    deck.position.set(-1,13,-68); envGroup.add(deck);
     for(var s2=-1;s2<=1;s2+=2){
-      for(var i2=0;i2<30;i2++){
-        var t=i2/29, x=-66+t*132;
-        var sag=Math.abs(x)<12 ? 11+20*(1-Math.cos((x/12)*Math.PI/2)) : 11+20+(Math.abs(x)-12)*0.34;
-        var seg=new THREE.Mesh(new THREE.BoxGeometry(5,0.5,0.5),red);
-        seg.position.set(x,Math.min(top+14,sag),-16+s2*3.6);
+      for(var i2=0;i2<26;i2++){
+        var t=i2/25, x=-62+t*122;
+        var sag=Math.abs(x+1)<25 ? 13+18*(1-Math.cos(((x+1)/25)*Math.PI/2)) : 13+18+(Math.abs(x+1)-25)*0.30;
+        var seg=new THREE.Mesh(new THREE.BoxGeometry(5.4,0.5,0.5),red);
+        seg.position.set(x,Math.min(44,sag),-68+s2*3);
         envGroup.add(seg);
       }
     }
   },
 
   opera:function(){
-    ground.material.color.setHex(0x141A1E);
-    seaPlane(-46,240,70);
-    skylineBehind(-40);
+    ground.material.color.setHex(0x1B2024);
+    road(-25,4.4,true);
+    neighbours2(0xC8C8C0,0x7A7A72,-16);
+    seaPlane(-62,240,80);
+    skylineBehind(-54);
     var shell=new THREE.MeshPhongMaterial({color:0xD8D3C4,shininess:40,side:THREE.DoubleSide});
-    // a shell rises out of each burning wall
-    faces.forEach(function(f,i){
-      var r=f.len*0.62;
-      var sh=new THREE.Mesh(new THREE.SphereGeometry(r,16,12,0,Math.PI*0.85,0,Math.PI*0.5),shell);
-      sh.position.set(f.cx-f.nx*1.6, f.top-1, f.cz-f.nz*1.6);
-      sh.rotation.set(-0.35, f.rot+0.2*i, 0);
-      sh.scale.set(0.55,1.05,0.9);
+    var podium=new THREE.Mesh(new THREE.BoxGeometry(34,4,18),stone(0x6E6A5E,8));
+    podium.position.set(-20,2,-58); envGroup.add(podium);
+    [[-12,7,10,0.5],[-4,9,13,0.35],[4,8,11,0.2],[11,6,8,0.1]].forEach(function(s){
+      var sh=new THREE.Mesh(new THREE.SphereGeometry(s[2],14,10,0,Math.PI*0.85,0,Math.PI*0.5),shell);
+      sh.position.set(s[0]-20,s[1],-58);
+      sh.rotation.set(-0.35,s[3],0);
+      sh.scale.set(0.55,1,0.9);
       envGroup.add(sh);
-      var sh2=new THREE.Mesh(new THREE.SphereGeometry(r*0.66,14,10,0,Math.PI*0.85,0,Math.PI*0.5),shell);
-      sh2.position.set(f.cx-f.nx*4.4, f.top-2.5, f.cz-f.nz*4.4);
-      sh2.rotation.set(-0.35, f.rot-0.25, 0);
-      sh2.scale.set(0.55,1,0.9);
-      envGroup.add(sh2);
-      upLight(f.cx+f.nx*3, 3, f.cz+f.nz*3, 0xFFE6C0, 13, 0.20);
+      upLight(s[0]-20,4,-50,0xFFE6C0,12,0.18);
     });
-    var podium=new THREE.Mesh(new THREE.BoxGeometry(40,3,22),stone(0x6E6A5E,8));
-    podium.position.set(0,1.5,-12); envGroup.add(podium);
     for(var b2=0;b2<5;b2++){
-      var lit=glowSprite(b2%2?0xFFD08A:0x8AC6FF,2.4,0.7);
-      lit.position.set(-58+b2*29,1.4,-56-Math.random()*14);
+      var lit=glowSprite(b2%2?0xFFD08A:0x8AC6FF,2.2,0.7);
+      lit.position.set(-50+b2*30,1.4,-76-Math.random()*14);
       envGroup.add(lit);
       blinkers.push({s:lit,rate:0.6+Math.random()*0.7,phase:Math.random()});
     }
   },
 
   redeemer:function(){
-    ground.material.color.setHex(0x161C16);
-    var top=faceTop(), c=faceMid();
-    // the mountain falls away behind the burning plinth
-    var hill=new THREE.Mesh(new THREE.ConeGeometry(40,26,18),
+    ground.material.color.setHex(0x1A2018);
+    road(-25,4.4,true);
+    neighbours2(0x7A7268,0x6A5A4A,-16);
+    var hill=new THREE.Mesh(new THREE.ConeGeometry(36,30,16),
       new THREE.MeshPhongMaterial({color:0x24301F,shininess:3,flatShading:true}));
-    hill.position.set(c.x,-6,c.z-30); envGroup.add(hill);
+    hill.position.set(6,6,-76); envGroup.add(hill);
     var white=stone(0xC6C6BE,20);
-    var base=new THREE.Mesh(new THREE.BoxGeometry(9,4,9),stone(0x7A7568,6));
-    base.position.set(c.x,top+2,c.z-3); envGroup.add(base);
-    var bodyR=new THREE.Mesh(new THREE.CylinderGeometry(2.0,3.0,15,10),white);
-    bodyR.position.set(c.x,top+11.5,c.z-3); envGroup.add(bodyR);
-    var headR=new THREE.Mesh(new THREE.SphereGeometry(1.8,12,9),white);
-    headR.position.set(c.x,top+20.4,c.z-3); envGroup.add(headR);
-    var arms=new THREE.Mesh(new THREE.BoxGeometry(22,2.1,2.1),white);
-    arms.position.set(c.x,top+16.5,c.z-3); envGroup.add(arms);
-    [-11,11].forEach(function(ax2){
-      var hand=new THREE.Mesh(new THREE.BoxGeometry(2.1,3.6,2.1),white);
-      hand.position.set(c.x+ax2,top+15.2,c.z-3); envGroup.add(hand);
+    var ped=new THREE.Mesh(new THREE.BoxGeometry(7,7,7),stone(0x7A7568,6));
+    ped.position.set(6,25,-76); envGroup.add(ped);
+    var body=new THREE.Mesh(new THREE.CylinderGeometry(1.7,2.6,13,10),white);
+    body.position.set(6,35,-76); envGroup.add(body);
+    var head=new THREE.Mesh(new THREE.SphereGeometry(1.5,10,8),white);
+    head.position.set(6,42.6,-76); envGroup.add(head);
+    var arms=new THREE.Mesh(new THREE.BoxGeometry(19,1.8,1.8),white);
+    arms.position.set(6,39.5,-76); envGroup.add(arms);
+    [-9.5,9.5].forEach(function(ax2){
+      var hand=new THREE.Mesh(new THREE.BoxGeometry(1.8,3.2,1.8),white);
+      hand.position.set(6+ax2,38.4,-76); envGroup.add(hand);
     });
-    for(var u2=0;u2<5;u2++) upLight(c.x+(u2-2)*5,top+1,c.z+5,0xEAF0FF,15,0.24);
-    for(var j=0;j<24;j++){
-      var a3=Math.random()*Math.PI*2, r3=30+Math.random()*30;
-      var x3=Math.cos(a3)*r3, z3=-Math.abs(Math.sin(a3)*r3)-16;
-      if(Math.abs(x3)<15&&z3>-24) continue;
+    for(var u2=0;u2<5;u2++) upLight(6+(u2-2)*5,28,-70,0xEAF0FF,14,0.20);
+    for(var j=0;j<22;j++){
+      var a3=Math.random()*Math.PI*2, r3=34+Math.random()*26;
+      var x3=Math.cos(a3)*r3, z3=-Math.abs(Math.sin(a3)*r3)-30;
       var t3=new THREE.Mesh(new THREE.IcosahedronGeometry(3+Math.random()*2.4,0),
         new THREE.MeshPhongMaterial({color:0x1B2E1C,shininess:2,flatShading:true}));
-      t3.position.set(x3,3+Math.random()*4,z3); t3.scale.y=0.8; envGroup.add(t3);
+      t3.position.set(x3,4+Math.random()*4,z3); t3.scale.y=0.8; envGroup.add(t3);
     }
   },
 
   pisa:function(){
-    ground.material.color.setHex(0x1D2018);
+    ground.material.color.setHex(0x232619);
+    road(-25,4.4,true);
+    streetlights(-22,[-28,-12,12,28]);
+    neighbours2(0xA8794A,0xA04A28,-16);
     var white=stone(0xCFC7B0,18);
-    // the burning tower leans, so its stone rings lean with it
-    var tf=faces[0];
     var lean=new THREE.Group();
-    lean.position.set(tf.cx-tf.nx*2.6, 0, tf.cz-tf.nz*2.6);
-    lean.rotation.z=0.09;
-    for(var s3=0;s3<6;s3++){
-      var ring=new THREE.Mesh(new THREE.CylinderGeometry(4.6,4.6,3.6,16,1,true),white);
-      ring.position.y=2.5+s3*3.8; lean.add(ring);
-      var band=new THREE.Mesh(new THREE.CylinderGeometry(4.9,4.9,0.5,16),white);
-      band.position.y=4.4+s3*3.8; lean.add(band);
+    lean.position.set(-24,0,-56); lean.rotation.z=0.10;
+    for(var s3=0;s3<7;s3++){
+      var ring=new THREE.Mesh(new THREE.CylinderGeometry(3.4,3.4,4,14,1,true),white);
+      ring.position.y=2+s3*4; lean.add(ring);
+      var band=new THREE.Mesh(new THREE.CylinderGeometry(3.7,3.7,0.5,14),white);
+      band.position.y=4+s3*4; lean.add(band);
     }
-    var belf=new THREE.Mesh(new THREE.CylinderGeometry(3.6,3.6,4,16),white);
-    belf.position.y=tf.top+1.5; lean.add(belf);
+    var cap2=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.6,3,14),white);
+    cap2.position.y=31; lean.add(cap2);
     envGroup.add(lean);
-    upLight(tf.cx,4,tf.cz+5,0xFFE2B0,16,0.24);
-    // the cathedral, which is the other thing on fire
-    var cf=faces[2];
-    var dome2=new THREE.Mesh(new THREE.SphereGeometry(5.4,16,12),white);
-    dome2.position.set(cf.cx-cf.nx*4, cf.top+1.5, cf.cz-cf.nz*4);
-    dome2.scale.y=0.95; envGroup.add(dome2);
-    var roof=new THREE.Mesh(new THREE.BoxGeometry(cf.len+1.5,0.9,10),stone(0x7A4A34,6));
-    roof.position.set(cf.cx-cf.nx*3, cf.top+0.5, cf.cz-cf.nz*3);
-    roof.rotation.y=cf.rot; envGroup.add(roof);
-    upLight(cf.cx,4,cf.cz+5,0xFFE2B0,15,0.20);
-    for(var g2=0;g2<9;g2++){
-      var cyp=new THREE.Mesh(new THREE.ConeGeometry(1.3,8,7),
+    upLight(-24,5,-49,0xFFE2B0,16,0.22);
+    var nave=new THREE.Mesh(new THREE.BoxGeometry(24,11,13),white);
+    nave.position.set(4,5.5,-60); envGroup.add(nave);
+    var dome2=new THREE.Mesh(new THREE.SphereGeometry(5,14,10),white);
+    dome2.position.set(4,12,-60); dome2.scale.y=0.95; envGroup.add(dome2);
+    var roof=new THREE.Mesh(new THREE.BoxGeometry(24.6,0.8,13.6),stone(0x7A4A34,6));
+    roof.position.set(4,11.2,-60); envGroup.add(roof);
+    upLight(4,5,-52,0xFFE2B0,16,0.18);
+    for(var g2=0;g2<8;g2++){
+      var cyp=new THREE.Mesh(new THREE.ConeGeometry(1.2,7,7),
         new THREE.MeshPhongMaterial({color:0x1E3320,shininess:3}));
-      cyp.position.set(-44+g2*11,4,-2); envGroup.add(cyp);
+      cyp.position.set(-40+g2*11,3.5,-42); envGroup.add(cyp);
     }
-    road(-26,4.4,true);
   }
 };
 Object.keys(LANDMARKS).forEach(function(k){ ENVS[k]=LANDMARKS[k]; });
@@ -2825,10 +2825,153 @@ function normalizeFace(f){
           nx:nx, nz:nz, dx:dx, dz:dz, cols:cols, rows:f.rows};
 }
 
+/* ============================================================
+   BUILDING STYLES
+   Every level used the same grey wall, which made thirty places look like
+   one place. A style sets the walls, the roof, the trim and the colour of
+   an unlit window, so a house in London does not look like one in Cairo.
+   ============================================================ */
+var STYLES={
+  ukBrick:     {wall:0x6E3B30, trim:0xC9C4B8, roof:"pitch",   roofCol:0x39414A, chimney:2, dark:0x1A1512, out:0x3E5A66},
+  frenchStone: {wall:0xB9AE94, trim:0x8A8272, roof:"mansard", roofCol:0x4A5058, balcony:true, dark:0x211E18, out:0x44606C},
+  clapboard:   {wall:0xC8CFCF, trim:0xF2F4F0, roof:"pitch",   roofCol:0x5A5148, chimney:1, boards:true, dark:0x1C2020, out:0x466874},
+  ochreStucco: {wall:0xB07C46, trim:0xD8C49A, roof:"tile",    roofCol:0xA04A28, dark:0x241A12, out:0x4A6068},
+  mudbrick:    {wall:0xA98A5E, trim:0xC4A878, roof:"flat",    roofCol:0x8A7048, dark:0x241C12, out:0x506858},
+  marble:      {wall:0xCFC8B4, trim:0xE8E2CE, roof:"dome",    roofCol:0xBEB59C, dark:0x211F1A, out:0x4E6E78},
+  whiteModern: {wall:0xDCDCD6, trim:0xF4F4F0, roof:"flat",    roofCol:0xA8A89E, dark:0x1E2022, out:0x4A7080},
+  warehouse:   {wall:0x4A3E38, trim:0x6A6058, roof:"flat",    roofCol:0x3A423E, dark:0x161312, out:0x3A5A66},
+  chalet:      {wall:0x6A4A32, trim:0xE8EEF4, roof:"pitch",   roofCol:0xE8EEF4, chimney:1, boards:true, dark:0x1E1712, out:0x4A6A76},
+  greyStone:   {wall:0x7A7A72, trim:0x9A9A90, roof:"flat",    roofCol:0x5A5A54, dark:0x1C1E1E, out:0x445E6C},
+  canalBrick:  {wall:0x7A4436, trim:0xD0C8B8, roof:"step",    roofCol:0x4A423C, dark:0x1A1412, out:0x3E5A66},
+  temple:      {wall:0x8E5A44, trim:0xD8B078, roof:"pagoda",  roofCol:0x8E2B22, dark:0x201410, out:0x4A6660},
+  glassIron:   {wall:0x3A4A44, trim:0x8FD0C8, roof:"none",    roofCol:0x2A3A34, dark:0x14201C, out:0x5A8A88},
+  concrete:    {wall:0x5E6068, trim:0x82848C, roof:"flat",    roofCol:0x4A4C52, dark:0x181A1E, out:0x40606E}
+};
+var styleNow=STYLES.greyStone;
+
+/* a roof that suits the wall it sits on */
+function addRoof(f,st){
+  var col=st.roofCol, rm=new THREE.MeshPhongMaterial({color:col,shininess:8});
+  var tm=new THREE.MeshPhongMaterial({color:st.trim,shininess:14});
+  var bx=f.cx-f.nx*1.4, bz=f.cz-f.nz*1.4;    // the middle of the block
+
+  if(st.roof==="pitch"||st.roof==="tile"){
+    // two slopes meeting at a ridge, which is what most houses actually have
+    for(var s=-1;s<=1;s+=2){
+      var slope=new THREE.Mesh(new THREE.BoxGeometry(f.len+1.2,0.28,3.4),rm);
+      slope.position.set(f.cx-f.nx*(1.4-s*1.5), f.top+1.05, f.cz-f.nz*(1.4-s*1.5));
+      slope.rotation.y=f.rot;
+      slope.rotateX(s*0.62);
+      levelGroup.add(slope);
+    }
+    var ridge=new THREE.Mesh(new THREE.BoxGeometry(f.len+1.4,0.3,0.4),tm);
+    ridge.position.set(bx,f.top+2.05,bz); ridge.rotation.y=f.rot;
+    levelGroup.add(ridge);
+    var eave=new THREE.Mesh(new THREE.BoxGeometry(f.len+1.6,0.22,0.5),tm);
+    eave.position.set(f.cx+f.nx*0.2,f.top+0.1,f.cz+f.nz*0.2); eave.rotation.y=f.rot;
+    levelGroup.add(eave);
+  } else if(st.roof==="mansard"){
+    var steep=new THREE.Mesh(new THREE.BoxGeometry(f.len+0.8,2.6,0.3),rm);
+    steep.position.set(f.cx-f.nx*0.35,f.top+1.2,f.cz-f.nz*0.35);
+    steep.rotation.y=f.rot; steep.rotateX(0.34);
+    levelGroup.add(steep);
+    var cap=new THREE.Mesh(new THREE.BoxGeometry(f.len+0.4,0.3,2.6),rm);
+    cap.position.set(bx,f.top+2.4,bz); cap.rotation.y=f.rot;
+    levelGroup.add(cap);
+    var cornice=new THREE.Mesh(new THREE.BoxGeometry(f.len+1.2,0.34,0.6),tm);
+    cornice.position.set(f.cx+f.nx*0.15,f.top+0.05,f.cz+f.nz*0.15); cornice.rotation.y=f.rot;
+    levelGroup.add(cornice);
+  } else if(st.roof==="step"){
+    // a stepped gable, the way canal houses finish
+    for(var k=0;k<3;k++){
+      var st2=new THREE.Mesh(new THREE.BoxGeometry(f.len-k*2.6,0.7,2.2),rm);
+      st2.position.set(bx,f.top+0.35+k*0.7,bz); st2.rotation.y=f.rot;
+      levelGroup.add(st2);
+    }
+  } else if(st.roof==="dome"){
+    var drum=new THREE.Mesh(new THREE.CylinderGeometry(f.len*0.26,f.len*0.28,1.2,14),tm);
+    drum.position.set(bx,f.top+0.6,bz); levelGroup.add(drum);
+    var dome=new THREE.Mesh(new THREE.SphereGeometry(f.len*0.26,16,12,0,Math.PI*2,0,Math.PI/2),rm);
+    dome.position.set(bx,f.top+1.2,bz); dome.scale.y=1.15; levelGroup.add(dome);
+  } else if(st.roof==="pagoda"){
+    var pag=new THREE.Mesh(new THREE.ConeGeometry(f.len*0.66,1.9,4),rm);
+    pag.position.set(bx,f.top+0.95,bz); pag.rotation.y=f.rot+Math.PI/4;
+    levelGroup.add(pag);
+  } else if(st.roof==="flat"){
+    var par=new THREE.Mesh(new THREE.BoxGeometry(f.len+1.0,0.8,2.2),rm);
+    par.position.set(f.cx-f.nx*0.8,f.top+0.4,f.cz-f.nz*0.8); par.rotation.y=f.rot;
+    levelGroup.add(par);
+    var band=new THREE.Mesh(new THREE.BoxGeometry(f.len+1.3,0.22,0.4),tm);
+    band.position.set(f.cx+f.nx*0.1,f.top+0.72,f.cz+f.nz*0.1); band.rotation.y=f.rot;
+    levelGroup.add(band);
+  }
+
+  if(st.chimney){
+    for(var c=0;c<st.chimney;c++){
+      var off=(st.chimney===1)?0:(c?1:-1)*f.len*0.3;
+      var ch=new THREE.Mesh(new THREE.BoxGeometry(0.9,2.6,0.9),
+        new THREE.MeshPhongMaterial({color:st.wall,shininess:6}));
+      ch.position.set(bx+f.dx*off, f.top+2.2, bz+f.dz*off);
+      levelGroup.add(ch);
+      var pot=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.20,0.6,8),tm);
+      pot.position.set(bx+f.dx*off, f.top+3.7, bz+f.dz*off);
+      levelGroup.add(pot);
+    }
+  }
+}
+
+/* the details that stop a wall reading as a flat slab */
+function addFacade(f,st){
+  var tm=new THREE.MeshPhongMaterial({color:st.trim,shininess:16});
+  // a string course between floors
+  if(f.rows.length>1){
+    for(var r=1;r<f.rows.length;r++){
+      var y=(f.rows[r]+f.rows[r-1])/2;
+      var band=new THREE.Mesh(new THREE.BoxGeometry(f.len,0.18,0.16),tm);
+      band.position.set(f.cx+f.nx*0.09,y,f.cz+f.nz*0.09);
+      band.rotation.y=f.rot;
+      levelGroup.add(band);
+    }
+  }
+  // horizontal boarding, for timber walls
+  if(st.boards){
+    for(var b=1;b<8;b++){
+      var line=new THREE.Mesh(new THREE.BoxGeometry(f.len,0.06,0.08),
+        new THREE.MeshPhongMaterial({color:st.trim,shininess:8,transparent:true,opacity:0.35}));
+      line.position.set(f.cx+f.nx*0.07, f.top*b/8, f.cz+f.nz*0.07);
+      line.rotation.y=f.rot;
+      levelGroup.add(line);
+    }
+  }
+  // little balconies under the lowest row of windows
+  if(st.balcony){
+    f.cols.forEach(function(a){
+      var y=f.rows[Math.min(1,f.rows.length-1)];
+      var rail=new THREE.Mesh(new THREE.BoxGeometry(1.9,0.5,0.12),
+        new THREE.MeshPhongMaterial({color:0x2A2A2A,shininess:40}));
+      rail.position.set(f.cx+f.dx*a+f.nx*0.34, y-1.05, f.cz+f.dz*a+f.nz*0.34);
+      rail.rotation.y=f.rot;
+      levelGroup.add(rail);
+    });
+  }
+  // a front door, so the ground floor has something human on it
+  var door=new THREE.Mesh(new THREE.PlaneGeometry(1.3,2.4),
+    new THREE.MeshPhongMaterial({color:st.trim,shininess:20}));
+  door.position.set(f.cx+f.nx*0.11, 1.2, f.cz+f.nz*0.11);
+  door.rotation.y=f.rot;
+  levelGroup.add(door);
+}
+
 function buildGeometry(cfg){
   clearGroup(levelGroup);
   wins.length=0;
   faces=cfg.faces.map(normalizeFace);
+
+  styleNow = STYLES[cfg.style] || STYLES.greyStone;
+  wallMat.color.setHex(styleNow.wall);
+  trimMat.color.setHex(styleNow.trim);
+  COL_DARK.setHex(styleNow.dark);
+  COL_OUT.setHex(styleNow.out);
 
   var m=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),
       s=new THREE.Vector3(1,1,1),p=new THREE.Vector3();
@@ -2843,15 +2986,19 @@ function buildGeometry(cfg){
 
     // a blank back, so it reads as a solid block from the side
     var back=new THREE.Mesh(new THREE.PlaneGeometry(f.len,f.top,1,1),wallMat);
-    back.position.set(f.cx-f.nx*1.6, f.top/2, f.cz-f.nz*1.6);
+    back.position.set(f.cx-f.nx*2.8, f.top/2, f.cz-f.nz*2.8);
     back.rotation.y=f.rot+Math.PI;
     levelGroup.add(back);
+    // and the two ends, so it is a building rather than a billboard
+    for(var e2=-1;e2<=1;e2+=2){
+      var end=new THREE.Mesh(new THREE.PlaneGeometry(2.8,f.top,1,1),wallMat);
+      end.position.set(f.cx+f.dx*e2*f.half-f.nx*1.4, f.top/2, f.cz+f.dz*e2*f.half-f.nz*1.4);
+      end.rotation.y=f.rot+e2*Math.PI/2;
+      levelGroup.add(end);
+    }
 
-    // roof parapet
-    var cap=new THREE.Mesh(new THREE.BoxGeometry(f.len+1.0,0.7,2.0),trimMat);
-    cap.position.set(f.cx-f.nx*0.8, f.top+0.35, f.cz-f.nz*0.8);
-    cap.rotation.y=f.rot;
-    levelGroup.add(cap);
+    addRoof(f,styleNow);
+    addFacade(f,styleNow);
 
     f.cols.forEach(function(a){
       f.rows.forEach(function(y){
@@ -3002,21 +3149,30 @@ function lostCount(){ var n=0; for(var i=0;i<lives.length;i++) if(lives[i].state
    ============================================================ */
 var brass=new THREE.MeshPhongMaterial({color:0xC9922E,shininess:70,specular:0x6A5020});
 var rubber=new THREE.MeshPhongMaterial({color:0x1E2A33,shininess:12});
-/* Two nozzles hang off the camera; only the equipped one is shown. Both put
-   their opening at the same spot, so water always leaves from where it looks
-   like it should. */
-var nozzleStd=null, nozzleFish=null, fishParts=null;
+/* One nozzle per shape hangs off the camera; only the equipped one is shown.
+   They all put their opening in the same place, so the water always leaves
+   from where it looks like it should. */
+var nozzles={};
 
 function hoseTail(){
   var curve=new THREE.CatmullRomCurve3([
     new THREE.Vector3(0,0,0.14),new THREE.Vector3(0.02,-0.10,0.34),new THREE.Vector3(0.10,-0.34,0.52)]);
-  return new THREE.Mesh(new THREE.TubeGeometry(curve,10,0.045,7,false),rubber);
+  var m=new THREE.Mesh(new THREE.TubeGeometry(curve,10,0.045,7,false),rubber);
+  m.name="tail"; return m;
+}
+function newNozzle(scale,y,z){
+  var g=new THREE.Group();
+  g.position.set(0.06, y===undefined?-0.34:y, z===undefined?-0.62:z);
+  g.rotation.set(0.10,0,0.06);
+  if(scale) g.scale.setScalar(scale);
+  g.visible=false;
+  camera.add(g);
+  return g;
 }
 
-(function buildStandard(){
-  var g=new THREE.Group();
-  g.position.set(0.06,-0.34,-0.62);
-  g.rotation.set(0.10,0,0.06);
+/* the plain brass one */
+(function(){
+  var g=newNozzle();
   var barrel=new THREE.Mesh(new THREE.CylinderGeometry(0.036,0.048,0.34,12),brass);
   barrel.rotation.x=-Math.PI/2; barrel.position.z=-0.16; g.add(barrel);
   var tip=new THREE.Mesh(new THREE.CylinderGeometry(0.020,0.036,0.09,12),brass);
@@ -3024,87 +3180,203 @@ function hoseTail(){
   var grip=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.20,10),rubber);
   grip.rotation.x=-Math.PI/2; grip.position.z=0.06; g.add(grip);
   g.add(hoseTail());
-  camera.add(g);
-  nozzleStd=g;
+  g.visible=true;
+  nozzles.standard=g;
 })();
 
-/* A fish. The water comes out of its mouth. */
-(function buildFish(){
-  var g=new THREE.Group();
-  /* Sized and placed so its mouth sits where the water actually leaves, and
-     so a fish head does not eat half the screen you are aiming through. */
-  g.position.set(0.06,-0.30,-0.68);
-  g.rotation.set(0.10,0,0.06);
-  g.scale.setScalar(0.82);
-
+/* a fish, water out of its mouth */
+(function(){
+  var g=newNozzle(0.42,-0.34,-0.74);
   var skin=new THREE.MeshPhongMaterial({color:0xE8632A,shininess:36,specular:0x7A3A18});
   var belly=new THREE.MeshPhongMaterial({color:0xF39A5E,shininess:26,specular:0x6A3A20});
   var dark=new THREE.MeshPhongMaterial({color:0x120A08,shininess:60});
   var white=new THREE.MeshPhongMaterial({color:0xF6F2EA,shininess:40});
   var hatM=new THREE.MeshPhongMaterial({color:0x7A6A46,shininess:14});
 
-  // head, a touch longer than it is wide so it reads as a fish
   var head=new THREE.Mesh(new THREE.SphereGeometry(0.20,16,13),skin);
-  head.scale.set(1,0.92,1.22);
-  head.position.z=-0.20; g.add(head);
+  head.scale.set(1,0.92,1.22); head.position.z=-0.20; g.add(head);
   var chin=new THREE.Mesh(new THREE.SphereGeometry(0.145,14,11),belly);
-  chin.scale.set(1,0.62,1.15);
-  chin.position.set(0,-0.075,-0.215); g.add(chin);
-
-  // the mouth: a ring, wide open, and the water leaves from inside it
+  chin.scale.set(1,0.62,1.15); chin.position.set(0,-0.075,-0.215); g.add(chin);
   var lips=new THREE.Mesh(new THREE.TorusGeometry(0.088,0.030,10,18),belly);
   lips.position.set(0,-0.028,-0.345); g.add(lips);
   var gullet=new THREE.Mesh(new THREE.CylinderGeometry(0.070,0.048,0.12,14,1,true),dark);
-  gullet.rotation.x=Math.PI/2;
-  gullet.position.set(0,-0.028,-0.30); g.add(gullet);
-
-  // eyes, set wide on the sides, looking slightly forward
+  gullet.rotation.x=Math.PI/2; gullet.position.set(0,-0.028,-0.30); g.add(gullet);
   [-1,1].forEach(function(s){
     var eye=new THREE.Mesh(new THREE.SphereGeometry(0.072,12,10),white);
     eye.position.set(s*0.145,0.075,-0.235); g.add(eye);
     var pupil=new THREE.Mesh(new THREE.SphereGeometry(0.032,10,8),dark);
     pupil.position.set(s*0.176,0.078,-0.288); g.add(pupil);
-  });
-
-  // fins either side, and a little helmet on top
-  [-1,1].forEach(function(s){
     var fin=new THREE.Mesh(new THREE.ConeGeometry(0.055,0.16,4),belly);
     fin.position.set(s*0.185,-0.03,-0.13);
-    fin.rotation.set(Math.PI/2,0,s*0.6);
-    g.add(fin);
+    fin.rotation.set(Math.PI/2,0,s*0.6); g.add(fin);
   });
   var hat=new THREE.Mesh(new THREE.SphereGeometry(0.115,14,8,0,Math.PI*2,0,Math.PI/2),hatM);
   hat.position.set(0,0.155,-0.20); g.add(hat);
   var brim=new THREE.Mesh(new THREE.TorusGeometry(0.115,0.020,8,16),hatM);
   brim.rotation.x=Math.PI/2; brim.position.set(0,0.155,-0.20); g.add(brim);
-  var knob=new THREE.Mesh(new THREE.SphereGeometry(0.028,8,6),hatM);
-  knob.position.set(0,0.275,-0.20); g.add(knob);
-
   var collar=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.075,0.10,12),rubber);
   collar.rotation.x=Math.PI/2; collar.position.z=0.02; g.add(collar);
   g.add(hoseTail());
-
-  g.visible=false;
-  camera.add(g);
-  nozzleFish=g;
-  fishParts={skin:skin,belly:belly};
+  nozzles.fish=g;
 })();
+
+/* a bath duck, water out of the bill */
+(function(){
+  var g=newNozzle(0.48,-0.34,-0.73);
+  var body=new THREE.MeshPhongMaterial({color:0xFFD23A,shininess:70,specular:0xFFF6C0});
+  var bill=new THREE.MeshPhongMaterial({color:0xF08A20,shininess:50,specular:0xFFC880});
+  var dark=new THREE.MeshPhongMaterial({color:0x0E0A06,shininess:80});
+
+  var head=new THREE.Mesh(new THREE.SphereGeometry(0.20,16,13),body);
+  head.position.set(0,0.02,-0.20); g.add(head);
+  var tuft=new THREE.Mesh(new THREE.SphereGeometry(0.055,8,7),body);
+  tuft.position.set(0,0.20,-0.18); g.add(tuft);
+  // the bill, which is where the water comes from
+  var upper=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.085,0.16,12),bill);
+  upper.rotation.x=Math.PI/2; upper.position.set(0,-0.025,-0.36); g.add(upper);
+  var mouth=new THREE.Mesh(new THREE.CylinderGeometry(0.062,0.045,0.10,12,1,true),dark);
+  mouth.rotation.x=Math.PI/2; mouth.position.set(0,-0.025,-0.40); g.add(mouth);
+  [-1,1].forEach(function(s){
+    var eye=new THREE.Mesh(new THREE.SphereGeometry(0.034,10,8),dark);
+    eye.position.set(s*0.098,0.075,-0.315); g.add(eye);
+    var wing=new THREE.Mesh(new THREE.SphereGeometry(0.09,10,8),body);
+    wing.scale.set(0.45,0.8,1.1);
+    wing.position.set(s*0.185,-0.03,-0.14); g.add(wing);
+  });
+  var collar=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.10,12),rubber);
+  collar.rotation.x=Math.PI/2; collar.position.z=0.02; g.add(collar);
+  g.add(hoseTail());
+  nozzles.duck=g;
+})();
+
+/* a dragon, water out between its teeth */
+(function(){
+  var g=newNozzle(0.46,-0.35,-0.74);
+  var scale=new THREE.MeshPhongMaterial({color:0x3AA05A,shininess:64,specular:0xA8E8C0});
+  var belly=new THREE.MeshPhongMaterial({color:0xC8E86A,shininess:40});
+  var horn=new THREE.MeshPhongMaterial({color:0xE8DCC0,shininess:70});
+  var dark=new THREE.MeshPhongMaterial({color:0x0A1408,shininess:70});
+  var eyeM=new THREE.MeshPhongMaterial({color:0xFFC02A,shininess:120});
+
+  var head=new THREE.Mesh(new THREE.SphereGeometry(0.19,14,12),scale);
+  head.scale.set(1,0.9,1.15); head.position.set(0,0.02,-0.18); g.add(head);
+  var snout=new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.145,0.20,10),scale);
+  snout.rotation.x=Math.PI/2; snout.position.set(0,-0.035,-0.34); g.add(snout);
+  var jaw=new THREE.Mesh(new THREE.BoxGeometry(0.19,0.06,0.19),belly);
+  jaw.position.set(0,-0.105,-0.34); g.add(jaw);
+  var maw=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.055,0.10,12,1,true),dark);
+  maw.rotation.x=Math.PI/2; maw.position.set(0,-0.035,-0.40); g.add(maw);
+  // teeth
+  for(var t=0;t<6;t++){
+    var a=t/6*Math.PI*2;
+    var tooth=new THREE.Mesh(new THREE.ConeGeometry(0.016,0.05,4),horn);
+    tooth.position.set(Math.cos(a)*0.085,-0.035+Math.sin(a)*0.085,-0.425);
+    tooth.rotation.x=-Math.PI/2; g.add(tooth);
+  }
+  [-1,1].forEach(function(s){
+    var eye=new THREE.Mesh(new THREE.SphereGeometry(0.045,10,8),eyeM);
+    eye.position.set(s*0.125,0.085,-0.26); g.add(eye);
+    var slit=new THREE.Mesh(new THREE.BoxGeometry(0.012,0.05,0.02),dark);
+    slit.position.set(s*0.152,0.088,-0.295); g.add(slit);
+    var hn=new THREE.Mesh(new THREE.ConeGeometry(0.038,0.20,6),horn);
+    hn.position.set(s*0.105,0.20,-0.13);
+    hn.rotation.set(-1.15,0,s*0.30); g.add(hn);
+    var brow=new THREE.Mesh(new THREE.ConeGeometry(0.028,0.09,5),horn);
+    brow.position.set(s*0.135,0.135,-0.24);
+    brow.rotation.set(-1.2,0,s*0.3); g.add(brow);
+  });
+  // a ridge of spines down the back
+  for(var sp=0;sp<4;sp++){
+    var spine=new THREE.Mesh(new THREE.ConeGeometry(0.03,0.09,4),horn);
+    spine.position.set(0,0.17-sp*0.02,-0.05+sp*0.06);
+    spine.rotation.x=-0.3; g.add(spine);
+  }
+  var collar=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.10,12),rubber);
+  collar.rotation.x=Math.PI/2; collar.position.z=0.02; g.add(collar);
+  g.add(hoseTail());
+  nozzles.dragon=g;
+})();
+
+/* an old boot. water comes out of the top, obviously */
+(function(){
+  var g=newNozzle(0.54,-0.32,-0.72);
+  var leather=new THREE.MeshPhongMaterial({color:0x6A4A32,shininess:18,specular:0x3A2A1C});
+  var sole=new THREE.MeshPhongMaterial({color:0x2A211A,shininess:10});
+  var lace=new THREE.MeshPhongMaterial({color:0xD8C8A0,shininess:20});
+
+  var shaft=new THREE.Mesh(new THREE.CylinderGeometry(0.135,0.115,0.30,12),leather);
+  shaft.rotation.x=Math.PI/2; shaft.position.set(0,0.01,-0.22); g.add(shaft);
+  var foot=new THREE.Mesh(new THREE.BoxGeometry(0.20,0.14,0.20),leather);
+  foot.position.set(0,-0.10,-0.14); g.add(foot);
+  var toe=new THREE.Mesh(new THREE.SphereGeometry(0.10,12,9),leather);
+  toe.scale.set(1,0.7,1); toe.position.set(0,-0.10,-0.04); g.add(toe);
+  var base=new THREE.Mesh(new THREE.BoxGeometry(0.23,0.05,0.32),sole);
+  base.position.set(0,-0.175,-0.11); g.add(base);
+  // the opening the water blasts out of
+  var mouth=new THREE.Mesh(new THREE.CylinderGeometry(0.105,0.09,0.10,12,1,true),
+    new THREE.MeshPhongMaterial({color:0x140F0A,shininess:30}));
+  mouth.rotation.x=Math.PI/2; mouth.position.set(0,0.01,-0.36); g.add(mouth);
+  var cuff=new THREE.Mesh(new THREE.TorusGeometry(0.135,0.022,8,16),leather);
+  cuff.position.set(0,0.01,-0.36); g.add(cuff);
+  for(var l=0;l<3;l++){
+    var x=new THREE.Mesh(new THREE.BoxGeometry(0.19,0.016,0.016),lace);
+    x.position.set(0,0.055-l*0.035,-0.30+l*0.02);
+    x.rotation.z=(l%2?0.4:-0.4); g.add(x);
+  }
+  var collar=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.075,0.10,12),rubber);
+  collar.rotation.x=Math.PI/2; collar.position.z=0.06; g.add(collar);
+  g.add(hoseTail());
+  nozzles.boot=g;
+})();
+
+/* Striped and rainbow hoses need a picture rather than a plain colour. */
+var hoseTextures={};
+function hoseTexture(item){
+  if(hoseTextures[item.id]) return hoseTextures[item.id];
+  var c=document.createElement("canvas"); c.width=64; c.height=64;
+  var g=c.getContext("2d");
+  if(item.rainbow){
+    var grd=g.createLinearGradient(0,0,64,0);
+    ["#FF4A6A","#FF9A3A","#FFE23A","#5ADC6A","#4AB0FF","#8A6AFF"].forEach(function(col,i,arr){
+      grd.addColorStop(i/(arr.length-1),col);
+    });
+    g.fillStyle=grd; g.fillRect(0,0,64,64);
+  } else {
+    g.fillStyle="#"+("000000"+item.col.toString(16)).slice(-6);
+    g.fillRect(0,0,64,64);
+    g.fillStyle="#"+("000000"+item.stripe.toString(16)).slice(-6);
+    g.save(); g.translate(32,32); g.rotate(-0.6); g.translate(-32,-32);
+    for(var i=-64;i<128;i+=22) g.fillRect(i,-32,11,128);
+    g.restore();
+  }
+  var t=new THREE.CanvasTexture(c);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(3,1);
+  hoseTextures[item.id]=t;
+  return t;
+}
 
 /* Put on whatever has been bought and equipped. Called at startup and every
    time something is changed in the shop, so it takes effect immediately. */
 function applyKit(){
   var n=shopItem("nozzle",save.kit.nozzle);
-  var wantFish=(n.shape==="fish");
-  if(nozzleStd)  nozzleStd.visible=!wantFish;
-  if(nozzleFish) nozzleFish.visible=wantFish;
-  // the fish keeps its own colours; the finishes only apply to the metal one
-  if(!wantFish){
+  var shape=n.shape||"standard";
+  Object.keys(nozzles).forEach(function(k){ nozzles[k].visible=(k===shape); });
+  // the character nozzles keep their own colours; finishes are for the metal one
+  if(shape==="standard"){
     brass.color.setHex(n.col);
     brass.specular.setHex(n.spec);
     brass.shininess=n.shine;
   }
   var h=shopItem("hose",save.kit.hose);
-  rubber.color.setHex(h.col);
+  if(h.stripe||h.rainbow){
+    rubber.color.setHex(0xFFFFFF);
+    rubber.map=hoseTexture(h);
+  } else {
+    rubber.color.setHex(h.col);
+    rubber.map=null;
+  }
+  rubber.needsUpdate=true;
   var w=shopItem("water",save.kit.water);
   if(typeof water!=="undefined"&&water.pts&&water.pts.material.uniforms)
     water.pts.material.uniforms.uColor.value.setHex(w.col);
@@ -4229,14 +4501,29 @@ window.__soak={
   lives:function(){ return lives.map(function(L){ return {win:L.win,kind:L.kind,state:L.state,t:+L.t.toFixed(1)}; }); },
   flamesAlive:function(){ var n=0; for(var i=0;i<MAX_FLAME;i++) if(flLife[i]>0) n++; return n; },
   saveData:function(){ return save; },
-  nozzleShown:function(){ return {
-    fishExists:!!nozzleFish, stdExists:!!nozzleStd,
-    fishVisible:nozzleFish?nozzleFish.visible:null,
-    stdVisible:nozzleStd?nozzleStd.visible:null,
-    fishInCamera:nozzleFish?(camera.children.indexOf(nozzleFish)>=0):null,
-    equipped:save.kit.nozzle,
-    shapeSeen:shopItem("nozzle",save.kit.nozzle).shape||"(none)"
-  }; },
+  nozzleBox:function(){
+    var out={};
+    Object.keys(nozzles).forEach(function(k){
+      var g=nozzles[k], was=g.visible; g.visible=true;
+      var b=new THREE.Box3(), tmp=new THREE.Box3(), xs=[], ys=[];
+      g.children.forEach(function(c){ if(c.name!=="tail"){ tmp.setFromObject(c); b.union(tmp); } });
+      for(var i=0;i<8;i++){
+        var v=new THREE.Vector3(i&1?b.max.x:b.min.x,i&2?b.max.y:b.min.y,i&4?b.max.z:b.min.z);
+        v.project(camera); xs.push(v.x); ys.push(v.y);
+      }
+      g.visible=was;
+      var fr=camera.worldToLocal(b.min.clone()).z, bk=camera.worldToLocal(b.max.clone()).z;
+      out[k]={w:+((Math.max.apply(0,xs)-Math.min.apply(0,xs))/2).toFixed(2),
+              top:+((Math.max.apply(0,ys)+1)/2).toFixed(2),
+              front:+Math.min(fr,bk).toFixed(2)};
+    });
+    return out;
+  },
+  nozzleShown:function(){
+    var shown=null;
+    Object.keys(nozzles).forEach(function(k){ if(nozzles[k].visible) shown=k; });
+    return {equipped:save.kit.nozzle, showing:shown, built:Object.keys(nozzles)};
+  },
   kitColors:function(){ return {
     nozzle:"#"+brass.color.getHexString(),
     hose:"#"+rubber.color.getHexString(),
