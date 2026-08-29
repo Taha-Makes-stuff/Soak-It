@@ -20,6 +20,9 @@
     --glass:rgba(8,14,22,.62);
     --glass-line:rgba(207,233,255,.20);
     --locked:#3A4654;
+    /* jits: the currency has its own colour so it never reads as a star */
+    --jit:#B26BFF;
+    --jit-hi:#D9BCFF;
 
     --cond:"Barlow Condensed",'Arial Narrow',Impact,sans-serif;
     --body:"Barlow",system-ui,-apple-system,Segoe UI,sans-serif;
@@ -223,6 +226,42 @@
   .btn{position:relative;}
 
   /* ============ announcements ============ */
+  /* ============ shop ============ */
+  .purse{
+    position:absolute;right:0;top:50%;transform:translateY(-50%);
+    font-family:var(--cond);font-weight:800;font-size:16px;letter-spacing:.08em;
+    color:var(--jit-hi);font-variant-numeric:tabular-nums;white-space:nowrap;
+    text-shadow:0 0 12px rgba(139,63,224,.55);
+  }
+  .shopTabs{margin:0 auto 12px;width:fit-content;}
+  #shopList{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  .kit{
+    display:flex;align-items:center;gap:13px;
+    background:rgba(14,22,34,.7);border:1px solid var(--glass-line);
+    border-radius:4px;padding:11px 13px;margin-bottom:9px;
+    width:100%;text-align:left;cursor:pointer;
+  }
+  .kit:disabled{cursor:default;}
+  .kit:focus-visible{outline:3px solid var(--water);outline-offset:2px;}
+  .kit .chipCol{
+    width:38px;height:38px;border-radius:8px;flex:0 0 auto;
+    border:1px solid rgba(255,255,255,.18);
+  }
+  .kit .kitName{
+    font-family:var(--cond);font-size:16px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--paper);flex:1;
+  }
+  .kit .kitTag{
+    font-family:var(--cond);font-size:12px;font-weight:800;letter-spacing:.14em;
+    text-transform:uppercase;flex:0 0 auto;
+  }
+  .kit.locked .kitName{color:rgba(233,241,246,.55);}
+  .kit.locked .kitTag{color:var(--jit-hi);}
+  .kit.cant .kitTag{color:rgba(233,241,246,.30);}
+  .kit.owned .kitTag{color:rgba(207,233,255,.55);}
+  .kit.on{border-color:rgba(178,107,255,.75);background:rgba(48,24,74,.45);}
+  .kit.on .kitTag{color:var(--jit-hi);}
+
   /* ============ leaderboard ============ */
   #boardList{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
   .rank{
@@ -253,7 +292,12 @@
     color:rgba(207,233,255,.6);margin-left:6px;
   }
 
-  #news .wrap, #profile .wrap, #board .wrap{
+  #endCoins{
+    font-family:var(--cond);font-weight:800;font-size:16px;letter-spacing:.14em;
+    color:var(--jit-hi);margin-top:6px;
+    text-shadow:0 0 12px rgba(139,63,224,.5);
+  }
+  #news .wrap, #profile .wrap, #board .wrap, #shop .wrap{
     width:100%;max-width:460px;height:100%;
     display:flex;flex-direction:column;
     padding:calc(14px + env(safe-area-inset-top)) 16px calc(14px + env(safe-area-inset-bottom));
@@ -791,6 +835,7 @@
       <button class="btn hot" id="playBtn">Play</button>
       <button class="btn ghost" id="levelsBtn">Levels</button>
       <button class="btn ghost" id="newsBtn">Announcements<span class="dot" id="newsDot" hidden></span></button>
+      <button class="btn ghost" id="shopBtn">Shop</button>
       <button class="btn ghost" id="boardBtn">Leaderboard</button>
     </div>
 
@@ -834,6 +879,26 @@
   <div class="wrap">
     <div class="sheetHead"><h2>Announcements</h2></div>
     <div id="newsList"></div>
+  </div>
+</div>
+
+<!-- ===================== shop ===================== -->
+<div class="screen" id="shop">
+  <button class="icon" id="shopBack" style="top:calc(14px + env(safe-area-inset-top));left:calc(14px + env(safe-area-inset-left));" aria-label="Back">
+    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <div class="wrap">
+    <div class="sheetHead">
+      <h2>Shop</h2>
+      <div class="purse" id="purse">◉ 0</div>
+    </div>
+    <div class="seasonTabs shopTabs">
+      <button class="seasonTab kindTab on" data-kind="nozzle">Nozzle</button>
+      <button class="seasonTab kindTab" data-kind="hose">Hose</button>
+      <button class="seasonTab kindTab" data-kind="water">Water</button>
+    </div>
+    <div id="shopList"></div>
+    <p class="privacy">Coins come from clearing levels. You earn more for stars, and more again for everyone you get out alive.</p>
   </div>
 </div>
 
@@ -914,6 +979,7 @@
     <div class="stars" id="endStars"></div>
     <div id="endTime">0.0s</div>
     <div id="endMissed"></div>
+    <div id="endCoins"></div>
     <div id="endBest">Best 0.0s</div>
     <p id="endSub">You saved the building.</p>
     <button class="btn hot wide" id="nextBtn">Next level</button>
@@ -993,7 +1059,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 13;
+var GAME_VERSION = 14;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -1199,8 +1265,44 @@ var LEVELS=SEASONS[0].levels;    // season 1 stays the default
 /* ============================================================
    SAVED PROGRESS
    ============================================================ */
+/* ============================================================
+   THE SHOP
+   Everything here is on the phone: coins earned by playing, spent on the
+   three things you can actually see from behind a hose.
+   ============================================================ */
+var SHOP={
+  nozzle:[
+    {id:"brass",  name:"Brass",    price:0,   col:0xC9922E, spec:0x6A5020, shine:70},
+    {id:"chrome", name:"Chrome",   price:10, col:0xD8DEE6, spec:0xFFFFFF, shine:160},
+    {id:"midnight",name:"Midnight",price:18, col:0x2A3038, spec:0x8899AA, shine:110},
+    {id:"copper", name:"Copper",   price:28, col:0xB4622A, spec:0x8A4A20, shine:90},
+    {id:"gold",   name:"Gold",     price:40, col:0xFFC94A, spec:0xFFE9A8, shine:190}
+  ],
+  hose:[
+    {id:"black",  name:"Black",    price:0,   col:0x1E2A33},
+    {id:"red",    name:"Red",      price:8, col:0xB8232C},
+    {id:"yellow", name:"Yellow",   price:15, col:0xD8A32A},
+    {id:"blue",   name:"Blue",     price:22, col:0x2A5FA8},
+    {id:"white",  name:"White",    price:32, col:0xD6DCE2}
+  ],
+  water:[
+    {id:"clear",  name:"Clear",    price:0,   col:0xCFE9FF},
+    {id:"ice",    name:"Ice",      price:12, col:0x8FD4FF},
+    {id:"emerald",name:"Emerald",  price:20, col:0x8FFFC4},
+    {id:"sunset", name:"Sunset",   price:30, col:0xFFB08A},
+    {id:"violet", name:"Violet",   price:42, col:0xC9A8FF}
+  ]
+};
+function shopItem(kind,id){
+  var list=SHOP[kind];
+  for(var i=0;i<list.length;i++) if(list[i].id===id) return list[i];
+  return list[0];
+}
+
 /* Progress is per season. Best times are keyed "1-4" (season 1, level 4). */
-var save={unlocked:{1:1,2:1},best:{},stars:{},vol:0.7,seenHint:false};
+var save={unlocked:{1:1,2:1},best:{},stars:{},vol:0.7,seenHint:false,
+          jits:0, owned:{nozzle:["brass"],hose:["black"],water:["clear"]},
+          kit:{nozzle:"brass",hose:"black",water:"clear"}};
 try{
   var raw=localStorage.getItem("soakit.save");
   if(raw){
@@ -1221,6 +1323,17 @@ try{
       });
       save.vol=(typeof pp.vol==="number")?pp.vol:0.7;
       save.seenHint=!!pp.seenHint;
+      save.jits=Math.max(0,pp.jits|0);
+      // the free item in each row is always owned, whatever the save says
+      ["nozzle","hose","water"].forEach(function(k){
+        var have=(pp.owned&&pp.owned[k])||[];
+        var free=SHOP[k][0].id;
+        save.owned[k]=[free].concat(have.filter(function(id){
+          return id!==free && SHOP[k].some(function(it){ return it.id===id; });
+        }));
+        var want=(pp.kit&&pp.kit[k])||free;
+        save.kit[k]=(save.owned[k].indexOf(want)>=0)?want:free;
+      });
     }
   }
 }catch(e){}
@@ -2411,6 +2524,20 @@ var rubber=new THREE.MeshPhongMaterial({color:0x1E2A33,shininess:12});
   camera.add(g);
 })();
 
+/* Put on whatever has been bought and equipped. Called at startup and every
+   time something is changed in the shop, so it takes effect immediately. */
+function applyKit(){
+  var n=shopItem("nozzle",save.kit.nozzle);
+  brass.color.setHex(n.col);
+  brass.specular.setHex(n.spec);
+  brass.shininess=n.shine;
+  var h=shopItem("hose",save.kit.hose);
+  rubber.color.setHex(h.col);
+  var w=shopItem("water",save.kit.water);
+  if(typeof water!=="undefined"&&water.pts&&water.pts.material.uniforms)
+    water.pts.material.uniforms.uColor.value.setHex(w.col);
+}
+
 /* ============================================================
    PARTICLES
    ============================================================ */
@@ -3044,7 +3171,7 @@ function step(dt,noDraw){
 /* ============================================================
    SCREENS
    ============================================================ */
-var SCREENS=["start","levels","news","board","profile","pause","settings","end"];
+var SCREENS=["start","levels","news","board","shop","profile","pause","settings","end"];
 function show(which){
   SCREENS.forEach(function(id){
     var el=$(id);
@@ -3105,12 +3232,18 @@ function finish(won){
   var t=elapsed, key=cfg.id, best=save.best[key];
   var got=rescuedCount(), lost=lostCount();
   var earned=starsFor(won,t,got);
+  /* Jits are paid purely on stars, exactly as Taha set them: none for a
+     fail, then 2, 4 and 7. That makes the third star — everyone out alive —
+     worth nearly as much as the other two together. */
+  var jits=[0,2,4,7][earned]||0;
   if(won){
+    save.jits+=jits;
     if(level>=save.unlocked[seasonNow]&&level<10) save.unlocked[seasonNow]=level+1;
     if(best===undefined||t<best){ save.best[key]=Math.round(t*10)/10; best=save.best[key]; }
     if(!save.stars[key]||earned>save.stars[key]) save.stars[key]=earned;
     persist(); Snd.win();
   } else Snd.lose();
+  $("endCoins").textContent = jits ? ("+"+jits+" jits") : "";
   paintStars($("endStars"),earned);
   // say plainly which one got away, and why
   var missed="";
@@ -3237,6 +3370,63 @@ function applyVol(v){
 vol.addEventListener("input",function(){ applyVol(parseInt(vol.value,10)/100); persist(); });
 vol.addEventListener("change",function(){ Snd.init(); Snd.resume(); Snd.tap(); });
 applyVol(save.vol);
+
+/* ---- shop ---- */
+var shopKind="nozzle";
+function renderShop(){
+  $("purse").textContent="◈ "+save.jits+" jits";
+  var list=$("shopList");
+  list.innerHTML="";
+  SHOP[shopKind].forEach(function(it){
+    var owned=save.owned[shopKind].indexOf(it.id)>=0;
+    var on=save.kit[shopKind]===it.id;
+    var afford=save.jits>=it.price;
+    var b=document.createElement("button");
+    b.className="kit"+(on?" on":(owned?" owned":(afford?" locked":" locked cant")));
+
+    var sw=document.createElement("span");
+    sw.className="chipCol";
+    sw.style.background="#"+("000000"+it.col.toString(16)).slice(-6);
+    b.appendChild(sw);
+
+    var nm=document.createElement("span");
+    nm.className="kitName"; nm.textContent=it.name;
+    b.appendChild(nm);
+
+    var tag=document.createElement("span");
+    tag.className="kitTag";
+    tag.textContent = on ? "WEARING" : (owned ? "WEAR" : ("◈ "+it.price));
+    b.appendChild(tag);
+
+    if(on){ b.disabled=true; }
+    else b.addEventListener("click",function(){
+      if(owned){
+        save.kit[shopKind]=it.id; applyKit(); persist(); Snd.tap(); renderShop();
+      } else if(save.jits>=it.price){
+        save.jits-=it.price;
+        save.owned[shopKind].push(it.id);
+        save.kit[shopKind]=it.id;
+        applyKit(); persist(); Snd.clear(); renderShop();
+      } else {
+        Snd.lose();
+        toast("Not enough jits");
+      }
+    });
+    list.appendChild(b);
+  });
+  Array.prototype.slice.call(document.querySelectorAll(".kindTab")).forEach(function(t){
+    t.classList.toggle("on", t.getAttribute("data-kind")===shopKind);
+  });
+}
+$("shopBtn").addEventListener("click",function(){
+  Snd.init(); Snd.tap(); shopKind="nozzle"; renderShop(); show("shop");
+});
+$("shopBack").addEventListener("click",function(){ Snd.tap(); show("start"); });
+Array.prototype.slice.call(document.querySelectorAll(".kindTab")).forEach(function(t){
+  t.addEventListener("click",function(){
+    Snd.tap(); shopKind=t.getAttribute("data-kind"); renderShop();
+  });
+});
 
 /* ============================================================
    LEADERBOARD
@@ -3435,6 +3625,11 @@ window.__soak={
   lives:function(){ return lives.map(function(L){ return {win:L.win,kind:L.kind,state:L.state,t:+L.t.toFixed(1)}; }); },
   flamesAlive:function(){ var n=0; for(var i=0;i<MAX_FLAME;i++) if(flLife[i]>0) n++; return n; },
   saveData:function(){ return save; },
+  kitColors:function(){ return {
+    nozzle:"#"+brass.color.getHexString(),
+    hose:"#"+rubber.color.getHexString(),
+    water:"#"+water.pts.material.uniforms.uColor.value.getHexString()
+  }; },
   /* where does a shot land, for balance checks */
   probe:function(pressureVal,pitchVal,yawVal){
     var sp=TUNE.speedMin+(TUNE.speedMax-TUNE.speedMin)*pressureVal;
@@ -3490,6 +3685,7 @@ buildGeometry(LEVELS[0]);
 buildEnv(LEVELS[0].env);
 buildMap();
 paintChip();
+applyKit();
 paintNewsDot();
 renderNews();
 fetchNews();
