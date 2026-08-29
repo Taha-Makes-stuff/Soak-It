@@ -604,6 +604,32 @@
   #endBest{font-family:var(--cond);font-size:11.5px;font-weight:700;letter-spacing:.2em;
            text-transform:uppercase;color:rgba(233,241,246,.45);}
 
+  /* three stars: put the fire out, be quick, get everyone out */
+  .stars{display:flex;justify-content:center;gap:8px;margin:10px 0 2px;}
+  .stars span{font-size:38px;line-height:1;}
+  .stars .got{
+    color:var(--brass-hi);
+    text-shadow:0 0 16px rgba(240,195,104,.65);
+    animation:starPop .45s cubic-bezier(.2,1.5,.4,1) backwards;
+  }
+  .stars .got:nth-child(2){animation-delay:.13s;}
+  .stars .got:nth-child(3){animation-delay:.26s;}
+  .stars .miss{color:rgba(233,241,246,.16);}
+  @keyframes starPop{from{transform:scale(0) rotate(-40deg);opacity:0;}to{transform:none;opacity:1;}}
+  #endMissed{
+    font-family:var(--body);font-size:13px;color:var(--brass-hi);
+    opacity:.75;margin:8px 0 0;min-height:1px;
+  }
+
+  /* the small set under each level on the map */
+  .nodeStars{
+    position:absolute;left:50%;top:30px;transform:translateX(-50%);
+    display:flex;gap:2px;white-space:nowrap;
+  }
+  .nodeStars span{font-size:13px;line-height:1;}
+  .nodeStars .got{color:var(--brass-hi);}
+  .nodeStars .miss{color:rgba(233,241,246,.18);}
+
   @media (prefers-reduced-motion:reduce){
     *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}
   }
@@ -836,7 +862,9 @@
 <div class="screen sheet" id="end">
   <div class="sheetCard">
     <h3 id="endTitle">Fire out</h3>
+    <div class="stars" id="endStars"></div>
     <div id="endTime">0.0s</div>
+    <div id="endMissed"></div>
     <div id="endBest">Best 0.0s</div>
     <p id="endSub">You saved the building.</p>
     <button class="btn hot wide" id="nextBtn">Next level</button>
@@ -916,7 +944,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 11;
+var GAME_VERSION = 12;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -1075,8 +1103,11 @@ var LAYOUTS2=[
   ]}
 ];
 
-var PAR_S1=[26,24,40,42,52,58,66,72,80,105];
-var PAR_S2=[28,34,38,48,56,62,70,74,86,110];
+/* Target times for the second star. Set at roughly four times what a clean
+   run actually takes, so you only miss it by dawdling — Taha asked for these
+   not to be hard at all. */
+var PAR_S1=[30,32,45,50,90,85,100,140,110,160];
+var PAR_S2=[45,45,55,55,85,130,120,120,155,150];
 
 function makeSeason(layouts, season, pars){
   return layouts.map(function(L,i){
@@ -1105,7 +1136,7 @@ var LEVELS=SEASONS[0].levels;    // season 1 stays the default
    SAVED PROGRESS
    ============================================================ */
 /* Progress is per season. Best times are keyed "1-4" (season 1, level 4). */
-var save={unlocked:{1:1,2:1},best:{},vol:0.7,seenHint:false};
+var save={unlocked:{1:1,2:1},best:{},stars:{},vol:0.7,seenHint:false};
 try{
   var raw=localStorage.getItem("soakit.save");
   if(raw){
@@ -1118,6 +1149,8 @@ try{
         save.unlocked={1:Math.max(1,Math.min(10,pp.unlocked[1]||1)),
                        2:Math.max(1,Math.min(10,pp.unlocked[2]||1))};
       }
+      var st=pp.stars||{};
+      Object.keys(st).forEach(function(k){ save.stars[/-/.test(k)?k:("1-"+k)]=st[k]; });
       var b=pp.best||{};
       Object.keys(b).forEach(function(k){
         save.best[/-/.test(k) ? k : ("1-"+k)] = b[k];
@@ -2807,15 +2840,45 @@ function startLevel(n,season){
   if(!save.seenHint){ dragHint.classList.add("show"); save.seenHint=true; persist(); }
 }
 
+/* One star for putting the fire out, two for doing it inside the target time,
+   three only if everybody got out. Rescues decide the top star — that is what
+   makes the people worth going for. */
+function starsFor(won,t,got){
+  if(!won) return 0;
+  var s=1;
+  if(t<=cfg.parTime) s++;
+  if(lives.length===0||got>=lives.length) s++;
+  return s;
+}
+function paintStars(el,earned){
+  el.innerHTML="";
+  for(var i=1;i<=3;i++){
+    var sp=document.createElement("span");
+    sp.className=(i<=earned)?"got":"miss";
+    sp.textContent="★";
+    el.appendChild(sp);
+  }
+}
+
 function finish(won){
   finished=true; running=false;
   var t=elapsed, key=cfg.id, best=save.best[key];
   var got=rescuedCount(), lost=lostCount();
+  var earned=starsFor(won,t,got);
   if(won){
     if(level>=save.unlocked[seasonNow]&&level<10) save.unlocked[seasonNow]=level+1;
     if(best===undefined||t<best){ save.best[key]=Math.round(t*10)/10; best=save.best[key]; }
+    if(!save.stars[key]||earned>save.stars[key]) save.stars[key]=earned;
     persist(); Snd.win();
   } else Snd.lose();
+  paintStars($("endStars"),earned);
+  // say plainly which one got away, and why
+  var missed="";
+  if(won){
+    if(earned<3&&lives.length&&got<lives.length) missed="Save everyone for the third star.";
+    else if(earned<2) missed="Clear it in under "+cfg.parTime+"s for two stars.";
+  }
+  $("endMissed").textContent=missed;
   var who=profile.name.trim();
   $("endTitle").textContent = won
     ? (who ? "Nice one, "+who : "Fire out")
@@ -2864,9 +2927,16 @@ function buildMap(season){
     var nm=document.createElement("div");
     nm.className="nodeFires "+((i%2===0)?"right":"left"); nm.textContent=lv.name;
     wrap.appendChild(nm);
+    if(state!=="locked"){
+      var sw=document.createElement("div");
+      sw.className="nodeStars";
+      paintStars(sw, save.stars[lv.id]||0);
+      wrap.appendChild(sw);
+    }
     if(save.best[lv.id]!==undefined){
       var bt=document.createElement("div");
-      bt.className="nodeTime"; bt.textContent=save.best[lv.id].toFixed(1)+"s";
+      bt.className="nodeTime"; bt.style.top="46px";
+      bt.textContent=save.best[lv.id].toFixed(1)+"s";
       wrap.appendChild(bt);
     }
     map.appendChild(wrap);
@@ -2876,9 +2946,12 @@ function buildMap(season){
   svg.innerHTML='<path d="'+pts.map(function(p,i){ return (i?"L":"M")+p[0]+" "+p[1]; }).join(" ")+
     '" fill="none" stroke="rgba(201,146,46,0.32)" stroke-width="2" stroke-linecap="round" '+
     'stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>';
-  var done=0;
-  levels.forEach(function(lv){ if(save.best[lv.id]!==undefined) done++; });
-  $("levProgress").textContent=done+" of 10 cleared";
+  var done=0, got=0;
+  levels.forEach(function(lv){
+    if(save.best[lv.id]!==undefined) done++;
+    got+=save.stars[lv.id]||0;
+  });
+  $("levProgress").textContent=done+" of 10 cleared  ·  ★ "+got+"/30";
   // highlight the season tab we are looking at
   Array.prototype.slice.call(document.querySelectorAll(".seasonTab")).forEach(function(t){
     t.classList.toggle("on", parseInt(t.getAttribute("data-season"),10)===mapSeason);
