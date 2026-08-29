@@ -1066,7 +1066,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 18;
+var GAME_VERSION = 19;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -2004,14 +2004,68 @@ function neighbours2(wallCol,roofCol,z){
   });
 }
 
+/* ------------------------------------------------------------------
+   A landmark is scenery, and scenery has to read from across a street
+   at night. Everything built between markStart and markEnd goes into
+   one group, which is then grown about its own base — so it gets
+   taller and wider without walking towards you — pushed back if its
+   new footprint would crowd the burning house, and floodlit, the way
+   a real monument is after dark.
+   ------------------------------------------------------------------ */
+var _markG=null,_markPrev=null,_markInfo=null;
+var marks=[];
+function markStart(ax,az,scale,back,clearDeg){
+  _markG=new THREE.Group(); _markPrev=envGroup; envGroup=_markG;
+  _markInfo={ax:ax,az:az,s:scale,back:back||0,
+             clear:(clearDeg===undefined?16:clearDeg)*Math.PI/180};
+}
+function floodlit(g){
+  g.traverse(function(o){
+    var m=o.material;
+    if(!m||!m.isMeshPhongMaterial||!m.emissive) return;
+    if(m.emissive.getHex()!==0) return;
+    o.material=m=m.clone();
+    m.emissive.copy(m.color).multiplyScalar(0.44).addScalar(0.07);
+  });
+}
+function markEnd(){
+  var g=_markG,d=_markInfo;
+  envGroup=_markPrev;
+  g.scale.setScalar(d.s);
+  g.position.set(d.ax-d.ax*d.s, 0, d.az-d.az*d.s-d.back);
+  /* however big it grew, it stays behind the street */
+  var bb=new THREE.Box3().setFromObject(g);
+  if(bb.max.z>-32) g.position.z-=(bb.max.z+32);
+  /* A landmark you cannot see over the burning roof may as well not be there.
+     Growing it sideways only pushes it further away, so stand it up instead
+     until its top is well clear of the roofline. */
+  var front=null;
+  faces.forEach(function(f){ if(!front||Math.abs(f.cx)<Math.abs(front.cx)) front=f; });
+  if(front){
+    var want=Math.atan2(front.top-1.7,Math.abs(front.cz))+d.clear;
+    for(var i=0;i<16;i++){
+      bb=new THREE.Box3().setFromObject(g);
+      var D=Math.hypot((bb.max.x+bb.min.x)/2,(bb.max.z+bb.min.z)/2);
+      if(Math.atan2(bb.max.y-1.7,D)>=want) break;
+      if(g.scale.y>=d.s*1.85) break;
+      g.scale.y*=1.07;
+    }
+  }
+  floodlit(g);
+  envGroup.add(g);
+  marks.push(g);
+  _markG=null; _markPrev=null; _markInfo=null;
+}
+
 var LANDMARKS={
   bigben:function(){
     ground.material.color.setHex(0x1B1E22);
     road(-26,4.6,true);
     streetlights(-23,[-30,-14,14,30]);
     neighbours2(0x5E3A30,0x39414A,-15);
-    skylineBehind(-46);
+    skylineBehind(-98);
     seaPlane(-64,240,50);
+    markStart(-27,-58,1.60,0);
     // the tower, well back across the river
     var m=stone(0x9C8A63,10);
     var shaft=new THREE.Mesh(new THREE.BoxGeometry(7,44,7),m);
@@ -2021,7 +2075,7 @@ var LANDMARKS={
       f.position.set(-27+d[0]*3.6,38,-58+d[1]*3.6);
       f.lookAt(-27+d[0]*40,38,-58+d[1]*40);
       envGroup.add(f);
-      var g=glowSprite(0xFFD98A,12,0.38); g.position.copy(f.position); envGroup.add(g);
+      var g=glowSprite(0xFFD98A,6,0.42); g.position.copy(f.position); envGroup.add(g);
     });
     var belfry=new THREE.Mesh(new THREE.BoxGeometry(8.4,6,8.4),stone(0x8B7A55,8));
     belfry.position.set(-27,47,-58); envGroup.add(belfry);
@@ -2033,6 +2087,7 @@ var LANDMARKS={
     // the houses of parliament alongside
     var hop=new THREE.Mesh(new THREE.BoxGeometry(34,14,10),m);
     hop.position.set(-4,7,-60); envGroup.add(hop);
+    markEnd();
   },
 
   eiffel:function(){
@@ -2040,7 +2095,8 @@ var LANDMARKS={
     road(-25,4.4,true);
     streetlights(-22,[-28,-12,12,28]);
     neighbours2(0xA89C82,0x4A5058,-16);
-    skylineBehind(-50);
+    skylineBehind(-98);
+    markStart(16,-62,1.60,0);
     var m=stone(0x6B5B44,20);
     [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(function(s){
       var leg=new THREE.Mesh(new THREE.CylinderGeometry(0.6,1.7,28,6),m);
@@ -2060,6 +2116,7 @@ var LANDMARKS={
     tip.position.set(16,64,-62); envGroup.add(tip);
     blinkers.push({s:tip,rate:1.3,phase:0});
     for(var i=0;i<7;i++) upLight(16,6+i*8,-56,0xFFC46A,15,0.14);
+    markEnd();
   },
 
   liberty:function(){
@@ -2067,8 +2124,9 @@ var LANDMARKS={
     road(-25,4.4,true);
     streetlights(-22,[-28,-12,12,28]);
     neighbours2(0x6A4436,0x4A423C,-16);
-    skylineBehind(-52);
+    skylineBehind(-98);
     seaPlane(-72,260,70);
+    markStart(26,-66,2.30,0);
     var base=new THREE.Mesh(new THREE.BoxGeometry(12,8,12),stone(0x5E5A50,6));
     base.position.set(26,4,-66); envGroup.add(base);
     var ped=new THREE.Mesh(new THREE.BoxGeometry(8,13,8),stone(0x6E6A5E,8));
@@ -2093,6 +2151,7 @@ var LANDMARKS={
     flame.position.set(30.2,38.4,-66); envGroup.add(flame);
     blinkers.push({s:flame,rate:2.4,phase:0.1});
     upLight(26,7,-60,0xBFE3C8,16,0.20);
+    markEnd();
   },
 
   colosseum:function(){
@@ -2100,38 +2159,42 @@ var LANDMARKS={
     road(-25,4.4,true);
     streetlights(-22,[-28,-12,12,28]);
     neighbours2(0x9A6A3A,0xA04A28,-16);
-    skylineBehind(-50);
+    skylineBehind(-98);
+    markStart(-24,-58,1.90,14,10);
     var m=stone(0x8A7A5E,6), dark=stone(0x4A4234,4);
-    for(var i=0;i<28;i++){
-      var a=(i/28)*Math.PI*2, R=15;
+    for(var i=0;i<20;i++){
+      var a=(i/20)*Math.PI*2, R=15;
       var x=-24+Math.cos(a)*R, z=-58+Math.sin(a)*R;
-      var broken=(i>9&&i<14);
-      var h=broken?8:16;
-      var pier=new THREE.Mesh(new THREE.BoxGeometry(2.2,h,3.2),m);
+      var broken=(i>7&&i<11);
+      var h=broken?13:25;
+      var pier=new THREE.Mesh(new THREE.BoxGeometry(1.5,h,3.2),m);
       pier.position.set(x,h/2,z); pier.rotation.y=-a; envGroup.add(pier);
       if(!broken){
-        var arch=new THREE.Mesh(new THREE.BoxGeometry(1.8,3.2,1.8),dark);
-        arch.position.set(-24+Math.cos(a)*R*0.93, 6, -58+Math.sin(a)*R*0.93);
+        var arch=new THREE.Mesh(new THREE.BoxGeometry(1.8,5.0,1.8),dark);
+        arch.position.set(-24+Math.cos(a)*R*0.93, 9, -58+Math.sin(a)*R*0.93);
         arch.rotation.y=-a; envGroup.add(arch);
       }
     }
     var rim=new THREE.Mesh(new THREE.TorusGeometry(15,0.7,6,40),m);
-    rim.rotation.x=-Math.PI/2; rim.position.set(-24,16.4,-58); envGroup.add(rim);
+    rim.rotation.x=-Math.PI/2; rim.position.set(-24,25.4,-58); envGroup.add(rim);
     for(var u=0;u<5;u++){
       var ang=u/5*Math.PI*2;
       upLight(-24+Math.cos(ang)*17,4,-58+Math.sin(ang)*17,0xFFC98A,13,0.16);
     }
+    markEnd();
   },
 
   pyramids:function(){
     ground.material.color.setHex(0x3A3222);
     var sand=stone(0x8A7A52,3);
     neighbours2(0x9A8258,0x8A7048,-16);
+    markStart(10,-70,2.20,0);
     [[-30,-62,24,32],[10,-72,28,36],[44,-58,17,21]].forEach(function(p){
       var py=new THREE.Mesh(new THREE.ConeGeometry(p[2],p[3],4),sand);
       py.position.set(p[0],p[3]/2,p[1]); py.rotation.y=Math.PI/4; envGroup.add(py);
       upLight(p[0],4,p[1]+p[2]*0.7,0xFFCE8A,20,0.20);
     });
+    markEnd();
     var sb=new THREE.Mesh(new THREE.BoxGeometry(12,4.5,4.2),sand);
     sb.position.set(-14,2.25,-40); sb.rotation.y=0.3; envGroup.add(sb);
     var sh=new THREE.Mesh(new THREE.BoxGeometry(3.4,4.2,3.4),sand);
@@ -2146,6 +2209,7 @@ var LANDMARKS={
   taj:function(){
     ground.material.color.setHex(0x1E211D);
     neighbours2(0xB8AC92,0xA0765A,-16);
+    markStart(4,-64,2.00,24);
     var white=stone(0xC9C2AE,26);
     var plinth=new THREE.Mesh(new THREE.BoxGeometry(30,3,22),white);
     plinth.position.set(4,1.5,-64); envGroup.add(plinth);
@@ -2161,6 +2225,7 @@ var LANDMARKS={
       var cap=new THREE.Mesh(new THREE.SphereGeometry(1.6,10,8),white);
       cap.position.set(4+s[0]*13,22.5,-64+s[1]*9); envGroup.add(cap);
     });
+    markEnd();
     var pool=new THREE.Mesh(new THREE.PlaneGeometry(5,26),
       new THREE.MeshPhongMaterial({color:0x0C2230,shininess:150,specular:0x6FA8C8}));
     pool.rotation.x=-Math.PI/2; pool.position.set(4,0.06,-44); envGroup.add(pool);
@@ -2174,7 +2239,8 @@ var LANDMARKS={
     streetlights(-22,[-28,-12,12,28]);
     neighbours2(0xB8BEC0,0x5A5148,-16);
     seaPlane(-74,280,80);
-    skylineBehind(-56);
+    skylineBehind(-98);
+    markStart(0,-68,2.00,0);
     var red=new THREE.MeshPhongMaterial({color:0xA33520,shininess:18});
     [-26,24].forEach(function(tx){
       [-3,3].forEach(function(o){
@@ -2200,6 +2266,7 @@ var LANDMARKS={
         envGroup.add(seg);
       }
     }
+    markEnd();
   },
 
   opera:function(){
@@ -2207,7 +2274,8 @@ var LANDMARKS={
     road(-25,4.4,true);
     neighbours2(0xC8C8C0,0x7A7A72,-16);
     seaPlane(-62,240,80);
-    skylineBehind(-54);
+    skylineBehind(-98);
+    markStart(-20,-58,2.40,8);
     var shell=new THREE.MeshPhongMaterial({color:0xD8D3C4,shininess:40,side:THREE.DoubleSide});
     var podium=new THREE.Mesh(new THREE.BoxGeometry(34,4,18),stone(0x6E6A5E,8));
     podium.position.set(-20,2,-58); envGroup.add(podium);
@@ -2225,12 +2293,14 @@ var LANDMARKS={
       envGroup.add(lit);
       blinkers.push({s:lit,rate:0.6+Math.random()*0.7,phase:Math.random()});
     }
+    markEnd();
   },
 
   redeemer:function(){
     ground.material.color.setHex(0x1A2018);
     road(-25,4.4,true);
     neighbours2(0x7A7268,0x6A5A4A,-16);
+    markStart(6,-76,2.10,10);
     var hill=new THREE.Mesh(new THREE.ConeGeometry(36,30,16),
       new THREE.MeshPhongMaterial({color:0x24301F,shininess:3,flatShading:true}));
     hill.position.set(6,6,-76); envGroup.add(hill);
@@ -2248,6 +2318,7 @@ var LANDMARKS={
       hand.position.set(6+ax2,38.4,-76); envGroup.add(hand);
     });
     for(var u2=0;u2<5;u2++) upLight(6+(u2-2)*5,28,-70,0xEAF0FF,14,0.20);
+    markEnd();
     for(var j=0;j<22;j++){
       var a3=Math.random()*Math.PI*2, r3=34+Math.random()*26;
       var x3=Math.cos(a3)*r3, z3=-Math.abs(Math.sin(a3)*r3)-30;
@@ -2262,6 +2333,7 @@ var LANDMARKS={
     road(-25,4.4,true);
     streetlights(-22,[-28,-12,12,28]);
     neighbours2(0xA8794A,0xA04A28,-16);
+    markStart(-24,-56,2.30,6);
     var white=stone(0xCFC7B0,18);
     var lean=new THREE.Group();
     lean.position.set(-24,0,-56); lean.rotation.z=0.10;
@@ -2282,6 +2354,7 @@ var LANDMARKS={
     var roof=new THREE.Mesh(new THREE.BoxGeometry(24.6,0.8,13.6),stone(0x7A4A34,6));
     roof.position.set(4,11.2,-60); envGroup.add(roof);
     upLight(4,5,-52,0xFFE2B0,16,0.18);
+    markEnd();
     for(var g2=0;g2<8;g2++){
       var cyp=new THREE.Mesh(new THREE.ConeGeometry(1.2,7,7),
         new THREE.MeshPhongMaterial({color:0x1E3320,shininess:3}));
@@ -2721,7 +2794,7 @@ var PLACES3={
 Object.keys(PLACES3).forEach(function(k){ ENVS[k]=PLACES3[k]; });
 function buildEnv(name){
   clearGroup(envGroup);
-  planes.length=0; blinkers.length=0; swayers.length=0;
+  planes.length=0; blinkers.length=0; swayers.length=0; marks.length=0;
   lightBeam=null; bigWheel=null;
   (ENVS[name]||ENVS.city)();
 }
@@ -4501,6 +4574,23 @@ window.__soak={
   lives:function(){ return lives.map(function(L){ return {win:L.win,kind:L.kind,state:L.state,t:+L.t.toFixed(1)}; }); },
   flamesAlive:function(){ var n=0; for(var i=0;i<MAX_FLAME;i++) if(flLife[i]>0) n++; return n; },
   saveData:function(){ return save; },
+  markBox:function(){
+    /* how high the burning roof blocks the view - a landmark must beat this */
+    var front=null;
+    faces.forEach(function(f){
+      if(!front||Math.abs(f.cx)<Math.abs(front.cx)) front=f;
+    });
+    var roof=front?Math.atan2(front.top-1.7,Math.abs(front.cz))*180/Math.PI:0;
+    return marks.map(function(g){
+      var b=new THREE.Box3().setFromObject(g);
+      var cx=(b.max.x+b.min.x)/2, cz=(b.max.z+b.min.z)/2;
+      var top=Math.atan2(b.max.y-1.7,Math.hypot(cx,cz))*180/Math.PI;
+      return {height:+b.max.y.toFixed(1), nearestZ:+b.max.z.toFixed(1),
+              width:+(b.max.x-b.min.x).toFixed(1), offCentre:+cx.toFixed(0),
+              roofBlocks:+roof.toFixed(0), topReaches:+top.toFixed(0),
+              clearsBy:+(top-roof).toFixed(0)};
+    });
+  },
   nozzleBox:function(){
     var out={};
     Object.keys(nozzles).forEach(function(k){
