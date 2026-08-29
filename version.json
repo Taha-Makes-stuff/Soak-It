@@ -1,6 +1,6 @@
 {
-  "version": 12,
+  "version": 13,
   "name": "Soak It",
   "file": "index.html",
-  "notes": "Stars on every level - clear it, be quick, save everyone"
+  "notes": "Landmarks are the burning buildings now, leaderboard, rain, sirens on load, rounder lights, more rescue time"
 }
