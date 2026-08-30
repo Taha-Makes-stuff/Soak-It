@@ -1,6 +1,6 @@
 {
-  "version": 23,
+  "version": 24,
   "name": "Soak It",
   "file": "index.html",
-  "notes": "Boss fight: The Blaze, a fire monster at an oil refinery, as level 11 of Season 1. Plus Gadgets - Splash Bomb, Triple Head, Rescue Net, Cold Snap and Sprinkler, one per level."
+  "notes": "Stars now pay 4, 7 and 10 jits. Gadgets cost jits, with two new ones: Hydrant Boost and Nuke Splash. Splash Bomb ring now sits flat on the surface. Every light in the game rebuilt - soft glows, lamp cones and light pools on the road."
 }

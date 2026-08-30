@@ -177,7 +177,7 @@
     font-family:var(--body);font-size:12.5px;line-height:1.5;
     color:rgba(233,241,246,.42);margin:16px 0 0;
   }
-  /* offered only in a browser on Android — inside the app it would be nonsense */
+  /* offered only in a browser on Android â inside the app it would be nonsense */
   .getApp{
     position:absolute;left:50%;transform:translateX(-50%);
     bottom:calc(var(--tabH) + 24px + env(safe-area-inset-bottom));
@@ -196,7 +196,7 @@
   .getApp svg{width:15px;height:15px;fill:none;stroke:var(--brass-hi);stroke-width:2;
               stroke-linecap:round;stroke-linejoin:round;}
 
-  /* version, deliberately quiet — it is for Taha, not for players */
+  /* version, deliberately quiet â it is for Taha, not for players */
   .version{
     position:absolute;left:50%;transform:translateX(-50%);
     bottom:calc(var(--tabH) + 2px + env(safe-area-inset-bottom));
@@ -264,7 +264,7 @@
 
   /* ============ bottom bar ============ */
   /* Three places to go, always in the same spot at the foot of the screen.
-     Icons only — the names are far too long to sit under them — so holding one
+     Icons only â the names are far too long to sit under them â so holding one
      tells you what it is, and a hold never opens it. */
   .tabBar{
     position:absolute;left:0;right:0;bottom:0;z-index:8;
@@ -410,7 +410,7 @@
     text-transform:uppercase;color:rgba(233,241,246,.42);margin-left:auto;
   }
 
-  /* The creator's mark. It is not offered in the profile editor — it comes
+  /* The creator's mark. It is not offered in the profile editor â it comes
      from the announcements file, which only Taha can write. */
   .avatar.creator{
     background:#080310;color:#EBD9FF;position:relative;overflow:hidden;
@@ -637,7 +637,7 @@
   }
   .plate .value em{font-style:normal;font-size:15px;color:rgba(233,241,246,.40);}
   #livesPlate .value{color:var(--water);}
-  /* someone is in trouble right now — the counter says so without words */
+  /* someone is in trouble right now â the counter says so without words */
   #livesPlate.urgent{border-color:rgba(255,122,46,.7);}
   #livesPlate.urgent .value{color:var(--ember);animation:throb .7s ease-in-out infinite;}
   #timePlate{text-align:center;}
@@ -855,7 +855,7 @@
       </button>
       <!-- the one gadget you brought with you -->
       <button id="gadgetBtn" aria-label="Use gadget">
-        <span id="gadgetIcon">●</span>
+        <span id="gadgetIcon">â</span>
         <span id="gadgetName">Splash Bomb</span>
       </button>
     </div>
@@ -1061,7 +1061,7 @@
   <div class="wrap">
     <div class="sheetHead">
       <h2>Shop</h2>
-      <div class="purse" id="purse">◉ 0</div>
+      <div class="purse" id="purse">â 0</div>
     </div>
     <div class="seasonTabs shopTabs">
       <button class="seasonTab kindTab on" data-kind="nozzle">Nozzle</button>
@@ -1079,7 +1079,10 @@
     <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
   </button>
   <div class="wrap">
-    <div class="sheetHead"><h2>Gadgets</h2></div>
+    <div class="sheetHead">
+      <h2>Gadgets</h2>
+      <div class="purse" id="gadgetPurse">◈ 0</div>
+    </div>
     <div id="gadgetList"></div>
     <p class="privacy">You take one into every level and it works once. Pick the one that suits the mess you are walking into.</p>
   </div>
@@ -1242,7 +1245,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 23;
+var GAME_VERSION = 24;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -1581,7 +1584,7 @@ function shopItem(kind,id){
 }
 
 /* Progress is per season. Best times are keyed "1-4" (season 1, level 4). */
-var save={unlocked:{1:1,2:1,3:1},best:{},stars:{},vol:0.7,seenHint:false,gadget:"bomb",
+var save={unlocked:{1:1,2:1,3:1},best:{},stars:{},vol:0.7,seenHint:false,gadget:"bomb",gadgetsOwned:["bomb"],
           jits:0, owned:{nozzle:["brass"],hose:["black"],water:["clear"]},
           kit:{nozzle:"brass",hose:"black",water:"clear"}};
 try{
@@ -1606,6 +1609,10 @@ try{
       save.vol=(typeof pp.vol==="number")?pp.vol:0.7;
       save.seenHint=!!pp.seenHint;
       save.jits=Math.max(0,pp.jits|0);
+      if(Object.prototype.toString.call(pp.gadgetsOwned)==="[object Array]")
+        save.gadgetsOwned=pp.gadgetsOwned.filter(function(id){ return typeof id==="string"; });
+      if(save.gadgetsOwned.indexOf("bomb")<0) save.gadgetsOwned.push("bomb");
+      if(typeof pp.gadget==="string") save.gadget=pp.gadget;
       // the free item in each row is always owned, whatever the save says
       ["nozzle","hose","water"].forEach(function(k){
         var have=(pp.owned&&pp.owned[k])||[];
@@ -1803,6 +1810,40 @@ var Snd=(function(){
     steam:function(){ burst(2600,"highpass",0.34,0.10); },
     splash:function(){ burst(1500,"highpass",0.12,0.035); },
     clear:function(){ burst(3000,"highpass",0.45,0.13); tone(660,0.32,0.10,"sine",1320); },
+    /* the warning while something falls out of the sky, and the arrival */
+    incoming:function(){
+      if(!ready) return;
+      try{
+        var t=ctx.currentTime;
+        var o=ctx.createOscillator(); o.type="sawtooth";
+        var bp=ctx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=1100; bp.Q.value=3;
+        var g=ctx.createGain();
+        g.gain.setValueAtTime(0.0001,t);
+        g.gain.linearRampToValueAtTime(0.10,t+0.25);
+        g.gain.setValueAtTime(0.10,t+1.9);
+        g.gain.exponentialRampToValueAtTime(0.0001,t+2.5);
+        o.frequency.setValueAtTime(1500,t);
+        o.frequency.exponentialRampToValueAtTime(320,t+2.4);
+        o.connect(bp); bp.connect(g); g.connect(master);
+        o.start(t); o.stop(t+2.6);
+      }catch(e){}
+    },
+    boom:function(){
+      if(!ready) return;
+      try{
+        var t=ctx.currentTime;
+        var s2=ctx.createBufferSource(); s2.buffer=noiseBuf;
+        var f2=ctx.createBiquadFilter(); f2.type="lowpass";
+        f2.frequency.setValueAtTime(1800,t);
+        f2.frequency.exponentialRampToValueAtTime(120,t+1.1);
+        var g2=ctx.createGain();
+        g2.gain.setValueAtTime(0.34,t);
+        g2.gain.exponentialRampToValueAtTime(0.0001,t+1.5);
+        s2.connect(f2); f2.connect(g2); g2.connect(master);
+        s2.start(t); s2.stop(t+1.6);
+        tone(70,1.0,0.22,"sine",34);
+      }catch(e){}
+    },
     /* someone reached in time — bright, rising, unmistakably good */
     rescue:function(){
       tone(784,0.14,0.13,"triangle");
@@ -1937,11 +1978,50 @@ var planes=[], blinkers=[], swayers=[];
 var lightBeam=null, bigWheel=null;   // the lighthouse sweep and the big wheel
 
 var litMat=function(c,o){ return new THREE.MeshBasicMaterial({color:c,transparent:o!==undefined,opacity:o===undefined?1:o}); };
+/* A glow with no picture on it draws as a hard square, which is exactly why
+   every light in the game looked like a pale box. One soft radial fade,
+   shared by all of them. */
+var GLOW_TEX=(function(){
+  var c=document.createElement("canvas"); c.width=c.height=128;
+  var g=c.getContext("2d");
+  var rg=g.createRadialGradient(64,64,0,64,64,64);
+  rg.addColorStop(0,   "rgba(255,255,255,1)");
+  rg.addColorStop(0.22,"rgba(255,255,255,0.78)");
+  rg.addColorStop(0.48,"rgba(255,255,255,0.30)");
+  rg.addColorStop(0.75,"rgba(255,255,255,0.08)");
+  rg.addColorStop(1,   "rgba(255,255,255,0)");
+  g.fillStyle=rg; g.fillRect(0,0,128,128);
+  return new THREE.CanvasTexture(c);
+})();
 function glowSprite(col,size,op){
-  var s=new THREE.Sprite(new THREE.SpriteMaterial({color:col,transparent:true,opacity:op===undefined?0.8:op,
+  var s=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW_TEX,color:col,transparent:true,
+    opacity:Math.min(1,(op===undefined?0.8:op)*1.25),
     blending:THREE.AdditiveBlending,depthWrite:false}));
   s.scale.set(size,size,1);
   return s;
+}
+/* the pool a lamp throws on the road under it — the thing that actually
+   reads as "there is a light there" rather than "there is a dot there" */
+function lightPool(x,z,col,size,op){
+  var m=new THREE.Mesh(new THREE.PlaneGeometry(size,size),
+    new THREE.MeshBasicMaterial({map:GLOW_TEX,color:col||0xFFD9A0,transparent:true,
+      opacity:op===undefined?0.26:op,blending:THREE.AdditiveBlending,depthWrite:false}));
+  m.rotation.x=-Math.PI/2; m.position.set(x,0.06,z);
+  envGroup.add(m);
+  return m;
+}
+/* Two real lamps, reused every level, so walls near a lamp post are actually
+   lit instead of merely having a bright dot floating beside them. Two is the
+   budget: every extra one costs on every surface in the scene. */
+var lampLights=[new THREE.PointLight(0xFFD9A0,0,30,1.7), new THREE.PointLight(0xFFD9A0,0,30,1.7)];
+lampLights.forEach(function(L){ scene.add(L); });
+var lampClaimed=0;
+function claimLamp(x,y,z,col){
+  if(lampClaimed>=lampLights.length) return;
+  var L=lampLights[lampClaimed++];
+  L.position.set(x,y,z);
+  L.color.setHex(col||0xFFD9A0);
+  L.intensity=0.85;
 }
 function tower(x,z,w,h){
   var tex=WIN_TEX.clone(); tex.needsUpdate=true;
@@ -1980,11 +2060,24 @@ function road(z,width,dashes){
   }
 }
 function streetlights(z,xs){
-  xs.forEach(function(x){
+  xs.forEach(function(x,i){
     var pole=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.12,6.4,7),trimMat);
     pole.position.set(x,3.2,z); envGroup.add(pole);
-    var lamp=glowSprite(0xFFD08A,3.2,0.8);
-    lamp.position.set(x,6.3,z); envGroup.add(lamp);
+    var arm=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,1.1,6),trimMat);
+    arm.rotation.z=Math.PI/2; arm.position.set(x,6.35,z+0.55); envGroup.add(arm);
+    var shade=new THREE.Mesh(new THREE.ConeGeometry(0.42,0.34,10),trimMat);
+    shade.position.set(x,6.28,z+1.05); envGroup.add(shade);
+    var bulb=new THREE.Mesh(new THREE.SphereGeometry(0.16,8,6),litMat(0xFFE6B8));
+    bulb.position.set(x,6.06,z+1.05); envGroup.add(bulb);
+    var lamp=glowSprite(0xFFD08A,2.6,0.62);
+    lamp.position.set(x,6.06,z+1.05); envGroup.add(lamp);
+    // the cone of light, and the pool it lands in
+    var cone=new THREE.Mesh(new THREE.CylinderGeometry(0.3,3.1,6.0,12,1,true),
+      new THREE.MeshBasicMaterial({color:0xFFD9A0,transparent:true,opacity:0.055,
+        blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+    cone.position.set(x,3.0,z+1.05); envGroup.add(cone);
+    lightPool(x,z+1.05,0xFFD9A0,11,0.30);
+    if(i<2) claimLamp(x,5.4,z+1.05,0xFFD9A0);
   });
 }
 
@@ -2611,12 +2704,18 @@ function cobbles(z,w,d,tint){
   return m;
 }
 function lampPost(x,z,col,h){
-  var pole=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.11,h||4.6,7),trimMat);
-  pole.position.set(x,(h||4.6)/2,z); envGroup.add(pole);
+  var hh=h||4.6;
+  var pole=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.11,hh,7),trimMat);
+  pole.position.set(x,hh/2,z); envGroup.add(pole);
   var head=new THREE.Mesh(new THREE.SphereGeometry(0.26,10,8),litMat(col||0xFFDCA0,0.95));
-  head.position.set(x,(h||4.6)+0.2,z); envGroup.add(head);
-  var g=glowSprite(col||0xFFDCA0,3.2,0.55);
-  g.position.set(x,(h||4.6)+0.2,z); envGroup.add(g);
+  head.position.set(x,hh+0.2,z); envGroup.add(head);
+  var g=glowSprite(col||0xFFDCA0,2.6,0.5);
+  g.position.set(x,hh+0.2,z); envGroup.add(g);
+  var cone=new THREE.Mesh(new THREE.CylinderGeometry(0.25,2.4,hh,12,1,true),
+    new THREE.MeshBasicMaterial({color:col||0xFFDCA0,transparent:true,opacity:0.05,
+      blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+  cone.position.set(x,hh/2,z); envGroup.add(cone);
+  lightPool(x,z,col||0xFFDCA0,8.5,0.24);
 }
 function cypress(x,z,h){
   var t=new THREE.Mesh(new THREE.ConeGeometry((h||6)*0.17,h||6,8),
@@ -3113,6 +3212,8 @@ function addValve(x,y,z,rot){
 
 function buildEnv(name){
   clearGroup(envGroup);
+  lampClaimed=0;
+  lampLights.forEach(function(L){ L.intensity=0; });
   planes.length=0; blinkers.length=0; swayers.length=0; marks.length=0;
   lightBeam=null; bigWheel=null;
   (ENVS[name]||ENVS.city)();
@@ -4071,7 +4172,7 @@ function hitWindow(i,x,y,z){
     return;
   }
   var rateNow=TUNE.emitMin+(TUNE.emitMax-TUNE.emitMin)*pressure;
-  w.fire-=TUNE.douse/rateNow;
+  w.fire-=TUNE.douse*(elapsed<boostUntil?2:1)/rateNow;
   if(Math.random()<0.30) puffSteam(x,y,z,1);
   if(Math.random()<0.04) Snd.steam();
   if(w.fire<=0){
@@ -4125,7 +4226,7 @@ function step(dt,noDraw){
 
   /* the hose kicks: open it right up and holding a line gets harder.
      Squared, so low pressure is rock steady and only the top end fights you. */
-  var amp = live ? pressure*pressure*TUNE.shake : 0;
+  var amp = (live&&elapsed>=boostUntil) ? pressure*pressure*TUNE.shake : 0;
   var shx = (Math.sin(now*21.3)*0.6+Math.sin(now*34.7)*0.4)*amp;
   var shy = (Math.sin(now*17.9)*0.6+Math.sin(now*29.3)*0.4)*amp;
   camera.rotation.y=-yaw+shx;
@@ -4166,7 +4267,7 @@ function step(dt,noDraw){
     B.s.material.opacity=(((now/B.rate+B.phase)%1)<0.42)?0.95:0.06;
   }
   if(bossOn&&live) updateBoss(dt,now);
-  if(live) updateGadgets(dt);
+  if(live){ updateGadgets(dt); updateNuke(dt); }
   if(bigWheel) bigWheel.rotation.z=now*0.12;
   if(lightBeam){ lightBeam.m.rotation.y=now*0.55; }
   for(var sw=0;sw<swayers.length;sw++){
@@ -4179,7 +4280,8 @@ function step(dt,noDraw){
   /* ---- water ---- */
   if(live){
     var speed=TUNE.speedMin+(TUNE.speedMax-TUNE.speedMin)*pressure;
-    var spread=TUNE.spreadLoose+(TUNE.spreadTight-TUNE.spreadLoose)*pressure;
+    var spread=(elapsed<boostUntil)?TUNE.spreadTight
+              :TUNE.spreadLoose+(TUNE.spreadTight-TUNE.spreadLoose)*pressure;
     var rate=TUNE.emitMin+(TUNE.emitMax-TUNE.emitMin)*pressure;
     emitCarry+=rate*dt*60;
     var n=emitCarry|0; emitCarry-=n; if(n>70) n=70;
@@ -4345,7 +4447,8 @@ function step(dt,noDraw){
 
   var flick=0.82+0.18*(Math.sin(now*9.3)*0.6+Math.sin(now*17.7)*0.4);
   fireLight.intensity=Math.min(3.2,fireTotal*0.42)*flick;
-  fireLight.distance=22+Math.min(30,fireTotal*3);
+  fireLight.distance=26+Math.min(34,fireTotal*3.4);
+  fireLight.decay=1.5;
 
   /* ---- the people ---- */
   var anyUrgent=false;
@@ -4498,7 +4601,7 @@ function finish(won){
   /* Jits are paid purely on stars, exactly as Taha set them: none for a
      fail, then 2, 4 and 7. That makes the third star — everyone out alive —
      worth nearly as much as the other two together. */
-  var jits=[0,2,4,7][earned]||0;
+  var jits=[0,4,7,10][earned]||0;
   if(won){
     save.jits+=jits;
     if(level>=save.unlocked[seasonNow]&&level<LEVELS.length) save.unlocked[seasonNow]=level+1;
@@ -4886,6 +4989,10 @@ $("endMenu").addEventListener("click",function(){ Snd.tap(); goStart(); });
         if(save.owned[k].indexOf(it.id)<0) save.owned[k].push(it.id);
       });
     });
+    if(!save.gadgetsOwned) save.gadgetsOwned=[];
+    GADGETS.forEach(function(g){
+      if(save.gadgetsOwned.indexOf(g.id)<0) save.gadgetsOwned.push(g.id);
+    });
     persist();
     Snd.init(); Snd.resume(); Snd.clear();
     toast("Owner unlocked");
@@ -5155,35 +5262,46 @@ function updateBoss(dt,now){
    ideas; the other three exist so that not every gadget is another way
    of pointing water at something.
    ============================================================ */
+/* Priced the way Taha asked: the better it is, the more it costs. The Splash
+   Bomb stays free so nobody is ever without one. */
 var GADGETS=[
-  {id:"bomb",   name:"Splash Bomb", col:"#4AB0FF",
-   blurb:"Lob it anywhere. It bursts across five valves at once, and it hurts the boss badly.",
+  {id:"bomb",   name:"Splash Bomb", col:"#4AB0FF", cost:0,
+   blurb:"Lob it anywhere. It bursts across the five nearest fires, and it takes a third off a boss.",
    how:"Tap once to aim, tap again to throw."},
-  {id:"triple", name:"Triple Head", col:"#FFC24A",
-   blurb:"Three jets at full power for ten seconds, and the rule about low fires stops applying.",
-   how:"Tap and go."},
-  {id:"net",    name:"Rescue Net",  col:"#5ADC8A",
-   blurb:"For thirty seconds nobody can fall. Anyone who runs out of time is caught instead.",
-   how:"Tap when someone is about to drop."},
-  {id:"cold",   name:"Cold Snap",   col:"#8AD8FF",
+  {id:"cold",   name:"Cold Snap",   col:"#8AD8FF", cost:25,
    blurb:"Every fire stops growing and stops spreading for eight seconds.",
    how:"Tap when it is all getting away from you."},
-  {id:"sprink", name:"Sprinkler",   col:"#B26BFF",
-   blurb:"Sticks to whatever you are pointing at and puts that one out on its own for twenty seconds.",
-   how:"Aim at a fire, then tap."}
+  {id:"sprink", name:"Sprinkler",   col:"#B26BFF", cost:35,
+   blurb:"Sticks to one fire and puts it out on its own for twenty seconds while you do something else.",
+   how:"Aim at a fire the way you would hose it, then tap."},
+  {id:"net",    name:"Rescue Net",  col:"#5ADC8A", cost:50,
+   blurb:"For thirty seconds the next two people who would fall get caught instead.",
+   how:"Tap when someone is about to drop."},
+  {id:"triple", name:"Triple Head", col:"#FFC24A", cost:65,
+   blurb:"Three jets for ten seconds, and the rule about low fires stops applying.",
+   how:"Tap and go."},
+  {id:"boost",  name:"Hydrant Boost", col:"#FF7A2E", cost:80,
+   blurb:"Twelve seconds with no kick, a jet that holds a dead straight line, and twice the power.",
+   how:"Tap and hold your aim."},
+  {id:"nuke",   name:"Nuke Splash", col:"#FF3A46", cost:100,
+   blurb:"Paint a building with the laser and a water bomb falls out of the sky onto it. Every fire on that building goes out. It will not touch a boss.",
+   how:"Tap to raise the laser, point at a building, tap again to call it in."}
 ];
 function gadgetById(id){
   for(var i=0;i<GADGETS.length;i++) if(GADGETS[i].id===id) return GADGETS[i];
   return GADGETS[0];
 }
 
-var gadgetLeft=0, aiming=false, netUntil=0, netLeft=0, coldUntil=0, tripleUntil=0, sprinkler=null;
+var gadgetLeft=0, aiming=false, netUntil=0, netLeft=0, coldUntil=0, tripleUntil=0, boostUntil=0, sprinkler=null;
 var bombs=[];
 var aimLine=null, aimRing=null;
 
 function resetGadget(){
+  if(!gadgetOwned(save.gadget||"bomb")) save.gadget="bomb";
   gadgetLeft=1; aiming=false;
-  netUntil=0; netLeft=0; coldUntil=0; tripleUntil=0; sprinkler=null;
+  netUntil=0; netLeft=0; coldUntil=0; tripleUntil=0; boostUntil=0; sprinkler=null;
+  marking=false; markedBld=-1; nukeDrop=null; showLaser(false);
+  groupBuildings();
   bombs.forEach(function(b){ bossGroup.remove(b.m); bossGroup.remove(b.gl); });
   bombs.length=0;
   showAim(false);
@@ -5193,10 +5311,10 @@ function resetGadget(){
 function paintGadget(){
   var g=gadgetById(save.gadget||"bomb");
   gadgetBtn.style.display=gadgetLeft>0?"grid":"none";
-  gadgetBtn.className=aiming?"armed":"";
+  gadgetBtn.className=(aiming||marking)?"armed":"";
   gadgetBtn.style.setProperty("--gcol",g.col);
-  gadgetName.textContent=aiming?"THROW":g.name;
-  gadgetIcon.textContent=({bomb:"●",triple:"≡",net:"▦",cold:"❄",sprink:"☁"})[g.id];
+  gadgetName.textContent=(aiming||marking)?(marking?"DROP IT":"THROW"):g.name;
+  gadgetIcon.textContent=({bomb:"●",triple:"≡",net:"▦",cold:"❄",sprink:"☁",boost:"▲",nuke:"☢"})[g.id]||"●";
 }
 
 /* ---- where a thrown bomb would land ---- */
@@ -5223,7 +5341,7 @@ function bombPath(){
       if(y<=0||y>=f.top) continue;
       var al=(hx-f.cx)*f.dx+(hz-f.cz)*f.dz;
       if(al<-f.half||al>f.half) continue;
-      return {pts:pts, at:new THREE.Vector3(hx,y,hz)};
+      return {pts:pts, at:new THREE.Vector3(hx,y,hz), face:f};
     }
   }
   return {pts:pts, at:new THREE.Vector3(x,y,z)};
@@ -5254,9 +5372,15 @@ function updateAim(){
   aimLine.geometry.attributes.position.needsUpdate=true;
   aimLine.geometry.setDrawRange(0,n);
   aimRing.position.copy(r.at);
-  // lie the ring flat on the ground, or flat against the wall it will hit
-  if(r.at.y<=0.2){ aimRing.rotation.set(-Math.PI/2,0,0); aimRing.position.y=0.06; }
-  else { aimRing.lookAt(0,r.at.y,0); }
+  /* the ring lies on whatever it is about to land on: flat on the road,
+     or flat against the wall, sitting on the window like a sticker */
+  if(r.face){
+    aimRing.rotation.set(0,r.face.rot,0);
+    aimRing.position.x+=r.face.nx*0.06;
+    aimRing.position.z+=r.face.nz*0.06;
+  } else {
+    aimRing.rotation.set(-Math.PI/2,0,0); aimRing.position.y=0.06;
+  }
 }
 
 function throwBomb(){
@@ -5333,6 +5457,167 @@ function jetLandsAt(){
   return null;
 }
 
+
+/* ============================================================
+   WHICH BUILDING IS WHICH
+   The nuke clears one building, so the game has to know where one
+   building stops and the next starts. Walls that touch belong to the
+   same building — which makes a front and its two wings one thing, and
+   makes each tank at the refinery its own.
+   ============================================================ */
+var bldOf=[], bldCount=0;
+function groupBuildings(){
+  bldOf.length=0; bldCount=0;
+  function ends(f){
+    return [[f.cx-f.dx*f.half, f.cz-f.dz*f.half],
+            [f.cx+f.dx*f.half, f.cz+f.dz*f.half]];
+  }
+  for(var i=0;i<faces.length;i++) bldOf[i]=-1;
+  for(var i=0;i<faces.length;i++){
+    if(bldOf[i]>=0) continue;
+    bldOf[i]=bldCount;
+    var queue=[i];
+    while(queue.length){
+      var a=queue.pop(), ea=ends(faces[a]);
+      for(var j=0;j<faces.length;j++){
+        if(bldOf[j]>=0) continue;
+        var eb=ends(faces[j]), touch=false;
+        for(var p=0;p<2&&!touch;p++) for(var q=0;q<2;q++){
+          var dx=ea[p][0]-eb[q][0], dz=ea[p][1]-eb[q][1];
+          if(dx*dx+dz*dz<30){ touch=true; break; }
+        }
+        if(touch){ bldOf[j]=bldCount; queue.push(j); }
+      }
+    }
+    bldCount++;
+  }
+}
+function buildingTop(b){
+  var sx=0,sz=0,n=0,top=0;
+  for(var i=0;i<faces.length;i++){
+    if(bldOf[i]!==b) continue;
+    sx+=faces[i].cx; sz+=faces[i].cz; n++;
+    if(faces[i].top>top) top=faces[i].top;
+  }
+  return n?{x:sx/n, z:sz/n, y:top}:null;
+}
+
+/* a straight line out of the nozzle, for pointing rather than for water */
+function laserHit(){
+  var x=TIP.x,y=TIP.y,z=TIP.z, step=0.4;
+  for(var i=0;i<250;i++){
+    var px=x,py=y,pz=z;
+    x+=DIR.x*step; y+=DIR.y*step; z+=DIR.z*step;
+    if(y<=0.03) return null;
+    for(var fj=0;fj<faces.length;fj++){
+      var f=faces[fj];
+      var dA=(px-f.cx)*f.nx+(pz-f.cz)*f.nz; if(dA<=0) continue;
+      var dB=(x-f.cx)*f.nx+(z-f.cz)*f.nz;   if(dB>0) continue;
+      var t=dA/(dA-dB);
+      var hx=px+(x-px)*t, hy=py+(y-py)*t, hz=pz+(z-pz)*t;
+      if(hy<=0||hy>=f.top) continue;
+      var al=(hx-f.cx)*f.dx+(hz-f.cz)*f.dz;
+      if(al<-f.half||al>f.half) continue;
+      return {fi:fj, bld:bldOf[fj], x:hx, y:hy, z:hz};
+    }
+  }
+  return null;
+}
+
+/* ---- marking a building, and dropping on it ---- */
+var marking=false, markedBld=-1, nukeDrop=null;
+var laserLine=null, markGroup=new THREE.Group(); scene.add(markGroup);
+
+function showLaser(on){
+  if(!laserLine){
+    laserLine=new THREE.Line(new THREE.BufferGeometry().setAttribute("position",
+      new THREE.BufferAttribute(new Float32Array(6),3)),
+      new THREE.LineBasicMaterial({color:0xFF3A46,transparent:true,opacity:0.95}));
+    laserLine.frustumCulled=false; scene.add(laserLine);
+  }
+  laserLine.visible=on;
+  if(!on){ clearGroup(markGroup); markedBld=-1; }
+}
+
+function paintMark(b){
+  if(b===markedBld) return;
+  markedBld=b;
+  clearGroup(markGroup);
+  if(b<0) return;
+  var m=new THREE.MeshBasicMaterial({color:0xFF6A2A,transparent:true,opacity:0.22,
+    side:THREE.DoubleSide,depthWrite:false});
+  var edge=new THREE.MeshBasicMaterial({color:0xFFC24A,transparent:true,opacity:0.75,
+    side:THREE.DoubleSide,depthWrite:false});
+  for(var i=0;i<faces.length;i++){
+    if(bldOf[i]!==b) continue;
+    var f=faces[i];
+    var p=new THREE.Mesh(new THREE.PlaneGeometry(f.len,f.top),m);
+    p.position.set(f.cx+f.nx*0.16, f.top/2, f.cz+f.nz*0.16);
+    p.rotation.y=f.rot; p.renderOrder=4; markGroup.add(p);
+    var band=new THREE.Mesh(new THREE.PlaneGeometry(f.len,0.35),edge);
+    band.position.set(f.cx+f.nx*0.20, f.top-0.2, f.cz+f.nz*0.20);
+    band.rotation.y=f.rot; band.renderOrder=5; markGroup.add(band);
+  }
+}
+
+function dropNuke(b){
+  var t=buildingTop(b);
+  if(!t) return;
+  var m=new THREE.Mesh(new THREE.ConeGeometry(0.7,3.0,10),
+    new THREE.MeshPhongMaterial({color:0xD8DCE0,emissive:0x303840,shininess:70}));
+  m.rotation.x=Math.PI;                       // nose down
+  var fin=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.9,0.12),
+    new THREE.MeshPhongMaterial({color:0xB4342A,shininess:40}));
+  fin.position.y=1.2; m.add(fin);
+  var gl=glowSprite(0xFFC24A,3.2,0.6);
+  bossGroup.add(m); bossGroup.add(gl);
+  nukeDrop={m:m, gl:gl, bld:b, x:t.x, z:t.z, y:t.y+46, target:t.y+1.2, v:0};
+  Snd.incoming();
+  toast("Incoming");
+}
+
+function nukeLands(){
+  var d=nukeDrop;
+  Snd.boom();
+  // the flash, then a wall of steam off the whole building
+  puffSteam(d.x,d.target,d.z,40);
+  splashDrops(d.x,d.target,d.z,26);
+  var flash=glowSprite(0xFFE9B8,26,0.95);
+  flash.position.set(d.x,d.target+1,d.z); bossGroup.add(flash);
+  blinkers.push({s:flash,rate:0.18,phase:0});
+  setTimeout(function(){ bossGroup.remove(flash); },420);
+  var n=0;
+  for(var i=0;i<wins.length;i++){
+    if(bldOf[wins[i].fi]!==d.bld) continue;
+    if(wins[i].fire<=0) continue;
+    douseFully(i); n++;
+  }
+  toast(n?("The whole building is out — "+n+" gone"):"Nothing was alight there");
+  bossGroup.remove(d.m); bossGroup.remove(d.gl);
+  nukeDrop=null;
+}
+
+function updateNuke(dt){
+  if(marking){
+    var h=laserHit();
+    var arr=laserLine.geometry.attributes.position.array;
+    arr[0]=TIP.x; arr[1]=TIP.y; arr[2]=TIP.z;
+    if(h){ arr[3]=h.x; arr[4]=h.y; arr[5]=h.z; paintMark(h.bld); }
+    else {
+      arr[3]=TIP.x+DIR.x*80; arr[4]=TIP.y+DIR.y*80; arr[5]=TIP.z+DIR.z*80;
+      paintMark(-1);
+    }
+    laserLine.geometry.attributes.position.needsUpdate=true;
+  }
+  if(nukeDrop){
+    nukeDrop.v+=26*dt;
+    nukeDrop.y-=nukeDrop.v*dt;
+    nukeDrop.m.position.set(nukeDrop.x,nukeDrop.y,nukeDrop.z);
+    nukeDrop.gl.position.set(nukeDrop.x,nukeDrop.y,nukeDrop.z);
+    if(nukeDrop.y<=nukeDrop.target) nukeLands();
+  }
+}
+
 function useGadget(){
   if(gadgetLeft<=0||!running||paused||finished) return;
   var g=gadgetById(save.gadget||"bomb");
@@ -5340,12 +5625,20 @@ function useGadget(){
     if(!aiming){ aiming=true; showAim(true); updateAim(); paintGadget(); return; }
     aiming=false; showAim(false); gadgetLeft=0; throwBomb(); paintGadget(); return;
   }
+  if(g.id==="nuke"){
+    if(!marking){ marking=true; showLaser(true); paintGadget(); return; }
+    if(markedBld<0){ toast("Point the laser at a building"); return; }
+    var b=markedBld;
+    marking=false; showLaser(false); gadgetLeft=0;
+    dropNuke(b); paintGadget(); return;
+  }
   gadgetLeft=0;
   if(g.id==="triple"){ tripleUntil=elapsed+10; toast("Triple head — ten seconds"); }
   /* a net holds a couple of people, not a whole building: any more and it
      simply hands you the rescue star */
   else if(g.id==="net"){ netUntil=elapsed+30; netLeft=2; toast("Net out — it will catch two"); }
   else if(g.id==="cold"){ coldUntil=elapsed+8; toast("Cold snap — the fire stops"); }
+  else if(g.id==="boost"){ boostUntil=elapsed+12; toast("Hydrant boost — twelve seconds"); }
   else if(g.id==="sprink"){
     var land=jetLandsAt(), best=-1, bestD=16;
     if(land) for(var i=0;i<wins.length;i++){
@@ -5405,13 +5698,19 @@ function updateGadgets(dt){
 }
 
 /* ---- the gadgets screen ---- */
+function gadgetOwned(id){
+  if(!save.gadgetsOwned) save.gadgetsOwned=["bomb"];
+  return save.gadgetsOwned.indexOf(id)>=0;
+}
 function renderGadgets(){
+  $("gadgetPurse").textContent="\u25C8 "+save.jits+" jits";
   var list=$("gadgetList");
   list.innerHTML="";
   var chosen=save.gadget||"bomb";
   GADGETS.forEach(function(g){
+    var owned=gadgetOwned(g.id), afford=save.jits>=g.cost;
     var row=document.createElement("button");
-    row.className="kit"+(g.id===chosen?" on":"");
+    row.className="kit"+(owned&&g.id===chosen?" on":"")+(owned?"":(afford?" locked":" locked cant"));
     var chip=document.createElement("span");
     chip.className="chipCol"; chip.style.background=g.col;
     var box=document.createElement("span");
@@ -5423,10 +5722,18 @@ function renderGadgets(){
     bl.textContent=g.blurb+" "+g.how;
     box.appendChild(nm); box.appendChild(bl);
     var tag=document.createElement("span");
-    tag.className="kitTag"; tag.textContent=(g.id===chosen)?"TAKING":"TAKE";
+    tag.className="kitTag";
+    tag.textContent = owned ? (g.id===chosen?"TAKING":"TAKE")
+                            : ("\u25C8 "+g.cost);
     row.appendChild(chip); row.appendChild(box); row.appendChild(tag);
     row.addEventListener("click",function(){
-      save.gadget=g.id; persist(); Snd.tap(); renderGadgets();
+      if(owned){ save.gadget=g.id; persist(); Snd.tap(); renderGadgets(); return; }
+      if(save.jits<g.cost){ toast("Not enough jits"); Snd.tap(); return; }
+      save.jits-=g.cost;
+      save.gadgetsOwned.push(g.id);
+      save.gadget=g.id;
+      persist(); Snd.clear(); renderGadgets();
+      toast(g.name+" bought");
     });
     list.appendChild(row);
   });
@@ -5498,7 +5805,9 @@ window.__soak={
   jetLand:function(){ var r=jetLandsAt(); return r?{x:+r.x.toFixed(2),y:+r.y.toFixed(2),z:+r.z.toFixed(2)}:null; },
   gadgetState:function(){
     return {left:gadgetLeft, aiming:aiming, id:save.gadget,
-            net:+(netUntil-elapsed).toFixed(1), netLeft:netLeft, cold:+(coldUntil-elapsed).toFixed(1),
+            net:+(netUntil-elapsed).toFixed(1), netLeft:netLeft,
+            boost:+(boostUntil-elapsed).toFixed(1), marking:marking, marked:markedBld,
+            buildings:bldCount, nukeFalling:!!nukeDrop, cold:+(coldUntil-elapsed).toFixed(1),
             triple:+(tripleUntil-elapsed).toFixed(1),
             sprinkler:sprinkler?sprinkler.win:null, bombs:bombs.length};
   },
