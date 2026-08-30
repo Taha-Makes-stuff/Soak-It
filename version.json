@@ -1,6 +1,6 @@
 {
-  "version": 20,
+  "version": 21,
   "name": "Soak It",
   "file": "index.html",
-  "notes": "Shop, announcements and leaderboard lists now scroll on a phone"
+  "notes": "New bottom bar: announcements, leaderboard and shop as icons; hold one for its name. Play and Levels stay in the middle."
 }
