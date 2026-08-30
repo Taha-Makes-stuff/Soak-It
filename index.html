@@ -1168,7 +1168,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 21;
+var GAME_VERSION = 22;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -2114,6 +2114,35 @@ function neighbours2(wallCol,roofCol,z){
    new footprint would crowd the burning house, and floodlit, the way
    a real monument is after dark.
    ------------------------------------------------------------------ */
+/* Scenery must never stand between the player and the fire. A fountain did it
+   on Grand Station, a pagoda roof did it on Temple Garden, and both times it
+   was spotted by eye rather than caught. Hand this the footprint of anything
+   you are about to place in front of the building — where it stands, how wide
+   it is, how tall — and it says whether it would hide a window. */
+function hidesFire(x,z,r,h){
+  if(z>-0.05) return false;                       // behind the player
+  for(var i=0;i<faces.length;i++){
+    var f=faces[i];
+    var e1x=f.cx-f.dx*f.half, e1z=f.cz-f.dz*f.half;
+    var e2x=f.cx+f.dx*f.half, e2z=f.cz+f.dz*f.half;
+    if(e1z>-1||e2z>-1) continue;
+    /* only exempt if the whole of it is behind the wall: a tree planted just
+       behind still bulges out in front of the windows */
+    if(z+r<=e1z&&z+r<=e2z) continue;
+    var lo=1e9, lz=0;
+    for(var k=0;k<wins.length;k++){
+      if(wins[k].fi!==i) continue;
+      if(wins[k].y<lo){ lo=wins[k].y; lz=wins[k].z; }
+    }
+    if(lo>1e8) continue;
+    // short enough to duck under the line of sight to the lowest window
+    if(h<TUNE.eyeY+(lo-WIN_HH-TUNE.eyeY)*(z/lz)) continue;
+    var a=e1x*(z/e1z), b=e2x*(z/e2z);             // the wall's spread at this depth
+    if(x>Math.min(a,b)-r&&x<Math.max(a,b)+r) return true;
+  }
+  return false;
+}
+
 var _markG=null,_markPrev=null,_markInfo=null;
 var marks=[];
 function markStart(ax,az,scale,back,clearDeg){
@@ -2639,15 +2668,20 @@ var PLACES3={
     skylineBehind(-56);
     var top=faceTop(), c=faceMid();
     var redM=new THREE.MeshPhongMaterial({color:0x8E2B22,shininess:22});
-    // stacked pagoda roofs climbing the burning tower
+    /* These roofs used to climb the burning tower, and their eaves hung nine
+       metres out over its face â thirteen windows could not be hit at all. The
+       building already gets a pagoda roof from its own style, so the stacked
+       one now stands in the garden beside it. */
+    var pav=new THREE.Group(); pav.position.set(-27,0,-11); envGroup.add(pav);
+    var post=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.65,7.4,8),redM);
+    post.position.y=3.7; pav.add(post);
     for(var r=0;r<4;r++){
-      var w=9.5-r*1.7;
-      var roof=new THREE.Mesh(new THREE.ConeGeometry(w,2.0,4),redM);
-      roof.position.set(c.x, 5.2+r*4.3, c.z-1.6);
-      roof.rotation.y=Math.PI/4; envGroup.add(roof);
+      var roof=new THREE.Mesh(new THREE.ConeGeometry(7.2-r*1.5,2.0,4),redM);
+      roof.position.y=7.2+r*3.3; roof.rotation.y=Math.PI/4; pav.add(roof);
     }
     var spire=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.34,4,8),litMat(0xE8C46A));
-    spire.position.set(c.x, top+3.6, c.z-1.6); envGroup.add(spire);
+    spire.position.set(-27,21.4,-11); envGroup.add(spire);
+    upLight(-27,3,-5,0xFFC98A,14,0.20);
     // a still pond
     var pond=new THREE.Mesh(new THREE.CircleGeometry(7,26),
       new THREE.MeshPhongMaterial({color:0x0E2A2A,shininess:170,specular:0x7FC6C0}));
@@ -2668,7 +2702,7 @@ var PLACES3={
     // blossom
     for(var b=0;b<9;b++){
       var bx=-24+b*6, bz=-8-Math.random()*8;
-      if(Math.abs(bx)<11&&bz>-13) continue;
+      if(hidesFire(bx,bz,2.9,7)) continue;
       var trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.3,4,6),
         new THREE.MeshPhongMaterial({color:0x3A2A22,shininess:4}));
       trunk.position.set(bx,2,bz); envGroup.add(trunk);
@@ -2693,7 +2727,9 @@ var PLACES3={
     pool.rotation.x=-Math.PI/2; pool.position.set(0,0.05,-4); envGroup.add(pool);
     for(var p=0;p<12;p++){
       var a=p/12*Math.PI*2;
-      palm(Math.cos(a)*11.5, -4+Math.sin(a)*9, 1.0+Math.random()*0.5);
+      var px=Math.cos(a)*11.5, pz=-4+Math.sin(a)*9;
+      if(hidesFire(px,pz,2.2,7)) continue;
+      palm(px, pz, 1.0+Math.random()*0.5);
     }
     // firepit by the water
     var pit=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.3,0.5,12),stone(0x54483A,5));
@@ -2755,7 +2791,7 @@ var PLACES3={
       q.position.set(x,0.7,-16); envGroup.add(q);
     });
     // bridges
-    [-4,-20,-34].forEach(function(z,i){
+    [-22,-34,-46].forEach(function(z,i){
       var deck=new THREE.Mesh(new THREE.BoxGeometry(13,0.5,2.4),stone(0x6A6058,10));
       deck.position.set(0,2.2,z); envGroup.add(deck);
       var arc=new THREE.Mesh(new THREE.TorusGeometry(4.6,0.42,7,18,Math.PI),stone(0x6A6058,10));
@@ -2881,8 +2917,8 @@ var PLACES3={
     domeRib.rotation.x=Math.PI/2; domeRib.position.set(c.x,top+1,c.z-6); envGroup.add(domeRib);
     // planting, inside and out
     for(var p=0;p<22;p++){
-      var px2=-20+Math.random()*40, pz=-20+Math.random()*22;
-      if(Math.abs(px2)<3&&pz>-6) continue;
+      var px2=-20+Math.random()*40, pz=-24+Math.random()*18;
+      if(hidesFire(px2,pz,2.9,4.2)) continue;
       var leaf=new THREE.Mesh(new THREE.IcosahedronGeometry(1.2+Math.random()*1.6,0),
         new THREE.MeshPhongMaterial({color:[0x1E4A2A,0x2A5E34,0x143A22][p%3],shininess:14,flatShading:true}));
       leaf.position.set(px2,1.2+Math.random()*2,pz); envGroup.add(leaf);
@@ -4702,7 +4738,45 @@ window.__soak={
   lives:function(){ return lives.map(function(L){ return {win:L.win,kind:L.kind,state:L.state,t:+L.t.toFixed(1)}; }); },
   flamesAlive:function(){ var n=0; for(var i=0;i<MAX_FLAME;i++) if(flLife[i]>0) n++; return n; },
   saveData:function(){ return save; },
+  /* Scenery must never stand between the player and a window. A fountain did it
+     once and a blossom tree did it again, so this is checkable rather than
+     eyeballed: sight line from the eye to each window, against the solid parts
+     of the set. Glows and sprites are see-through and do not count. */
+  blocked:function(){
+    /* nothing has moved into place unless the world matrices are current, and
+       it is the draw that normally does that - without this every ray misses */
+    envGroup.updateMatrixWorld(true);
+    var solids=[];
+    envGroup.traverse(function(o){
+      if(!o.isMesh||!o.material) return;
+      if(o.material.transparent&&o.material.opacity<0.95) return;
+      solids.push(o);
+    });
+    var ray=new THREE.Raycaster();
+    var eye=new THREE.Vector3(0,TUNE.eyeY,0);
+    var out=[];
+    wins.forEach(function(w,i){
+      var f=faces[w.fi];
+      /* the middle, the four corners, and the plume standing above it */
+      var pts=[[0,0],[-WIN_HW,-WIN_HH],[WIN_HW,-WIN_HH],[-WIN_HW,WIN_HH],[WIN_HW,WIN_HH],[0,WIN_HH+1.3]];
+      var hidden=0, first=null, middle=false;
+      pts.forEach(function(p,pi){
+        var t=new THREE.Vector3(w.x+f.dx*p[0], w.y+p[1], w.z+f.dz*p[0]);
+        var dir=t.clone().sub(eye);
+        var far=dir.length(); dir.normalize();
+        ray.set(eye,dir); ray.near=0.5; ray.far=far-0.8;
+        var hit=ray.intersectObjects(solids,false)[0];
+        if(hit){ hidden++; if(!first) first=hit; if(pi===0) middle=true; }
+      });
+      if(hidden) out.push({win:i,at:"("+w.x.toFixed(1)+", "+w.y+", "+w.z.toFixed(1)+")",
+                           hiddenParts:hidden+" of 6", middleBlocked:middle,
+                           by:"("+first.point.x.toFixed(1)+", "+first.point.y.toFixed(1)+", "+first.point.z.toFixed(1)+")",
+                           what:first.object.geometry.type+" at ("+first.object.position.x.toFixed(1)+","+first.object.position.y.toFixed(1)+","+first.object.position.z.toFixed(1)+")"});
+    });
+    return out;
+  },
   markBox:function(){
+
     /* how high the burning roof blocks the view - a landmark must beat this */
     var front=null;
     faces.forEach(function(f){

@@ -1,6 +1,6 @@
 {
-  "version": 21,
+  "version": 22,
   "name": "Soak It",
   "file": "index.html",
-  "notes": "New bottom bar: announcements, leaderboard and shop as icons; hold one for its name. Play and Levels stay in the middle."
+  "notes": "Temple Garden: pagoda roofs no longer hang over the fire. Also fixed hidden windows on The Oasis, Canal Town and The Glasshouse."
 }
