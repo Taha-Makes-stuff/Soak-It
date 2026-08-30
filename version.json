@@ -1,6 +1,6 @@
 {
-  "version": 26,
+  "version": 27,
   "name": "Soak It",
   "file": "index.html",
-  "notes": "Nuke Splash now only clears the one wall you point the laser at, can be dropped on a boss for half its health, and costs 150 jits"
+  "notes": "Two new bosses: Ironpaw the mech on the bridge (Season 2) and Emberwing the dragon over the castle (Season 3). Both move, and each is fought a different way."
 }

@@ -1245,7 +1245,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 26;
+var GAME_VERSION = 27;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -1431,7 +1431,20 @@ var LAYOUTS2=[
     {cx:0,   cz:-15, rot:0,   len:17, top:13, cols:[-6.5,-3.2,0,3.2,6.5], rows:[3,6.3,9.6]},
     {cx:-11, cz:-10, rot:50,  len:9,  top:13, cols:[-2.8,0,2.8],          rows:[3,6.3,9.6]},
     {cx:11,  cz:-10, rot:-50, len:9,  top:13, cols:[-2.8,0,2.8],          rows:[3,6.3,9.6]}
+  ]},
+  /* The Mech. Season 2's boss, and a different fight to the Blaze: hosing it
+     does nothing at all while its chest is shut. You wait, and when the plates
+     swing open you have four seconds. */
+  { name:"The Mech", env:"bridge", style:"greyStone",
+    fires:0, lives:3, loseAt:22, spreadEvery:24, rescueTime:40,
+    boss:{kind:"mech", name:"Ironpaw", x:0, z:-13, sway:4.0,
+          throwEvery:5.4, burst:6, openFor:4.0, shutFor:9.0},
+    faces:[
+    /* the two bridge towers, one either side of it */
+    {cx:-11, cz:-17, rot:0, len:7.0, top:15, cols:[-2.2,0,2.2], rows:[3.5,7,11]},
+    {cx:11,  cz:-17, rot:0, len:7.0, top:15, cols:[-2.2,0,2.2], rows:[3.5,7,11]}
   ]}
+
 ];
 
 /* Target times for the second star. Set at roughly four times what a clean
@@ -1492,12 +1505,27 @@ var LAYOUTS3=[
     {cx:0,     cz:-15, rot:0,   len:18, top:14, cols:[-7,-3.5,0,3.5,7], rows:[3,6,9,12]},
     {cx:-11.5, cz:-10, rot:54,  len:9,  top:11, cols:[-2.8,0,2.8],      rows:[2.8,5.6,8.4]},
     {cx:11.5,  cz:-10, rot:-54, len:9,  top:11, cols:[-2.8,0,2.8],      rows:[2.8,5.6,8.4]}
+  ]},
+  /* The Dragon. The hardest of the three: it will not stay still. You can only
+     hurt it while it is perched, and every time it moves it burns a new stretch
+     of wall on the way past. */
+  { name:"The Dragon", env:"castle", style:"greyStone",
+    fires:0, lives:4, loseAt:24, spreadEvery:22, rescueTime:38,
+    boss:{kind:"dragon", name:"Emberwing", x:0, y:14, z:-13,
+          throwEvery:6, burst:7, perchFor:6.5, flyFor:2.6,
+          perches:[-12,0,12]},
+    faces:[
+    /* the curtain wall, and a tower either end */
+    {cx:0,   cz:-16, rot:0, len:16, top:11, cols:[-6,-3,0,3,6], rows:[3.5,7]},
+    {cx:-12, cz:-16, rot:0, len:6.5, top:13, cols:[-2,2],               rows:[4,8.5]},
+    {cx:12,  cz:-16, rot:0, len:6.5, top:13, cols:[-2,2],               rows:[4,8.5]}
   ]}
+
 ];
 
 var PAR_S1=[30,32,45,50,90,85,100,140,110,160,165];
-var PAR_S2=[45,45,55,55,85,130,120,120,155,150];
-var PAR_S3=[55,50,60,55,60,120,90,95,90,120];
+var PAR_S2=[45,45,55,55,85,130,120,120,155,150,185];
+var PAR_S3=[55,50,60,55,60,120,90,95,90,120,210];
 
 function makeSeason(layouts, season, pars){
   return layouts.map(function(L,i){
@@ -3130,6 +3158,93 @@ Object.keys(PLACES3).forEach(function(k){ ENVS[k]=PLACES3[k]; });
    each one — the same angled walls Season 2 uses. Nothing new had to be
    taught to the water.
    ============================================================ */
+
+/* ---------- the two arenas ---------- */
+
+/* A river crossing with two great towers, a lit city behind it. */
+ENVS.bridge=function(){
+  ground.material.color.setHex(0x1A1F26);
+  skylineBehind(-74);
+  seaPlane(-30,260,44);
+  var stone=new THREE.MeshPhongMaterial({color:0x8A8270,shininess:14,flatShading:true});
+  var iron =new THREE.MeshPhongMaterial({color:0x3A4A6A,shininess:40});
+  var road =new THREE.MeshPhongMaterial({color:0x24282E,shininess:20});
+
+  // the deck you are standing on, running out over the water
+  var deck=new THREE.Mesh(new THREE.BoxGeometry(30,0.8,44),road);
+  deck.position.set(0,0.4,-14); envGroup.add(deck);
+  [-15,15].forEach(function(x){
+    var kerb=new THREE.Mesh(new THREE.BoxGeometry(0.9,1.5,44),stone);
+    kerb.position.set(x,1.0,-14); envGroup.add(kerb);
+  });
+
+  // the walkways between the towers, high up
+  [8.5,10.6].forEach(function(y){
+    var walk=new THREE.Mesh(new THREE.BoxGeometry(28,0.5,3.0),iron);
+    walk.position.set(0,y+8,-17); envGroup.add(walk);
+  });
+  for(var i=0;i<9;i++){
+    var strut=new THREE.Mesh(new THREE.BoxGeometry(0.35,2.6,0.35),iron);
+    strut.position.set(-10+i*2.5,17.8,-17); envGroup.add(strut);
+  }
+  // suspension cables sweeping down to the deck
+  [-1,1].forEach(function(s){
+    for(var c=0;c<14;c++){
+      var t=c/13;
+      var x=s*(11+t*30);
+      var y=15-Math.pow(t,1.6)*13;
+      var seg=new THREE.Mesh(new THREE.BoxGeometry(2.6,0.22,0.22),iron);
+      seg.position.set(x,y,-17); seg.rotation.z=s*(0.25+t*0.55); envGroup.add(seg);
+    }
+  });
+  streetlights(-6,[-11,-4,4,11]);
+  upLight(0,3,-8,0xFFC98A,26,0.14);
+};
+WEATHER.bridge="rain";
+
+/* A castle on a rock, battlements and two round towers. */
+ENVS.castle=function(){
+  ground.material.color.setHex(0x1C2420);
+  skylineBehind(-88);
+  var rock=new THREE.MeshPhongMaterial({color:0x3A3A34,shininess:5,flatShading:true});
+  var stone=new THREE.MeshPhongMaterial({color:0x7A776E,shininess:10,flatShading:true});
+  var roofM=new THREE.MeshPhongMaterial({color:0x3E4A5A,shininess:18,flatShading:true});
+
+  // the crag it is built on
+  for(var r=0;r<7;r++){
+    var m=new THREE.Mesh(new THREE.IcosahedronGeometry(9+Math.random()*6,0),rock);
+    m.position.set(-30+r*10,-4.5,-34-Math.random()*10);
+    m.scale.y=0.55; envGroup.add(m);
+  }
+  // round towers either side, with conical caps
+  [-12,12].forEach(function(x){
+    var t=new THREE.Mesh(new THREE.CylinderGeometry(3.8,4.2,13,14),stone);
+    t.position.set(x,6.5,-19); envGroup.add(t);
+    var cap=new THREE.Mesh(new THREE.ConeGeometry(4.8,4.6,14),roofM);
+    cap.position.set(x,15.3,-19); envGroup.add(cap);
+    for(var b=0;b<10;b++){
+      var a=b/10*Math.PI*2;
+      var cren=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.3,1.2),stone);
+      cren.position.set(x+Math.cos(a)*3.8,13.5,-19+Math.sin(a)*3.8);
+      cren.rotation.y=-a; envGroup.add(cren);
+    }
+    var flame=glowSprite(0xFFB05A,4.4,0.8);
+    flame.position.set(x,17.0,-19); envGroup.add(flame);
+    blinkers.push({s:flame,rate:0.5,phase:x>0?0.3:0});
+  });
+  // battlements along the curtain wall
+  for(var c=0;c<13;c++){
+    var cr=new THREE.Mesh(new THREE.BoxGeometry(1.5,1.6,1.6),stone);
+    cr.position.set(-8+c*1.35,10.8,-16); envGroup.add(cr);
+  }
+  var gate=new THREE.Mesh(new THREE.BoxGeometry(4.2,5.6,0.6),roofM);
+  gate.position.set(0,2.8,-15.4); envGroup.add(gate);
+  lampPost(-8,-8,0xFFC07A,5.0);
+  lampPost(8,-8,0xFFC07A,5.0);
+  upLight(0,4,-10,0xFFB07A,26,0.16);
+};
+WEATHER.castle="clear";
+
 ENVS.refinery=function(){
   ground.material.color.setHex(0x22262A);
   skylineBehind(-64);
@@ -4311,6 +4426,10 @@ function step(dt,noDraw){
       /* Each wall is a flat plane at some angle. Measure which side of it the
          droplet was on before and after: if it crossed from the front, work
          out where, and whether that point is actually on the wall. */
+      if(bossOn&&boss&&boss.alive&&boss.vulnerable===false&&armourHit(nx,ny,nz)){
+        if(Math.random()<0.22) splashDrops(nx,ny,nz,1);
+        wlife[d]=0; water.alpha[d]=0; water.pos[i3+1]=-999; continue;
+      }
       if(bossOn&&boss&&boss.alive&&hitBoss(nx,ny,nz)){
         soakBoss(nx,ny,nz);
         wlife[d]=0; water.alpha[d]=0; water.pos[i3+1]=-999; continue;
@@ -5055,6 +5174,296 @@ function flameAt(x,y,z,n,pw){
   }
 }
 
+
+/* ============================================================
+   THE OTHER TWO BOSSES
+   One per season, each harder than the last and each fought a
+   different way. Every one of them moves: nothing here just stands
+   still and takes it.
+   ============================================================ */
+
+/* ---------- SEASON 2: the Mech, on the bridge ---------- */
+function buildMech(B){
+  var steel=new THREE.MeshPhongMaterial({color:0x6E7683,shininess:70,specular:0x39404A,flatShading:true});
+  var dark =new THREE.MeshPhongMaterial({color:0x2E3440,shininess:50,flatShading:true});
+  var pink =new THREE.MeshPhongMaterial({color:0xE0559A,shininess:80,specular:0x6A2A4A,flatShading:true});
+  var rust =new THREE.MeshPhongMaterial({color:0xC1502A,shininess:60,flatShading:true});
+  var blue =new THREE.MeshPhongMaterial({color:0x3A56B8,shininess:60,flatShading:true});
+  var core =new THREE.MeshPhongMaterial({color:0x4AE0FF,emissive:0x1A8AB0,shininess:90});
+
+  var g=new THREE.Group();
+  g.position.set(B.x,0,B.z);
+
+  // mismatched legs, one rust one blue, because a machine built out of
+  // whatever was lying about is more interesting than a matched pair
+  var legs=[];
+  [[-1.9,rust],[1.9,blue]].forEach(function(L,i){
+    var leg=new THREE.Group(); leg.position.set(L[0],7.2,0);
+    var thigh=new THREE.Mesh(new THREE.BoxGeometry(1.9,4.0,1.9),L[1]);
+    thigh.position.y=-2.0; leg.add(thigh);
+    var knee=new THREE.Mesh(new THREE.SphereGeometry(1.0,8,6),dark);
+    knee.position.y=-4.1; leg.add(knee);
+    var shin=new THREE.Mesh(new THREE.BoxGeometry(1.6,3.6,1.6),L[1]);
+    shin.position.y=-6.0; leg.add(shin);
+    var foot=new THREE.Mesh(new THREE.BoxGeometry(2.5,0.9,3.4),dark);
+    foot.position.set(0,-8.1,0.5); leg.add(foot);
+    g.add(leg); legs.push(leg);
+  });
+
+  var hips=new THREE.Mesh(new THREE.BoxGeometry(5.0,2.0,2.8),dark);
+  hips.position.y=7.6; g.add(hips);
+  var torso=new THREE.Mesh(new THREE.BoxGeometry(5.6,4.6,3.2),steel);
+  torso.position.y=10.6; g.add(torso);
+
+  // the chest: two plates that swing open and expose the core
+  var plates=[];
+  [-1,1].forEach(function(sx){
+    var p=new THREE.Group(); p.position.set(sx*1.35,10.8,1.6);
+    var plate=new THREE.Mesh(new THREE.BoxGeometry(2.6,3.6,0.5),pink);
+    plate.position.x=sx*1.25; p.add(plate);
+    g.add(p); plates.push(p);
+  });
+  var glow=new THREE.Mesh(new THREE.SphereGeometry(1.25,12,10),core);
+  glow.position.set(0,10.8,1.35); g.add(glow);
+  var halo=glowSprite(0x6AE8FF,6.5,0.85);
+  halo.position.set(0,10.8,1.7); g.add(halo);
+
+  // shoulders and long arms
+  var arms=[];
+  [-1,1].forEach(function(s){
+    var arm=new THREE.Group(); arm.position.set(s*3.9,12.0,0);
+    var pauld=new THREE.Mesh(new THREE.BoxGeometry(2.6,2.2,2.8),s<0?rust:blue);
+    arm.add(pauld);
+    var upper=new THREE.Mesh(new THREE.BoxGeometry(1.5,3.4,1.5),steel);
+    upper.position.y=-2.4; arm.add(upper);
+    var elbow=new THREE.Mesh(new THREE.SphereGeometry(0.85,8,6),dark);
+    elbow.position.y=-4.2; arm.add(elbow);
+    var fore=new THREE.Mesh(new THREE.BoxGeometry(1.7,3.4,1.7),steel);
+    fore.position.y=-6.0; arm.add(fore);
+    var fist=new THREE.Mesh(new THREE.BoxGeometry(2.3,2.1,2.3),s<0?rust:blue);
+    fist.position.y=-8.0; arm.add(fist);
+    g.add(arm); arms.push(arm);
+  });
+
+  // a head that reads as an animal, not a helmet
+  var head=new THREE.Group(); head.position.set(0,14.4,0.2); g.add(head);
+  var skull=new THREE.Mesh(new THREE.BoxGeometry(3.2,2.8,3.0),pink);
+  head.add(skull);
+  var snout=new THREE.Mesh(new THREE.BoxGeometry(1.8,1.2,1.0),pink);
+  snout.position.set(0,-0.5,1.7); head.add(snout);
+  var ears=[];
+  [-1,1].forEach(function(s){
+    var ear=new THREE.Mesh(new THREE.CylinderGeometry(0.75,0.75,0.5,12),pink);
+    ear.rotation.x=Math.PI/2; ear.position.set(s*1.35,1.65,0); head.add(ear); ears.push(ear);
+  });
+  var visor=new THREE.Mesh(new THREE.BoxGeometry(2.5,0.55,0.2),litMat(0x6AE8FF));
+  visor.position.set(0,0.35,1.55); head.add(visor);
+  var vg=glowSprite(0x6AE8FF,3.2,0.8); vg.position.set(0,0.35,1.8); head.add(vg);
+
+  bossGroup.add(g);
+  return {g:g, legs:legs, arms:arms, plates:plates, head:head, ears:ears,
+          glow:glow, halo:halo, core:core};
+}
+
+function mechTick(b,dt,now){
+  var g=b.g, p=b.parts;
+  // it shifts its weight from foot to foot the whole time
+  var walk=Math.sin(b.t*1.15);
+  g.position.x=b.x+Math.sin(b.t*0.42)*b.sway;
+  g.position.y=Math.abs(Math.sin(b.t*1.15))*0.35;
+  g.rotation.z=walk*0.035;
+  g.rotation.y=Math.sin(b.t*0.42+1.57)*0.16;
+  p.legs[0].rotation.x=walk*0.30;
+  p.legs[1].rotation.x=-walk*0.30;
+  p.arms[0].rotation.x=-walk*0.34 - b.wind*1.7;
+  p.arms[1].rotation.x=walk*0.34;
+  p.head.rotation.y=Math.sin(b.t*0.42+1.57)*-0.28;
+  p.head.rotation.x=Math.sin(b.t*0.7)*0.06;
+  p.ears.forEach(function(e,i){ e.rotation.z=Math.sin(b.t*2.3+i)*0.22; });
+
+  /* The armour is the whole fight. Water does nothing while the chest is
+     shut, so you wait, and when it cracks open you have four seconds. */
+  b.openT-=dt;
+  if(b.openT<=0){
+    b.open=!b.open;
+    b.openT=b.open?b.cfg.openFor:b.cfg.shutFor;
+    toast(b.open?"The chest is open — hit it now":"Armour shut");
+    if(b.open) Snd.clear();
+  }
+  var want=b.open?1:0;
+  b.openness+=(want-b.openness)*Math.min(1,dt*4.5);
+  p.plates[0].rotation.y= b.openness*1.25;
+  p.plates[1].rotation.y=-b.openness*1.25;
+  p.glow.scale.setScalar(0.55+b.openness*0.75);
+  p.halo.material.opacity=0.12+b.openness*0.85;
+  p.core.emissive.setHex(b.open?0x30D8FF:0x0E4658);
+
+  b.vulnerable=b.open;
+  b.dmgMult=2.4;
+  b.hitLumps=[[g.position.x,g.position.y+10.8,b.z+1.4,2.4]];
+
+  if(b.open&&frame%3===0) flameAt(g.position.x,10.8,b.z+1.6,1,0.5);
+  if(frame%7===0){
+    var s=(Math.random()<0.5)?-1:1;
+    puffSteam(g.position.x+s*4.2,13.2,b.z,1);
+  }
+
+  // the stomp: it swings a fist down and something catches light
+  if(b.wind>0){
+    b.wind-=dt;
+    if(b.wind<=0){ bossThrow(); b.throwT=b.cfg.throwEvery; Snd.boom(); }
+  } else {
+    b.throwT-=dt;
+    if(b.throwT<=0) b.wind=0.7;
+  }
+}
+
+/* ---------- SEASON 3: the Dragon, over the castle ---------- */
+function buildDragon(B){
+  var hide=new THREE.MeshPhongMaterial({color:0x8E1F1A,shininess:34,flatShading:true});
+  var belly=new THREE.MeshPhongMaterial({color:0xE08A2A,emissive:0x6A3200,shininess:40,flatShading:true});
+  var wingM=new THREE.MeshPhongMaterial({color:0x5A1410,shininess:16,side:THREE.DoubleSide,flatShading:true});
+  var horn=new THREE.MeshPhongMaterial({color:0xD8C8A0,shininess:60,flatShading:true});
+
+  var g=new THREE.Group();
+  g.position.set(B.x,B.y||11,B.z);
+
+  var body=new THREE.Mesh(new THREE.SphereGeometry(2.5,12,9),hide);
+  body.scale.set(1.5,1.0,1.05); g.add(body);
+  var chest=new THREE.Mesh(new THREE.SphereGeometry(1.7,10,8),belly);
+  chest.scale.set(1.3,0.8,0.7); chest.position.set(0,-0.9,0.6); g.add(chest);
+
+  // neck in segments, so it can curl
+  /* An S-curve: up out of the shoulders, over, then the head comes back down
+     and looks at you. Straight out it just reads as a stack of balls. */
+  var neckBase=[-0.34,-0.14,0.28,0.34];
+  var neck=[], parent=g;
+  for(var i=0;i<4;i++){
+    var seg=new THREE.Group();
+    seg.position.set(0, i?0.0:0.9, i?1.5:2.6);
+    seg.rotation.x=neckBase[i];
+    seg.userData.baseX=neckBase[i];
+    var m=new THREE.Mesh(new THREE.SphereGeometry(1.25-i*0.16,9,7),hide);
+    m.scale.set(0.9,0.9,1.25); seg.add(m);
+    parent.add(seg); parent=seg; neck.push(seg);
+  }
+  var head=new THREE.Group(); head.position.set(0,0,1.5); parent.add(head);
+  var skull=new THREE.Mesh(new THREE.SphereGeometry(1.05,10,8),hide);
+  skull.scale.set(0.95,0.85,1.4); head.add(skull);
+  var jaw=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.42,1.7),hide);
+  jaw.position.set(0,-0.62,0.7); head.add(jaw);
+  var maw=glowSprite(0xFF8A2A,2.6,0.0);
+  maw.position.set(0,-0.25,1.7); head.add(maw);
+  [-1,1].forEach(function(s){
+    var h=new THREE.Mesh(new THREE.ConeGeometry(0.26,1.5,6),horn);
+    h.position.set(s*0.5,0.75,-0.35); h.rotation.set(-0.5,0,s*0.3); head.add(h);
+    var eye=new THREE.Mesh(new THREE.SphereGeometry(0.19,8,6),litMat(0xFFD24A));
+    eye.position.set(s*0.62,0.28,0.72); head.add(eye);
+  });
+
+  // tail in segments, so it can whip
+  var tail=[]; parent=g;
+  for(var t2=0;t2<6;t2++){
+    var ts=new THREE.Group();
+    ts.position.set(0,0,t2?-1.35:-2.6);
+    ts.rotation.x=t2<3?-0.26:0.14;
+    ts.userData.baseX=ts.rotation.x;
+    var tm=new THREE.Mesh(new THREE.ConeGeometry(1.05-t2*0.16,1.5,7),hide);
+    tm.rotation.x=Math.PI/2; ts.add(tm);
+    parent.add(ts); parent=ts; tail.push(ts);
+  }
+
+  // wings: an arm bone and a membrane on each side
+  var wings=[];
+  [-1,1].forEach(function(s){
+    var w=new THREE.Group(); w.position.set(s*1.9,0.9,0.2);
+    var bone=new THREE.Mesh(new THREE.CylinderGeometry(0.20,0.13,6.4,6),hide);
+    bone.rotation.z=s*Math.PI/2; bone.position.x=s*3.2; w.add(bone);
+    var shape=new THREE.Shape();
+    shape.moveTo(0,0); shape.lineTo(6.4,1.5); shape.lineTo(6.1,-1.2);
+    shape.lineTo(3.6,-2.6); shape.lineTo(1.6,-1.9); shape.lineTo(0,0);
+    var mem=new THREE.Mesh(new THREE.ShapeGeometry(shape),wingM);
+    mem.scale.x=s; w.add(mem);
+    g.add(w); wings.push(w);
+  });
+
+  var legs=[];
+  [[-1.5,-1.7,1.1],[1.5,-1.7,1.1],[-1.4,-1.7,-1.3],[1.4,-1.7,-1.3]].forEach(function(L){
+    var leg=new THREE.Mesh(new THREE.BoxGeometry(0.75,1.7,0.75),hide);
+    leg.position.set(L[0],L[1],L[2]); g.add(leg); legs.push(leg);
+  });
+
+  bossGroup.add(g);
+  return {g:g, neck:neck, head:head, tail:tail, wings:wings, legs:legs, maw:maw};
+}
+
+function dragonTick(b,dt,now){
+  var g=b.g, p=b.parts;
+
+  // it beats its wings the whole time, harder while it is moving
+  var beat=Math.sin(b.t*(b.flying?7.0:2.4));
+  p.wings[0].rotation.z= beat*(b.flying?0.85:0.28)+0.15;
+  p.wings[1].rotation.z=-beat*(b.flying?0.85:0.28)-0.15;
+  p.neck.forEach(function(s,i){
+    s.rotation.x=s.userData.baseX+Math.sin(b.t*1.5-i*0.5)*0.09;
+    s.rotation.y=Math.sin(b.t*0.8-i*0.4)*0.13;
+  });
+  p.tail.forEach(function(s,i){
+    s.rotation.y=Math.sin(b.t*1.8-i*0.6)*0.20;
+    s.rotation.x=s.userData.baseX+Math.sin(b.t*1.2-i*0.4)*0.07;
+  });
+  p.legs.forEach(function(l,i){ l.rotation.x=b.flying?0.7:Math.sin(b.t*1.2+i)*0.05; });
+
+  if(b.flying){
+    /* In the air it is out of reach. That is the whole shape of the fight:
+       you get it while it is down, then it moves and you go again. */
+    b.moveT-=dt;
+    var u=1-Math.max(0,b.moveT)/b.cfg.flyFor;
+    var e=u<0.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+    g.position.x=b.fromX+(b.toX-b.fromX)*e;
+    g.position.y=b.baseY+Math.sin(u*Math.PI)*7.5;
+    g.rotation.y=b.baseYaw+(b.toX>b.fromX?-0.75:0.75)*Math.sin(u*Math.PI);
+    g.rotation.z=(b.toX>b.fromX?-0.22:0.22)*Math.sin(u*Math.PI);
+    if(b.moveT<=0){
+      b.flying=false; b.perchT=b.cfg.perchFor;
+      g.position.x=b.toX; g.position.y=b.baseY;
+      g.rotation.set(0,b.baseYaw,0);
+    }
+    b.vulnerable=false;
+    b.hitLumps=[];
+  } else {
+    g.position.y=b.baseY+Math.sin(b.t*1.6)*0.35;
+    g.rotation.y=b.baseYaw+Math.sin(b.t*0.5)*0.10;
+    g.rotation.z=Math.sin(b.t*0.9)*0.05;
+    b.vulnerable=true;
+    b.hitLumps=[[g.position.x,g.position.y,b.z,3.1],
+                [g.position.x,g.position.y+0.6,b.z+4.4,1.6]];
+    b.perchT-=dt;
+
+    // it breathes along the wall in front of it before it moves on
+    if(b.perchT<=b.cfg.perchFor*0.45 && !b.breathed){
+      b.breathed=true;
+      b.breath=0.9;
+      Snd.incoming();
+    }
+    if(b.perchT<=0){
+      b.flying=true; b.breathed=false;
+      b.moveT=b.cfg.flyFor;
+      b.fromX=g.position.x;
+      var spots=b.cfg.perches.filter(function(x){ return Math.abs(x-b.fromX)>2; });
+      b.toX=spots[(Math.random()*spots.length)|0];
+    }
+  }
+
+  if(b.breath>0){
+    b.breath-=dt;
+    p.maw.material.opacity=Math.max(0,b.breath);
+    flameAt(g.position.x, g.position.y-0.2, b.z+5.5, 3, 1.3);
+    if(b.breath<=0){ p.maw.material.opacity=0; bossThrow(); bossThrow(); }
+  }
+  if(frame%2===0) flameAt(g.position.x, g.position.y-1.2, b.z, 1, 0.6);
+}
+
 function buildBoss(cfg){
   clearGroup(bossGroup);
   boss=null; bossOn=false; bossKilled=false;
@@ -5062,6 +5471,23 @@ function buildBoss(cfg){
   if(!cfg.boss) return;
   var B=cfg.boss;
 
+  if(B.kind==="mech"||B.kind==="dragon"){
+    var parts=(B.kind==="mech")?buildMech(B):buildDragon(B);
+    boss={g:parts.g, parts:parts, kind:B.kind, tick:(B.kind==="mech")?mechTick:dragonTick,
+          hp:1, alive:true, dying:0, t:Math.random()*6, hurt:0,
+          x:B.x, z:B.z, sway:B.sway||0, throwT:(B.throwEvery||7)*0.55, wind:0,
+          balls:[], cfg:B, vulnerable:true, hitLumps:[],
+          // mech
+          open:false, openness:0, openT:B.shutFor||9,
+          // dragon
+          baseY:B.y||11, baseYaw:1.25, flying:false, perchT:B.perchFor||7, moveT:0,
+          fromX:B.x, toX:B.x, breath:0, breathed:false};
+    bossOn=true;
+    bossBar.classList.add("on");
+    bossName.textContent=B.name||"Boss";
+    paintBossBar();
+    return;
+  }
   var skin=new THREE.MeshPhongMaterial({color:0xD8340A,emissive:0x7A1A00,shininess:26,flatShading:true});
   var hot =new THREE.MeshPhongMaterial({color:0xFF9A2A,emissive:0xB84A00,shininess:34,flatShading:true});
   var g=new THREE.Group();
@@ -5107,9 +5533,9 @@ function buildBoss(cfg){
   });
 
   bossGroup.add(g);
-  boss={g:g, arms:arms, hp:1, alive:true, dying:0, t:Math.random()*6,
-        x:B.x, z:B.z, sway:B.sway, throwT:B.throwEvery*0.55, wind:0,
-        balls:[], cfg:B, hurt:0};
+  boss={g:g, arms:arms, kind:"blaze", tick:blazeTick, hp:1, alive:true, dying:0,
+        t:Math.random()*6, x:B.x, z:B.z, sway:B.sway, throwT:B.throwEvery*0.55,
+        wind:0, balls:[], cfg:B, hurt:0, vulnerable:true, hitLumps:[]};
   bossOn=true;
   bossBar.classList.add("on");
   bossName.textContent=B.name||"The Blaze";
@@ -5157,9 +5583,12 @@ function bossCollapse(){
 
 function hitBoss(nx,ny,nz){
   if(!boss||!boss.alive) return false;
+  if(boss.vulnerable===false) return false;
   var bx=boss.g.position.x, by=boss.g.position.y, bz=boss.z;
-  // three lumps: the chest, the head, and the low mass of it
-  var lumps=[[bx,by+4.7,bz,3.0],[bx,by+7.0,bz+0.3,1.7],[bx,by+1.8,bz,2.4]];
+  /* Each boss says where it can be hit. The Blaze is hittable all over; the
+     Mech only through its open chest; the Dragon only while it is perched. */
+  var lumps=(boss.hitLumps&&boss.hitLumps.length)?boss.hitLumps
+           :[[bx,by+4.7,bz,3.0],[bx,by+7.0,bz+0.3,1.7],[bx,by+1.8,bz,2.4]];
   for(var i=0;i<lumps.length;i++){
     var L=lumps[i], dx=nx-L[0], dy=ny-L[1], dz=nz-L[2];
     if(dx*dx+dy*dy+dz*dz<=L[3]*L[3]) return true;
@@ -5171,7 +5600,9 @@ function hitBoss(nx,ny,nz){
    easier to hold on it, not more powerful. */
 function soakBoss(x,y,z,mult){
   var rateNow=TUNE.emitMin+(TUNE.emitMax-TUNE.emitMin)*pressure;
-  boss.hp-=(TUNE.bossDouse*(mult||1))/rateNow;
+  /* a boss can be softer where it is exposed: the Mech's open core is
+     worth far more than four seconds of ordinary hosing */
+  boss.hp-=(TUNE.bossDouse*(mult||1)*(boss.dmgMult||1))/rateNow;
   boss.hurt=0.12;
   if(Math.random()<0.5) puffSteam(x,y,z,1);
   if(Math.random()<0.03) Snd.steam();
@@ -5189,7 +5620,54 @@ function updateBoss(dt,now){
   b.t+=dt;
   if(b.hurt>0) b.hurt-=dt;
 
-  if(b.alive){
+  if(b.alive){ b.tick(b,dt,now); }
+  else if(b.dying>0){
+    b.dying-=dt;
+    var k2=Math.max(0.02,b.dying/1.3);
+    g.scale.setScalar(k2);
+    g.position.y=(b.baseY||0)-(1-k2)*1.6;
+    g.rotation.z=(1-k2)*0.9;
+    if(frame%2===0){
+      puffSteam(g.position.x+(Math.random()-0.5)*4,1+Math.random()*5,b.z,2);
+      flameAt(g.position.x,3*k2,b.z,2,1.2*k2);
+    }
+    if(b.dying<=0){ bossGroup.remove(g); bossCollapse(); }
+  }
+  updateBalls(b,dt);
+}
+
+/* the shape it is hittable through even when the water bounces off */
+function armourHit(nx,ny,nz){
+  if(!boss) return false;
+  var bx=boss.g.position.x, by=boss.g.position.y, bz=boss.z;
+  var r=(boss.kind==="mech")?7.0:4.2;
+  var cy=(boss.kind==="mech")?10.0:by;
+  var dx=nx-bx, dy=ny-cy, dz=nz-bz;
+  return dx*dx+dy*dy+dz*dz<=r*r;
+}
+
+function updateBalls(b,dt){
+  for(var i=b.balls.length-1;i>=0;i--){
+    var P=b.balls[i];
+    P.t+=dt;
+    var u=Math.min(1,P.t/P.dur);
+    var x=P.fx+(P.tx-P.fx)*u, z=P.fz+(P.tz-P.fz)*u;
+    var y=P.fy+(P.ty-P.fy)*u+Math.sin(u*Math.PI)*4.5;
+    P.m.position.set(x,y,z); P.gl.position.set(x,y,z);
+    P.m.rotation.x+=dt*7; P.m.rotation.y+=dt*5;
+    if(frame%2===0) flameAt(x,y,z,1,0.7);
+    if(u>=1){
+      ignite(P.win);
+      flameAt(P.tx,P.ty,P.tz,8,1.2);
+      bossGroup.remove(P.m); bossGroup.remove(P.gl);
+      b.balls.splice(i,1);
+    }
+  }
+}
+
+function blazeTick(b,dt,now){
+  var g=b.g;
+  {
     /* it shifts its weight rather than charging about — a target that ran
        would be unfair with a hose that arcs */
     g.position.x=b.x+Math.sin(b.t*0.5)*b.sway;
@@ -5223,36 +5701,11 @@ function updateBoss(dt,now){
       b.throwT-=dt;
       if(b.throwT<=0) b.wind=0.75;               // a wind-up you can see coming
     }
-  } else if(b.dying>0){
-    b.dying-=dt;
-    var k=Math.max(0.02,b.dying/1.3);
-    g.scale.setScalar(k);
-    g.position.y=-(1-k)*1.6;
-    g.rotation.z=(1-k)*0.9;
-    if(frame%2===0){
-      puffSteam(g.position.x+(Math.random()-0.5)*4,1+Math.random()*5,b.z,2);
-      flameAt(g.position.x,3*k,b.z,2,1.2*k);
-    }
-    if(b.dying<=0){ bossGroup.remove(g); bossCollapse(); }
   }
-
-  // the fireballs it threw, on their way over
-  for(var i=b.balls.length-1;i>=0;i--){
-    var P=b.balls[i];
-    P.t+=dt;
-    var u=Math.min(1,P.t/P.dur);
-    var x=P.fx+(P.tx-P.fx)*u, z=P.fz+(P.tz-P.fz)*u;
-    var y=P.fy+(P.ty-P.fy)*u+Math.sin(u*Math.PI)*4.5;
-    P.m.position.set(x,y,z); P.gl.position.set(x,y,z);
-    P.m.rotation.x+=dt*7; P.m.rotation.y+=dt*5;
-    if(frame%2===0) flameAt(x,y,z,1,0.7);
-    if(u>=1){
-      ignite(P.win);
-      flameAt(P.tx,P.ty,P.tz,8,1.2);
-      bossGroup.remove(P.m); bossGroup.remove(P.gl);
-      b.balls.splice(i,1);
-    }
-  }
+  // hittable all over: chest, head, and the low mass of it
+  b.hitLumps=[[g.position.x,g.position.y+4.7,b.z,3.0],
+              [g.position.x,g.position.y+7.9,b.z+0.3,1.9],
+              [g.position.x,g.position.y+1.8,b.z,2.4]];
 }
 
 
@@ -5838,7 +6291,10 @@ window.__soak={
     if(!boss) return null;
     return {hp:+boss.hp.toFixed(3), alive:boss.alive, dying:+boss.dying.toFixed(2),
             x:+boss.g.position.x.toFixed(2), z:boss.z, balls:boss.balls.length,
-            killed:bossKilled, chestY:+(boss.g.position.y+4.7).toFixed(2)};
+            killed:bossKilled, chestY:+(boss.g.position.y+4.7).toFixed(2),
+            kind:boss.kind, vulnerable:boss.vulnerable!==false,
+            open:!!boss.open, flying:!!boss.flying,
+            lumps:(boss.hitLumps||[]).map(function(L){ return L.map(function(v){ return +v.toFixed(2); }); })};
   },
   markBox:function(){
 
