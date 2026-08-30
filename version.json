@@ -1,6 +1,6 @@
 {
-  "version": 25,
+  "version": 26,
   "name": "Soak It",
   "file": "index.html",
-  "notes": "New app icon on the web app too"
+  "notes": "Nuke Splash now only clears the one wall you point the laser at, can be dropped on a boss for half its health, and costs 150 jits"
 }
