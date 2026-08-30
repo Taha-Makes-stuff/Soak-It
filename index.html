@@ -60,7 +60,7 @@
       linear-gradient(#070B11, #0D1520 62%, #131C28);
   }
   .screen.on{display:grid;place-items:center;}
-  #news.on, #shop.on, #board.on, #profile.on{place-items:stretch;}
+  #news.on, #shop.on, #board.on, #profile.on, #gadgets.on{place-items:stretch;}
   #start.on{padding-bottom:calc(var(--tabH) + env(safe-area-inset-bottom));}
   .screen.sheet{
     background:rgba(6,10,16,.88);
@@ -234,6 +234,32 @@
     width:11px;height:11px;border-radius:50%;
     background:var(--ember);border:2px solid #0D1520;
   }
+  /* ============ boss health ============ */
+  #bossBar{
+    position:absolute;left:50%;transform:translateX(-50%);
+    top:calc(84px + env(safe-area-inset-top));
+    width:min(74vw,420px);display:none;pointer-events:none;text-align:center;
+  }
+  #bossBar.on{display:block;}
+  .bossName{
+    font-family:var(--cond);font-weight:800;font-style:italic;
+    font-size:15px;letter-spacing:.22em;text-transform:uppercase;
+    color:#FFC9A0;text-shadow:0 0 14px rgba(255,90,20,.7);margin-bottom:5px;
+  }
+  .bossTrack{
+    height:13px;border-radius:2px;overflow:hidden;
+    background:rgba(8,12,18,.82);border:1px solid rgba(255,140,70,.45);
+    box-shadow:0 0 18px rgba(255,80,20,.28) inset;
+  }
+  .bossFill{
+    height:100%;width:100%;
+    background:linear-gradient(90deg,#7E1008,#E8380C 45%,#FFA43A);
+    transition:width .12s linear;
+  }
+  #bossBar.low .bossFill{background:linear-gradient(90deg,#5A0C06,#FF6A18);}
+  #bossBar.low .bossName{animation:bossPulse .7s ease-in-out infinite;}
+  @keyframes bossPulse{50%{opacity:.45;}}
+
   .btn{position:relative;}
 
   /* ============ bottom bar ============ */
@@ -291,7 +317,7 @@
     text-shadow:0 0 12px rgba(139,63,224,.55);
   }
   .shopTabs{margin:0 auto 12px;width:fit-content;}
-  #shopList{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+  #shopList,#gadgetList{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
   .kit{
     display:flex;align-items:center;gap:13px;
     background:rgba(14,22,34,.7);border:1px solid var(--glass-line);
@@ -354,7 +380,7 @@
     color:var(--jit-hi);margin-top:6px;
     text-shadow:0 0 12px rgba(139,63,224,.5);
   }
-  #news .wrap, #profile .wrap, #board .wrap, #shop .wrap{
+  #news .wrap, #profile .wrap, #board .wrap, #shop .wrap, #gadgets .wrap{
     width:100%;max-width:460px;height:100%;margin-inline:auto;
     display:flex;flex-direction:column;min-height:0;
     padding:calc(14px + env(safe-area-inset-top)) 16px calc(14px + env(safe-area-inset-bottom));
@@ -499,6 +525,11 @@
     background:var(--night-2);
   }
   .node:focus-visible{outline:3px solid var(--water);outline-offset:3px;}
+  .node.boss{
+    width:64px;height:64px;font-size:20px;
+    border-color:rgba(255,90,30,.85);
+    box-shadow:0 0 22px rgba(255,80,20,.5);
+  }
   .node.locked{
     border-color:var(--locked);color:var(--locked);
     cursor:not-allowed;background:rgba(14,22,34,.6);
@@ -630,6 +661,23 @@
   }
 
   .deck{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;}
+  .leftDeck{display:flex;flex-direction:column;align-items:flex-start;gap:12px;}
+  /* the gadget you brought: one use, so it says what it is */
+  #gadgetBtn{
+    pointer-events:auto;display:grid;place-items:center;gap:1px;
+    padding:8px 12px 7px;border-radius:4px;cursor:pointer;
+    background:var(--glass);border:1px solid var(--gcol,#4AB0FF);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    box-shadow:0 0 16px color-mix(in srgb, var(--gcol,#4AB0FF) 35%, transparent);
+  }
+  #gadgetBtn:active{transform:scale(.95);}
+  #gadgetIcon{font-size:17px;line-height:1;color:var(--gcol,#4AB0FF);}
+  #gadgetName{
+    font-family:var(--cond);font-weight:800;font-size:10px;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--paper);
+  }
+  #gadgetBtn.armed{background:rgba(74,176,255,.22);animation:gadgetPulse .8s ease-in-out infinite;}
+  @keyframes gadgetPulse{50%{opacity:.55;}}
 
   #pauseBtn{
     pointer-events:auto;position:relative;
@@ -792,12 +840,25 @@
     </div>
   </div>
 
+  <!-- only on the boss level: how much fight it has left -->
+  <div id="bossBar">
+    <div class="bossName" id="bossName">The Blaze</div>
+    <div class="bossTrack"><div class="bossFill" id="bossFill"></div></div>
+  </div>
+
   <div id="arc"><div id="arcMark"></div></div>
 
   <div class="deck">
-    <button id="pauseBtn" aria-label="Pause">
-      <svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
-    </button>
+    <div class="leftDeck">
+      <button id="pauseBtn" aria-label="Pause">
+        <svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      </button>
+      <!-- the one gadget you brought with you -->
+      <button id="gadgetBtn" aria-label="Use gadget">
+        <span id="gadgetIcon">●</span>
+        <span id="gadgetName">Splash Bomb</span>
+      </button>
+    </div>
 
     <div id="gauge">
       <div id="psi">40<em>POWER</em></div>
@@ -891,6 +952,7 @@
     <div class="startBtns afterTruck">
       <button class="btn hot" id="playBtn">Play</button>
       <button class="btn ghost" id="levelsBtn">Levels</button>
+      <button class="btn ghost" id="gadgetsBtn">Gadgets</button>
     </div>
 
     <p class="hint afterTruck">Drag to aim the hose. Slide the bar for pressure.</p>
@@ -1008,6 +1070,18 @@
     </div>
     <div id="shopList"></div>
     <p class="privacy">Coins come from clearing levels. You earn more for stars, and more again for everyone you get out alive.</p>
+  </div>
+</div>
+
+<!-- ===================== gadgets ===================== -->
+<div class="screen" id="gadgets">
+  <button class="icon" id="gadgetsBack" style="top:calc(14px + env(safe-area-inset-top));left:calc(14px + env(safe-area-inset-left));" aria-label="Back">
+    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <div class="wrap">
+    <div class="sheetHead"><h2>Gadgets</h2></div>
+    <div id="gadgetList"></div>
+    <p class="privacy">You take one into every level and it works once. Pick the one that suits the mess you are walking into.</p>
   </div>
 </div>
 
@@ -1168,7 +1242,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 22;
+var GAME_VERSION = 23;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -1181,6 +1255,8 @@ var $=function(id){return document.getElementById(id);};
 var stage=$("stage"), hud=$("hud"), toastEl=$("toast"), dragHint=$("dragHint");
 var livesEl=$("lives"), livesTotalEl=$("livesTotal"), livesPlate=$("livesPlate");
 var burningEl=$("burning"), burnPlate=$("burnPlate"), timeEl=$("time");
+var bossBar=$("bossBar"), bossName=$("bossName"), bossFill=$("bossFill");
+var gadgetBtn=$("gadgetBtn"), gadgetIcon=$("gadgetIcon"), gadgetName=$("gadgetName");
 var psiEl=$("psi"), arcMark=$("arcMark");
 var gaugeEl=$("gauge"), gBody=$("gaugeBody"), gFill=$("gaugeFill"), gMark=$("gaugeMarker"), gTicks=$("gaugeTicks");
 
@@ -1210,7 +1286,9 @@ var TUNE = {
   shake: 0.012,
   // a fire in the bottom 40% of a wall must be fought at 40% pressure or less
   lowFrac: 0.40,
-  lowMaxPressure: 0.50
+  lowMaxPressure: 0.50,
+  // the creature: fixed flow like a window, sized to about half a minute
+  bossDouse: 0.00085
 };
 
 var WIN_W=1.5, WIN_H=2.0, WIN_HW=WIN_W/2, WIN_HH=WIN_H/2;
@@ -1264,6 +1342,21 @@ var LAYOUTS=[
     {ax:"z", v:-17, lo:-11, hi:11, top:17, cols:[-9,-5.4,-1.8,1.8,5.4,9], rows:[3,5.8,8.6,11.4,14.2]},
     {ax:"x", v:-11, lo:-14, hi:2,  top:17, cols:[-2,-6,-10,-13],          rows:[3,5.8,8.6,11.4,14.2]},
     {ax:"x", v:11,  lo:-14, hi:2,  top:17, cols:[-2,-6,-10,-13],          rows:[3,5.8,8.6,11.4,14.2]}
+  ]},
+  /* ---- the boss. Eleventh in Season 1, so it is meant to be beaten by
+     someone who has just finished the first ten, not to break them. ---- */
+  { name:"The Blaze", env:"refinery", style:"refinery",
+    fires:0, lives:3, loseAt:22, spreadEvery:26, rescueTime:44,
+    boss:{name:"The Blaze", x:0, z:-13, sway:5, throwEvery:6.8, burst:5},
+    faces:[
+    /* One flat panel across the front of each tank, standing where the shell
+       comes closest to you. Bending it into an arc of three was the obvious
+       idea and it was wrong: the panels shadowed one another and two thirds
+       of the valves could not be hit. The cylinder is drawn over the top, so
+       the flatness never shows. */
+    {cx:-14, cz:-16, rot:0, len:7.2, top:9,  cols:[-2.4,0,2.4], rows:[3,6]},
+    {cx:0,   cz:-19, rot:0, len:8.4, top:11, cols:[-2.8,0,2.8], rows:[3,7]},
+    {cx:14,  cz:-16, rot:0, len:7.2, top:9,  cols:[-2.4,0,2.4], rows:[3,6]}
   ]}
 ];
 /* ============================================================
@@ -1399,7 +1492,7 @@ var LAYOUTS3=[
   ]}
 ];
 
-var PAR_S1=[30,32,45,50,90,85,100,140,110,160];
+var PAR_S1=[30,32,45,50,90,85,100,140,110,160,165];
 var PAR_S2=[45,45,55,55,85,130,120,120,155,150];
 var PAR_S3=[55,50,60,55,60,120,90,95,90,120];
 
@@ -1410,10 +1503,11 @@ function makeSeason(layouts, season, pars){
       name:L.name, env:L.env, style:L.style, faces:L.faces,
       fires:L.fires,
       lives:L.lives,
-      loseAt:L.fires+12,
-      spreadEvery:14.5-i*0.40,
+      boss:L.boss||null,
+      loseAt:L.loseAt||(L.fires+12),
+      spreadEvery:L.spreadEvery||(14.5-i*0.40),
       // less time to reach someone as the levels get harder
-      rescueTime:30.0-i*0.80,
+      rescueTime:L.rescueTime||(30.0-i*0.80),
       /* Second star. Set from watching a competent run and then given room,
          so it rewards working briskly rather than playing perfectly. */
       parTime:pars[i]
@@ -1487,7 +1581,7 @@ function shopItem(kind,id){
 }
 
 /* Progress is per season. Best times are keyed "1-4" (season 1, level 4). */
-var save={unlocked:{1:1,2:1,3:1},best:{},stars:{},vol:0.7,seenHint:false,
+var save={unlocked:{1:1,2:1,3:1},best:{},stars:{},vol:0.7,seenHint:false,gadget:"bomb",
           jits:0, owned:{nozzle:["brass"],hose:["black"],water:["clear"]},
           kit:{nozzle:"brass",hose:"black",water:"clear"}};
 try{
@@ -1497,9 +1591,9 @@ try{
     if(pp&&typeof pp==="object"){
       // anyone who played before seasons existed keeps everything they earned
       if(typeof pp.unlocked==="number"){
-        save.unlocked={1:Math.max(1,Math.min(10,pp.unlocked)),2:1,3:1};
+        save.unlocked={1:Math.max(1,Math.min(11,pp.unlocked)),2:1,3:1};
       } else if(pp.unlocked&&typeof pp.unlocked==="object"){
-        save.unlocked={1:Math.max(1,Math.min(10,pp.unlocked[1]||1)),
+        save.unlocked={1:Math.max(1,Math.min(11,pp.unlocked[1]||1)),
                        2:Math.max(1,Math.min(10,pp.unlocked[2]||1)),
                        3:Math.max(1,Math.min(10,pp.unlocked[3]||1))};
       }
@@ -2930,6 +3024,93 @@ var PLACES3={
   }
 };
 Object.keys(PLACES3).forEach(function(k){ ENVS[k]=PLACES3[k]; });
+
+/* ============================================================
+   THE REFINERY
+   Round tanks, but the fire sits on flat panels bent round the front of
+   each one — the same angled walls Season 2 uses. Nothing new had to be
+   taught to the water.
+   ============================================================ */
+ENVS.refinery=function(){
+  ground.material.color.setHex(0x22262A);
+  skylineBehind(-64);
+  var steelM=new THREE.MeshPhongMaterial({color:0x5A626A,shininess:40,specular:0x2A3038});
+  var darkM =new THREE.MeshPhongMaterial({color:0x343A40,shininess:18});
+  var pipeM =new THREE.MeshPhongMaterial({color:0x6A7078,shininess:52,specular:0x3A4048});
+
+  // the shells the valves are bolted to
+  [[-14,-22,6,9],[0,-26,7,11],[14,-22,6,9]].forEach(function(T){
+    var drum=new THREE.Mesh(new THREE.CylinderGeometry(T[2],T[2],T[3],22,1,true),steelM);
+    drum.position.set(T[0],T[3]/2,T[1]); envGroup.add(drum);
+    var lid=new THREE.Mesh(new THREE.CylinderGeometry(T[2]*1.02,T[2]*0.94,0.9,22),darkM);
+    lid.position.set(T[0],T[3]+0.3,T[1]); envGroup.add(lid);
+    for(var b=0;b<3;b++){
+      var band=new THREE.Mesh(new THREE.TorusGeometry(T[2]+0.06,0.13,6,26),darkM);
+      band.rotation.x=Math.PI/2;
+      band.position.set(T[0],1.6+b*(T[3]-2.4)/2,T[1]); envGroup.add(band);
+    }
+    // the stair that winds up the side
+    for(var s=0;s<9;s++){
+      var st=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.14,0.5),darkM);
+      var a=-1.15+s*0.16;
+      st.position.set(T[0]+Math.sin(a)*(T[2]+0.7), 0.9+s*(T[3]-1.6)/9, T[1]+Math.cos(a)*(T[2]+0.7));
+      st.rotation.y=a; envGroup.add(st);
+    }
+    upLight(T[0],1.4,T[1]+T[2]+2.2,0xFFD79A,13,0.16);
+  });
+
+  // the column on the right, with its flare
+  var col=new THREE.Mesh(new THREE.CylinderGeometry(3.5,3.9,20,16,1,true),steelM);
+  col.position.set(24,10,-24); envGroup.add(col);
+  var cap=new THREE.Mesh(new THREE.SphereGeometry(3.5,14,8,0,Math.PI*2,0,Math.PI/2),darkM);
+  cap.position.set(24,20,-24); envGroup.add(cap);
+  var stack=new THREE.Mesh(new THREE.CylinderGeometry(0.9,1.2,9,10),darkM);
+  stack.position.set(31,15,-27); envGroup.add(stack);
+  var flare=glowSprite(0xFF9A3A,9,0.9);
+  flare.position.set(31,20.4,-27); envGroup.add(flare);
+  blinkers.push({s:flare,rate:0.42,phase:0.1});
+
+  // pipework, low and wide, kept well clear of the line of fire
+  for(var p=0;p<7;p++){
+    var y=1.1+p*0.85;
+    var run=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.28,54,8),pipeM);
+    run.rotation.z=Math.PI/2; run.position.set(0,y,-37-p*0.7); envGroup.add(run);
+  }
+  [-22,-6,8,22].forEach(function(x){
+    var riser=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.32,7,8),pipeM);
+    riser.position.set(x,3.5,-39); envGroup.add(riser);
+  });
+
+  // gantry floodlights either side, out of the way
+  [-30,30].forEach(function(x){
+    var mast=new THREE.Mesh(new THREE.BoxGeometry(0.5,16,0.5),darkM);
+    mast.position.set(x,8,-12); envGroup.add(mast);
+    var lamp=glowSprite(0xFFE6B8,9,0.55);
+    lamp.position.set(x,16,-11); envGroup.add(lamp);
+  });
+
+  // a low sodium haze over the whole site
+  upLight(0,3,-6,0xFF8A4A,34,0.13);
+};
+WEATHER.refinery="clear";
+
+/* a valve wheel on each fire point, so it reads as plant and not as a window */
+function addValve(x,y,z,rot){
+  var wheelM=new THREE.MeshPhongMaterial({color:0xB4342A,shininess:44,specular:0x5A1A14});
+  var ring=new THREE.Mesh(new THREE.TorusGeometry(0.42,0.09,6,14),wheelM);
+  ring.position.set(x,y,z); ring.rotation.y=rot; levelGroup.add(ring);
+  for(var i=0;i<2;i++){
+    var spoke=new THREE.Mesh(new THREE.BoxGeometry(0.82,0.09,0.09),wheelM);
+    spoke.position.set(x,y,z); spoke.rotation.y=rot; spoke.rotation.z=i?Math.PI/2:0;
+    levelGroup.add(spoke);
+  }
+  var boss2=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,0.24,8),
+    new THREE.MeshPhongMaterial({color:0x8A9098,shininess:60}));
+  boss2.position.set(x+Math.sin(rot)*0.1,y,z+Math.cos(rot)*0.1);
+  boss2.rotation.x=Math.PI/2; boss2.rotation.z=-rot;
+  levelGroup.add(boss2);
+}
+
 function buildEnv(name){
   clearGroup(envGroup);
   planes.length=0; blinkers.length=0; swayers.length=0; marks.length=0;
@@ -3056,6 +3237,7 @@ var STYLES={
   canalBrick:  {wall:0x7A4436, trim:0xD0C8B8, roof:"step",    roofCol:0x4A423C, dark:0x1A1412, out:0x3E5A66},
   temple:      {wall:0x8E5A44, trim:0xD8B078, roof:"pagoda",  roofCol:0x8E2B22, dark:0x201410, out:0x4A6660},
   glassIron:   {wall:0x3A4A44, trim:0x8FD0C8, roof:"none",    roofCol:0x2A3A34, dark:0x14201C, out:0x5A8A88},
+  refinery:    {wall:0x5A626A, trim:0x8A9098, roof:"none", roofCol:0x3A4048, valve:true, bare:true, dark:0x14181C, out:0x3E5A66},
   concrete:    {wall:0x5E6068, trim:0x82848C, roof:"flat",    roofCol:0x4A4C52, dark:0x181A1E, out:0x40606E}
 };
 var styleNow=STYLES.greyStone;
@@ -3189,6 +3371,8 @@ function buildGeometry(cfg){
   var n=0;
 
   faces.forEach(function(f,faceIndex){
+    // a tank has its own shell built by the environment; a house needs walls
+    if(!styleNow.bare){
     // the wall itself
     var wall=new THREE.Mesh(new THREE.PlaneGeometry(f.len,f.top,8,6),wallMat);
     wall.position.set(f.cx,f.top/2,f.cz);
@@ -3210,6 +3394,7 @@ function buildGeometry(cfg){
 
     addRoof(f,styleNow);
     addFacade(f,styleNow);
+    }
 
     f.cols.forEach(function(a){
       f.rows.forEach(function(y){
@@ -3220,6 +3405,7 @@ function buildGeometry(cfg){
                nx:f.nx, nz:f.nz};
         wins.push(w);
 
+        if(styleNow.valve) addValve(wx+f.nx*0.06,y,wz+f.nz*0.06,f.rot);
         p.set(wx,y,wz); e.set(0,f.rot,0); q.setFromEuler(e); m.compose(p,q,s);
         winMesh.setMatrixAt(n,m);
         p.set(wx+f.nx*0.05, y, wz+f.nz*0.05);
@@ -3879,7 +4065,7 @@ function isLowWindow(w){ return w.y < w.face.top*TUNE.lowFrac; }
 function hitWindow(i,x,y,z){
   var w=wins[i];
   if(w.fire<=0) return;
-  if(isLowWindow(w) && pressure>TUNE.lowMaxPressure){
+  if(isLowWindow(w) && pressure>TUNE.lowMaxPressure && elapsed>=tripleUntil){
     warnPressure();
     if(Math.random()<0.25) splashDrops(x,y,z,1);
     return;
@@ -3979,6 +4165,8 @@ function step(dt,noDraw){
     var B=blinkers[bl];
     B.s.material.opacity=(((now/B.rate+B.phase)%1)<0.42)?0.95:0.06;
   }
+  if(bossOn&&live) updateBoss(dt,now);
+  if(live) updateGadgets(dt);
   if(bigWheel) bigWheel.rotation.z=now*0.12;
   if(lightBeam){ lightBeam.m.rotation.y=now*0.55; }
   for(var sw=0;sw<swayers.length;sw++){
@@ -4021,6 +4209,10 @@ function step(dt,noDraw){
       /* Each wall is a flat plane at some angle. Measure which side of it the
          droplet was on before and after: if it crossed from the front, work
          out where, and whether that point is actually on the wall. */
+      if(bossOn&&boss&&boss.alive&&hitBoss(nx,ny,nz)){
+        soakBoss(nx,ny,nz);
+        wlife[d]=0; water.alpha[d]=0; water.pos[i3+1]=-999; continue;
+      }
       var hitFace=null,hAlong=0,hy=0,hx=0,hz=0;
       for(var fj=0;fj<faces.length&&!hitFace;fj++){
         var f=faces[fj];
@@ -4076,7 +4268,7 @@ function step(dt,noDraw){
     burning++; fireTotal+=Math.min(1,w.fire);
     if(!live) continue;
 
-    w.fire=Math.min(1.4,w.fire+TUNE.fireGrow*dt);
+    if(elapsed>=coldUntil) w.fire=Math.min(1.4,w.fire+TUNE.fireGrow*dt);
     if(w.fire>=TUNE.spreadAt) hotCount++;
 
     var lvl=Math.min(1,w.fire);
@@ -4162,7 +4354,12 @@ function step(dt,noDraw){
     if(L.state==="waiting"){
       if(live&&w2.fire>0){
         L.t-=dt;
-        if(L.t<=0){
+        if(L.t<=0&&elapsed<netUntil&&netLeft>0){
+          netLeft--;
+          L.state="saved"; L.t=L.max*0.25;
+          livesEl.textContent=rescuedCount();
+          Snd.rescue(); toast(netLeft?"Caught — one left in the net":"Caught — the net is full");
+        } else if(L.t<=0){
           L.state="lost"; L.t=0;
           w2.dead=true;
           Snd.lost();
@@ -4198,6 +4395,7 @@ function step(dt,noDraw){
 
   /* ---- spreading ---- */
   if(live&&hotCount>0){
+    if(elapsed<coldUntil) spreadClock+=dt*Math.min(hotCount,TUNE.spreadCap);
     spreadClock-=dt*Math.min(hotCount,TUNE.spreadCap);
     if(spreadClock<=0){
       spreadClock=cfg.spreadEvery;
@@ -4223,7 +4421,8 @@ function step(dt,noDraw){
   Snd.frame(live,pressure,fireTotal,dt);
 
   if(live){
-    if(burning===0&&saved>0) finish(true);
+    var stillFighting = bossOn && boss && (boss.alive||boss.dying>0);
+    if(!stillFighting && burning===0 && (saved>0||bossKilled)) finish(true);
     else if(burning>=cfg.loseAt) finish(false);
   }
 
@@ -4233,7 +4432,7 @@ function step(dt,noDraw){
 /* ============================================================
    SCREENS
    ============================================================ */
-var SCREENS=["start","levels","news","board","shop","profile","pause","settings","end"];
+var SCREENS=["start","levels","news","board","shop","gadgets","profile","pause","settings","end"];
 function show(which){
   SCREENS.forEach(function(id){
     var el=$(id);
@@ -4247,10 +4446,11 @@ function show(which){
 function startLevel(n,season){
   seasonNow=season||seasonNow||1;
   LEVELS=SEASONS[seasonNow-1].levels;
-  level=Math.max(1,Math.min(10,n));
+  level=Math.max(1,Math.min(LEVELS.length,n));
   cfg=LEVELS[level-1];
   buildGeometry(cfg);
   buildEnv(cfg.env);
+  buildBoss(cfg);
   setWeather(WEATHER[cfg.env]||"clear");
   saved=0; burning=0; finished=false; paused=false;
   elapsed=0; spreadClock=cfg.spreadEvery;
@@ -4264,6 +4464,7 @@ function startLevel(n,season){
   burningEl.textContent=fireIdx.length;
   timeEl.innerHTML="0.0<em>s</em>";
   paintWins(0);
+  resetGadget();
   running=true;
   show("game");
   if(!save.seenHint){ dragHint.classList.add("show"); save.seenHint=true; persist(); }
@@ -4300,7 +4501,7 @@ function finish(won){
   var jits=[0,2,4,7][earned]||0;
   if(won){
     save.jits+=jits;
-    if(level>=save.unlocked[seasonNow]&&level<10) save.unlocked[seasonNow]=level+1;
+    if(level>=save.unlocked[seasonNow]&&level<LEVELS.length) save.unlocked[seasonNow]=level+1;
     if(best===undefined||t<best){ save.best[key]=Math.round(t*10)/10; best=save.best[key]; }
     if(!save.stars[key]||earned>save.stars[key]) save.stars[key]=earned;
     persist(); Snd.win();
@@ -4327,7 +4528,7 @@ function finish(won){
       ? (level<10?"Every window clear.":"You cleared all ten places.")
       : "The fire got away from you.")
     + (rescueLine?"<br><b>"+rescueLine+"</b>":"");
-  $("nextBtn").style.display=(won&&level<10)?"block":"none";
+  $("nextBtn").style.display=(won&&level<LEVELS.length)?"block":"none";
   show("end");
   $("end").className="screen sheet on "+(won?"win":"lose");
 }
@@ -4340,16 +4541,17 @@ function buildMap(season){
   var map=$("map");
   Array.prototype.slice.call(map.querySelectorAll(".nodeWrap")).forEach(function(n){ n.parentNode.removeChild(n); });
   var pts=[];
-  for(var i=0;i<10;i++){
+  var gap=86/Math.max(1,levels.length-1);
+  for(var i=0;i<levels.length;i++){
     var num=i+1, lv=levels[i];
-    var x=(i%2===0)?26:74, y=7+i*9.5;
+    var x=(i%2===0)?26:74, y=6+i*gap;
     pts.push([x,y]);
     var state=(num<unlocked)?"done":(num===unlocked?"open next":"locked");
     var wrap=document.createElement("div");
     wrap.className="nodeWrap";
     wrap.style.cssText="position:absolute;left:"+x+"%;top:"+y+"%;";
     var b=document.createElement("button");
-    b.className="node "+state;
+    b.className="node "+state+(lv.boss?" boss":"");
     b.setAttribute("aria-label","Level "+num+", "+lv.name);
     if(state==="locked"){ b.disabled=true; b.textContent="•"; }
     else {
@@ -4386,7 +4588,7 @@ function buildMap(season){
     if(save.best[lv.id]!==undefined) done++;
     got+=save.stars[lv.id]||0;
   });
-  $("levProgress").textContent=done+" of 10 cleared  ·  ★ "+got+"/30";
+  $("levProgress").textContent=done+" of "+levels.length+" cleared  ·  ★ "+got+"/"+(levels.length*3);
   // highlight the season tab we are looking at
   // scoped to the levels screen: the shop reuses this class for its own tabs
   Array.prototype.slice.call(document.querySelectorAll("#levels .seasonTab")).forEach(function(t){
@@ -4511,6 +4713,11 @@ $("shopBtn").addEventListener("click",function(){
   Snd.init(); Snd.tap(); shopKind="nozzle"; renderShop(); show("shop");
 });
 $("shopBack").addEventListener("click",function(){ Snd.tap(); show("start"); });
+$("gadgetsBtn").addEventListener("click",function(){
+  Snd.init(); Snd.tap(); renderGadgets(); show("gadgets");
+});
+$("gadgetsBack").addEventListener("click",function(){ Snd.tap(); show("start"); });
+gadgetBtn.addEventListener("click",function(e){ e.stopPropagation(); useGadget(); });
 Array.prototype.slice.call(document.querySelectorAll(".kindTab")).forEach(function(t){
   t.addEventListener("click",function(){
     Snd.tap(); shopKind=t.getAttribute("data-kind"); renderShop();
@@ -4714,6 +4921,517 @@ resize();
 /* ============================================================
    TEST HANDLE
    ============================================================ */
+
+/* ============================================================
+   THE BOSS
+   A thing made of fire, shaped like a gorilla, standing in front of a
+   refinery. Two halves: put the creature out, then put out everything it
+   threw while you were busy. Its health is the bar across the top.
+   ============================================================ */
+var bossOn=false, boss=null, bossKilled=false;
+var bossGroup=new THREE.Group(); scene.add(bossGroup);
+
+/* flames anywhere, not just at a window */
+function flameAt(x,y,z,n,pw){
+  pw=pw||1;
+  for(var c=0;c<n;c++){
+    var k=flHead; flHead=(flHead+1)%MAX_FLAME;
+    flPos[k*3]  = x+(Math.random()-0.5)*pw*1.4;
+    flPos[k*3+1]= y+(Math.random()-0.5)*pw*0.9;
+    flPos[k*3+2]= z+(Math.random()-0.5)*pw*1.4;
+    flVx[k]=(Math.random()-0.5)*0.9;
+    flVy[k]=1.5+Math.random()*1.7+pw*0.5;
+    flVz[k]=(Math.random()-0.5)*0.9;
+    flMax[k]=flLife[k]=0.38+Math.random()*0.48;
+    flBase[k]=(0.45+Math.random()*0.45)*pw;
+    flSize[k]=flBase[k]; flLifeA[k]=1;
+  }
+}
+
+function buildBoss(cfg){
+  clearGroup(bossGroup);
+  boss=null; bossOn=false; bossKilled=false;
+  bossBar.classList.remove("on");
+  if(!cfg.boss) return;
+  var B=cfg.boss;
+
+  var skin=new THREE.MeshPhongMaterial({color:0xD8340A,emissive:0x7A1A00,shininess:26,flatShading:true});
+  var hot =new THREE.MeshPhongMaterial({color:0xFF9A2A,emissive:0xB84A00,shininess:34,flatShading:true});
+  var g=new THREE.Group();
+  g.position.set(B.x,0,B.z);
+
+  [-1.45,1.45].forEach(function(sx){
+    var leg=new THREE.Mesh(new THREE.CylinderGeometry(0.95,1.15,2.4,7),skin);
+    leg.position.set(sx,1.2,0); g.add(leg);
+    var foot=new THREE.Mesh(new THREE.SphereGeometry(1.05,8,6),hot);
+    foot.position.set(sx,0.5,0.5); foot.scale.set(1,0.7,1.25); g.add(foot);
+  });
+  // a heavy chest, far wider at the shoulders than at the waist
+  var torso=new THREE.Mesh(new THREE.SphereGeometry(2.5,10,8),skin);
+  torso.position.set(0,4.6,0); torso.scale.set(1.22,1.18,0.92); g.add(torso);
+  var chest=new THREE.Mesh(new THREE.SphereGeometry(1.7,9,7),hot);
+  chest.position.set(0,4.9,1.15); chest.scale.set(1.15,0.95,0.6); g.add(chest);
+
+  var head=new THREE.Mesh(new THREE.SphereGeometry(1.62,10,8),skin);
+  head.position.set(0,7.9,0.3); head.scale.set(1.05,0.95,1.05); g.add(head);
+  var brow=new THREE.Mesh(new THREE.BoxGeometry(2.5,0.5,0.55),hot);
+  brow.position.set(0,8.3,1.25); g.add(brow);
+  [-0.52,0.52].forEach(function(ex){
+    var eye=new THREE.Mesh(new THREE.SphereGeometry(0.26,8,6),litMat(0xFFF0B0));
+    eye.position.set(ex,7.85,1.42); g.add(eye);
+    var eg=glowSprite(0xFFD070,0.9,0.8); eg.position.set(ex,7.85,1.5); g.add(eg);
+  });
+  var jaw=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.55,0.8),litMat(0xFFC24A));
+  jaw.position.set(0,7.15,1.15); g.add(jaw);
+
+  // the arms are the point of it: long, heavy, knuckles near the ground
+  var arms=[];
+  [-1,1].forEach(function(s){
+    var arm=new THREE.Group();
+    arm.position.set(s*2.75,6.0,0);
+    var upper=new THREE.Mesh(new THREE.CylinderGeometry(0.92,0.78,3.4,7),skin);
+    upper.position.set(s*0.35,-1.6,0); upper.rotation.z=-s*0.20; arm.add(upper);
+    var fore=new THREE.Mesh(new THREE.CylinderGeometry(0.78,0.66,3.0,7),skin);
+    fore.position.set(s*0.95,-4.5,0.15); fore.rotation.z=-s*0.12; arm.add(fore);
+    var fist=new THREE.Mesh(new THREE.SphereGeometry(1.15,9,7),hot);
+    fist.position.set(s*1.15,-6.1,0.3); arm.add(fist);
+    arm.add(new THREE.Mesh(new THREE.SphereGeometry(1.32,9,7),skin));
+    g.add(arm); arms.push(arm);
+  });
+
+  bossGroup.add(g);
+  boss={g:g, arms:arms, hp:1, alive:true, dying:0, t:Math.random()*6,
+        x:B.x, z:B.z, sway:B.sway, throwT:B.throwEvery*0.55, wind:0,
+        balls:[], cfg:B, hurt:0};
+  bossOn=true;
+  bossBar.classList.add("on");
+  bossName.textContent=B.name||"The Blaze";
+  paintBossBar();
+}
+
+function paintBossBar(){
+  var pct=boss?Math.max(0,boss.hp)*100:0;
+  bossFill.style.width=pct.toFixed(1)+"%";
+  bossBar.classList.toggle("low",pct<28);
+}
+
+/* it lobs a ball of fire at a valve it has not lit yet */
+function bossThrow(){
+  var cand=[];
+  for(var i=0;i<wins.length;i++) if(wins[i].fire<=0&&!wins[i].out&&!wins[i].dead) cand.push(i);
+  if(!cand.length) return;
+  var wi=cand[(Math.random()*cand.length)|0], w=wins[wi];
+  var m=new THREE.Mesh(new THREE.IcosahedronGeometry(0.66,0),litMat(0xFFC24A));
+  bossGroup.add(m);
+  var gl=glowSprite(0xFF7A2A,3.2,0.7); bossGroup.add(gl);
+  boss.balls.push({m:m, gl:gl, t:0, dur:1.15, win:wi,
+    fx:boss.g.position.x, fy:6.6, fz:boss.z+1.2,
+    tx:w.x, ty:w.y, tz:w.z});
+  Snd.splash();
+}
+
+/* when it goes, it goes all over the refinery */
+function bossCollapse(){
+  bossKilled=true;
+  var cand=[];
+  for(var i=0;i<wins.length;i++) if(wins[i].fire<=0&&!wins[i].out&&!wins[i].dead) cand.push(i);
+  for(var s=cand.length-1;s>0;s--){ var j=(Math.random()*(s+1))|0, t=cand[s]; cand[s]=cand[j]; cand[j]=t; }
+  cand.slice(0,boss.cfg.burst||6).forEach(function(wi){
+    ignite(wi); flameAt(wins[wi].x,wins[wi].y,wins[wi].z,6,1.1);
+  });
+  // the people only come into it once the creature is down
+  var lit=[];
+  for(var k=0;k<wins.length;k++) if(wins[k].fire>0) lit.push(k);
+  placeLives(cfg,lit);
+  bossBar.classList.remove("on");
+  toast("It is down. Now soak the refinery.");
+  Snd.clear();
+}
+
+function hitBoss(nx,ny,nz){
+  if(!boss||!boss.alive) return false;
+  var bx=boss.g.position.x, by=boss.g.position.y, bz=boss.z;
+  // three lumps: the chest, the head, and the low mass of it
+  var lumps=[[bx,by+4.7,bz,3.0],[bx,by+7.0,bz+0.3,1.7],[bx,by+1.8,bz,2.4]];
+  for(var i=0;i<lumps.length;i++){
+    var L=lumps[i], dx=nx-L[0], dy=ny-L[1], dz=nz-L[2];
+    if(dx*dx+dy*dy+dz*dz<=L[3]*L[3]) return true;
+  }
+  return false;
+}
+
+/* Fixed flow, exactly like a window: turning the pressure up makes the jet
+   easier to hold on it, not more powerful. */
+function soakBoss(x,y,z,mult){
+  var rateNow=TUNE.emitMin+(TUNE.emitMax-TUNE.emitMin)*pressure;
+  boss.hp-=(TUNE.bossDouse*(mult||1))/rateNow;
+  boss.hurt=0.12;
+  if(Math.random()<0.5) puffSteam(x,y,z,1);
+  if(Math.random()<0.03) Snd.steam();
+  if(boss.hp<=0){
+    boss.hp=0; boss.alive=false; boss.dying=1.3;
+    puffSteam(boss.g.position.x,5,boss.z,26);
+    Snd.steam();
+  }
+  if(frame%4===0) paintBossBar();
+}
+
+function updateBoss(dt,now){
+  if(!boss) return;
+  var b=boss, g=b.g;
+  b.t+=dt;
+  if(b.hurt>0) b.hurt-=dt;
+
+  if(b.alive){
+    /* it shifts its weight rather than charging about — a target that ran
+       would be unfair with a hose that arcs */
+    g.position.x=b.x+Math.sin(b.t*0.5)*b.sway;
+    g.position.y=Math.abs(Math.sin(b.t*1.05))*0.30;
+    g.rotation.y=Math.sin(b.t*0.5+1.57)*0.20;
+    var swing=Math.sin(b.t*1.05)*0.30;
+    b.arms[0].rotation.x=swing-b.wind*2.1;
+    b.arms[1].rotation.x=-swing;
+    b.arms[0].rotation.z=-b.wind*0.5;
+
+    var s2=(frame%4<2)?-1:1;
+    if(frame%2===0){
+      flameAt(g.position.x,5.0,b.z,4,1.7);
+      flameAt(g.position.x+(Math.random()-0.5)*6.2,3.0,b.z,3,1.2);
+      flameAt(g.position.x+(s2<0?-3.1:3.1),1.2,b.z+0.3,2,1.0);
+      if(frame%4===0) flameAt(g.position.x,8.1,b.z+0.3,2,1.0);
+    }
+    if(frame%10===0&&Math.random()<0.5){
+      var k3=smHead; smHead=(smHead+1)%MAX_SMOKE;
+      smoke.pos[k3*3]=g.position.x+(Math.random()-0.5)*3;
+      smoke.pos[k3*3+1]=7.6; smoke.pos[k3*3+2]=b.z;
+      smVx[k3]=(Math.random()-0.5)*0.6; smVy[k3]=1.6+Math.random(); smVz[k3]=0.3;
+      smMax[k3]=smLife[k3]=1.6+Math.random()*1.2; smGrow[k3]=0.6+Math.random()*0.6;
+      smoke.size[k3]=0.45; smoke.alpha[k3]=0.20;
+    }
+
+    if(b.wind>0){
+      b.wind-=dt;
+      if(b.wind<=0){ bossThrow(); b.throwT=b.cfg.throwEvery; }
+    } else {
+      b.throwT-=dt;
+      if(b.throwT<=0) b.wind=0.75;               // a wind-up you can see coming
+    }
+  } else if(b.dying>0){
+    b.dying-=dt;
+    var k=Math.max(0.02,b.dying/1.3);
+    g.scale.setScalar(k);
+    g.position.y=-(1-k)*1.6;
+    g.rotation.z=(1-k)*0.9;
+    if(frame%2===0){
+      puffSteam(g.position.x+(Math.random()-0.5)*4,1+Math.random()*5,b.z,2);
+      flameAt(g.position.x,3*k,b.z,2,1.2*k);
+    }
+    if(b.dying<=0){ bossGroup.remove(g); bossCollapse(); }
+  }
+
+  // the fireballs it threw, on their way over
+  for(var i=b.balls.length-1;i>=0;i--){
+    var P=b.balls[i];
+    P.t+=dt;
+    var u=Math.min(1,P.t/P.dur);
+    var x=P.fx+(P.tx-P.fx)*u, z=P.fz+(P.tz-P.fz)*u;
+    var y=P.fy+(P.ty-P.fy)*u+Math.sin(u*Math.PI)*4.5;
+    P.m.position.set(x,y,z); P.gl.position.set(x,y,z);
+    P.m.rotation.x+=dt*7; P.m.rotation.y+=dt*5;
+    if(frame%2===0) flameAt(x,y,z,1,0.7);
+    if(u>=1){
+      ignite(P.win);
+      flameAt(P.tx,P.ty,P.tz,8,1.2);
+      bossGroup.remove(P.m); bossGroup.remove(P.gl);
+      b.balls.splice(i,1);
+    }
+  }
+}
+
+
+/* ============================================================
+   GADGETS
+   One per level, chosen before you play. Two of them are Taha's own
+   ideas; the other three exist so that not every gadget is another way
+   of pointing water at something.
+   ============================================================ */
+var GADGETS=[
+  {id:"bomb",   name:"Splash Bomb", col:"#4AB0FF",
+   blurb:"Lob it anywhere. It bursts across five valves at once, and it hurts the boss badly.",
+   how:"Tap once to aim, tap again to throw."},
+  {id:"triple", name:"Triple Head", col:"#FFC24A",
+   blurb:"Three jets at full power for ten seconds, and the rule about low fires stops applying.",
+   how:"Tap and go."},
+  {id:"net",    name:"Rescue Net",  col:"#5ADC8A",
+   blurb:"For thirty seconds nobody can fall. Anyone who runs out of time is caught instead.",
+   how:"Tap when someone is about to drop."},
+  {id:"cold",   name:"Cold Snap",   col:"#8AD8FF",
+   blurb:"Every fire stops growing and stops spreading for eight seconds.",
+   how:"Tap when it is all getting away from you."},
+  {id:"sprink", name:"Sprinkler",   col:"#B26BFF",
+   blurb:"Sticks to whatever you are pointing at and puts that one out on its own for twenty seconds.",
+   how:"Aim at a fire, then tap."}
+];
+function gadgetById(id){
+  for(var i=0;i<GADGETS.length;i++) if(GADGETS[i].id===id) return GADGETS[i];
+  return GADGETS[0];
+}
+
+var gadgetLeft=0, aiming=false, netUntil=0, netLeft=0, coldUntil=0, tripleUntil=0, sprinkler=null;
+var bombs=[];
+var aimLine=null, aimRing=null;
+
+function resetGadget(){
+  gadgetLeft=1; aiming=false;
+  netUntil=0; netLeft=0; coldUntil=0; tripleUntil=0; sprinkler=null;
+  bombs.forEach(function(b){ bossGroup.remove(b.m); bossGroup.remove(b.gl); });
+  bombs.length=0;
+  showAim(false);
+  paintGadget();
+}
+
+function paintGadget(){
+  var g=gadgetById(save.gadget||"bomb");
+  gadgetBtn.style.display=gadgetLeft>0?"grid":"none";
+  gadgetBtn.className=aiming?"armed":"";
+  gadgetBtn.style.setProperty("--gcol",g.col);
+  gadgetName.textContent=aiming?"THROW":g.name;
+  gadgetIcon.textContent=({bomb:"●",triple:"≡",net:"▦",cold:"❄",sprink:"☁"})[g.id];
+}
+
+/* ---- where a thrown bomb would land ---- */
+var BOMB_SPEED=21;
+function bombPath(){
+  var pts=[], x=TIP.x,y=TIP.y,z=TIP.z;
+  var vx=DIR.x*BOMB_SPEED, vy=DIR.y*BOMB_SPEED, vz=DIR.z*BOMB_SPEED;
+  var h=1/90;
+  for(var i=0;i<900;i++){
+    vy-=TUNE.gravity*h;
+    var px=x,pz=z;
+    x+=vx*h; y+=vy*h; z+=vz*h;
+    if(i%3===0) pts.push(new THREE.Vector3(x,y,z));
+    // the creature is the thing you most want to lob it at, so the ring
+    // has to land on it rather than on the tank behind it
+    if(bossOn&&boss&&boss.alive&&hitBoss(x,y,z)) return {pts:pts, at:new THREE.Vector3(x,y,z)};
+    if(y<=0.05) return {pts:pts, at:new THREE.Vector3(x,0.05,z)};
+    for(var fj=0;fj<faces.length;fj++){
+      var f=faces[fj];
+      var dA=(px-f.cx)*f.nx+(pz-f.cz)*f.nz; if(dA<=0) continue;
+      var dB=(x-f.cx)*f.nx+(z-f.cz)*f.nz;   if(dB>0) continue;
+      var t=dA/(dA-dB);
+      var hx=px+(x-px)*t, hz=pz+(z-pz)*t;
+      if(y<=0||y>=f.top) continue;
+      var al=(hx-f.cx)*f.dx+(hz-f.cz)*f.dz;
+      if(al<-f.half||al>f.half) continue;
+      return {pts:pts, at:new THREE.Vector3(hx,y,hz)};
+    }
+  }
+  return {pts:pts, at:new THREE.Vector3(x,y,z)};
+}
+
+function showAim(on){
+  if(!aimLine){
+    aimLine=new THREE.Line(new THREE.BufferGeometry().setAttribute("position",
+      new THREE.BufferAttribute(new Float32Array(300*3),3)),
+      new THREE.LineBasicMaterial({color:0x8AD8FF,transparent:true,opacity:0.85}));
+    aimLine.frustumCulled=false; scene.add(aimLine);
+    aimRing=new THREE.Mesh(new THREE.RingGeometry(1.05,1.5,26),
+      new THREE.MeshBasicMaterial({color:0x8AD8FF,transparent:true,opacity:0.8,
+        side:THREE.DoubleSide,depthTest:false}));
+    aimRing.renderOrder=6; scene.add(aimRing);
+  }
+  aimLine.visible=on; aimRing.visible=on;
+}
+
+function updateAim(){
+  var r=bombPath();
+  var arr=aimLine.geometry.attributes.position.array;
+  var n=Math.min(300,r.pts.length);
+  for(var i=0;i<300;i++){
+    var p=r.pts[Math.min(i,n-1)]||r.at;
+    arr[i*3]=p.x; arr[i*3+1]=p.y; arr[i*3+2]=p.z;
+  }
+  aimLine.geometry.attributes.position.needsUpdate=true;
+  aimLine.geometry.setDrawRange(0,n);
+  aimRing.position.copy(r.at);
+  // lie the ring flat on the ground, or flat against the wall it will hit
+  if(r.at.y<=0.2){ aimRing.rotation.set(-Math.PI/2,0,0); aimRing.position.y=0.06; }
+  else { aimRing.lookAt(0,r.at.y,0); }
+}
+
+function throwBomb(){
+  var m=new THREE.Mesh(new THREE.IcosahedronGeometry(0.42,0),
+    new THREE.MeshPhongMaterial({color:0x4AB0FF,emissive:0x1A5A8A,shininess:60}));
+  var gl=glowSprite(0x8AD8FF,3.0,0.7);
+  bossGroup.add(m); bossGroup.add(gl);
+  bombs.push({m:m, gl:gl,
+    x:TIP.x, y:TIP.y, z:TIP.z,
+    vx:DIR.x*BOMB_SPEED, vy:DIR.y*BOMB_SPEED, vz:DIR.z*BOMB_SPEED});
+  Snd.splash();
+}
+
+/* five valves at once, or a serious dent in the creature */
+function burstBomb(x,y,z){
+  puffSteam(x,y,z,22);
+  splashDrops(x,y,z,14);
+  Snd.steam();
+  if(bossOn&&boss&&boss.alive){
+    var bx=boss.g.position.x-x, by=boss.g.position.y+4.7-y, bz=boss.z-z;
+    if(bx*bx+by*by+bz*bz<36){
+      boss.hp-=0.28; if(boss.hp<=0){ boss.hp=0; boss.alive=false; boss.dying=1.3;
+        puffSteam(boss.g.position.x,5,boss.z,26); }
+      paintBossBar();
+      return;
+    }
+  }
+  var near=[];
+  for(var i=0;i<wins.length;i++){
+    var w=wins[i];
+    if(w.fire<=0) continue;
+    var dx=w.x-x, dy=w.y-y, dz=w.z-z;
+    var d2=dx*dx+dy*dy+dz*dz;
+    if(d2<49) near.push({i:i,d:d2});
+  }
+  near.sort(function(a,b){ return a.d-b.d; });
+  near.slice(0,5).forEach(function(n){ douseFully(n.i); });
+}
+
+function douseFully(i){
+  var w=wins[i];
+  if(w.fire<=0) return;
+  w.fire=0; w.out=true; saved++;
+  puffSteam(w.x,w.y,w.z,7);
+  if(w.life&&w.life.state==="waiting"){
+    w.life.state="saved";
+    livesEl.textContent=rescuedCount();
+    Snd.rescue();
+  }
+}
+
+/* You aim a hose *above* what you want to hit, so "what you are pointing at"
+   is not where the camera points â it is where the water comes down. */
+function jetLandsAt(){
+  var sp=TUNE.speedMin+(TUNE.speedMax-TUNE.speedMin)*pressure;
+  var x=TIP.x,y=TIP.y,z=TIP.z;
+  var vx=DIR.x*sp,vy=DIR.y*sp,vz=DIR.z*sp,h=1/180;
+  for(var i=0;i<1400;i++){
+    vy-=TUNE.gravity*h; var k=1-TUNE.drag*h; vx*=k; vy*=k; vz*=k;
+    var px=x,pz=z; x+=vx*h; y+=vy*h; z+=vz*h;
+    if(y<=0.03) return null;
+    for(var fj=0;fj<faces.length;fj++){
+      var f=faces[fj];
+      var dA=(px-f.cx)*f.nx+(pz-f.cz)*f.nz; if(dA<=0) continue;
+      var dB=(x-f.cx)*f.nx+(z-f.cz)*f.nz;   if(dB>0) continue;
+      var t=dA/(dA-dB);
+      var hx=px+(x-px)*t, hz=pz+(z-pz)*t;
+      if(y<=0||y>=f.top) continue;
+      var al=(hx-f.cx)*f.dx+(hz-f.cz)*f.dz;
+      if(al<-f.half||al>f.half) continue;
+      return {x:hx,y:y,z:hz};
+    }
+  }
+  return null;
+}
+
+function useGadget(){
+  if(gadgetLeft<=0||!running||paused||finished) return;
+  var g=gadgetById(save.gadget||"bomb");
+  if(g.id==="bomb"){
+    if(!aiming){ aiming=true; showAim(true); updateAim(); paintGadget(); return; }
+    aiming=false; showAim(false); gadgetLeft=0; throwBomb(); paintGadget(); return;
+  }
+  gadgetLeft=0;
+  if(g.id==="triple"){ tripleUntil=elapsed+10; toast("Triple head — ten seconds"); }
+  /* a net holds a couple of people, not a whole building: any more and it
+     simply hands you the rescue star */
+  else if(g.id==="net"){ netUntil=elapsed+30; netLeft=2; toast("Net out — it will catch two"); }
+  else if(g.id==="cold"){ coldUntil=elapsed+8; toast("Cold snap — the fire stops"); }
+  else if(g.id==="sprink"){
+    var land=jetLandsAt(), best=-1, bestD=16;
+    if(land) for(var i=0;i<wins.length;i++){
+      var w=wins[i]; if(w.fire<=0) continue;
+      var dx=w.x-land.x, dy=w.y-land.y, dz=w.z-land.z;
+      var d=dx*dx+dy*dy+dz*dz;
+      if(d<bestD){ bestD=d; best=i; }
+    }
+    if(best<0){ gadgetLeft=1; toast("Point the hose at a fire first"); paintGadget(); return; }
+    sprinkler={win:best,t:20};
+    toast("Sprinkler on");
+  }
+  Snd.tap();
+  paintGadget();
+}
+
+function updateGadgets(dt){
+  if(aiming) updateAim();
+  if(sprinkler){
+    sprinkler.t-=dt;
+    var w=wins[sprinkler.win];
+    if(w.fire>0){
+      w.fire-=0.34*dt;
+      if(Math.random()<0.5) puffSteam(w.x,w.y,w.z,1);
+      /* hand it over while there is still a fire to put out: douseFully
+         is what marks it done, counts it and gets the person out */
+      if(w.fire<=0){ w.fire=0.001; douseFully(sprinkler.win); }
+    }
+    if(sprinkler.t<=0||w.fire<=0) sprinkler=null;
+  }
+  for(var i=bombs.length-1;i>=0;i--){
+    var B=bombs[i];
+    B.vy-=TUNE.gravity*dt;
+    var px=B.x, pz=B.z;
+    B.x+=B.vx*dt; B.y+=B.vy*dt; B.z+=B.vz*dt;
+    B.m.position.set(B.x,B.y,B.z); B.gl.position.set(B.x,B.y,B.z);
+    B.m.rotation.x+=dt*6; B.m.rotation.z+=dt*4;
+    var done=false;
+    if(B.y<=0.05){ burstBomb(B.x,0.2,B.z); done=true; }
+    if(!done) for(var fj=0;fj<faces.length;fj++){
+      var f=faces[fj];
+      var dA=(px-f.cx)*f.nx+(pz-f.cz)*f.nz; if(dA<=0) continue;
+      var dB=(B.x-f.cx)*f.nx+(B.z-f.cz)*f.nz; if(dB>0) continue;
+      var t=dA/(dA-dB);
+      var hx=px+(B.x-px)*t, hz=pz+(B.z-pz)*t;
+      if(B.y<=0||B.y>=f.top) continue;
+      var al=(hx-f.cx)*f.dx+(hz-f.cz)*f.dz;
+      if(al<-f.half||al>f.half) continue;
+      burstBomb(hx,B.y,hz); done=true; break;
+    }
+    if(!done&&bossOn&&boss&&boss.alive&&hitBoss(B.x,B.y,B.z)){ burstBomb(B.x,B.y,B.z); done=true; }
+    if(done||B.y<-4||Math.abs(B.x)>70||Math.abs(B.z)>70){
+      bossGroup.remove(B.m); bossGroup.remove(B.gl);
+      bombs.splice(i,1);
+    }
+  }
+}
+
+/* ---- the gadgets screen ---- */
+function renderGadgets(){
+  var list=$("gadgetList");
+  list.innerHTML="";
+  var chosen=save.gadget||"bomb";
+  GADGETS.forEach(function(g){
+    var row=document.createElement("button");
+    row.className="kit"+(g.id===chosen?" on":"");
+    var chip=document.createElement("span");
+    chip.className="chipCol"; chip.style.background=g.col;
+    var box=document.createElement("span");
+    box.style.cssText="flex:1;text-align:left;";
+    var nm=document.createElement("span");
+    nm.className="kitName"; nm.textContent=g.name;
+    var bl=document.createElement("span");
+    bl.style.cssText="display:block;font-family:var(--body);font-size:11.5px;line-height:1.45;color:rgba(233,241,246,.55);margin-top:3px;";
+    bl.textContent=g.blurb+" "+g.how;
+    box.appendChild(nm); box.appendChild(bl);
+    var tag=document.createElement("span");
+    tag.className="kitTag"; tag.textContent=(g.id===chosen)?"TAKING":"TAKE";
+    row.appendChild(chip); row.appendChild(box); row.appendChild(tag);
+    row.addEventListener("click",function(){
+      save.gadget=g.id; persist(); Snd.tap(); renderGadgets();
+    });
+    list.appendChild(row);
+  });
+}
+
 window.__soak={
   step:step,
   state:function(){
@@ -4774,6 +5492,21 @@ window.__soak={
                            what:first.object.geometry.type+" at ("+first.object.position.x.toFixed(1)+","+first.object.position.y.toFixed(1)+","+first.object.position.z.toFixed(1)+")"});
     });
     return out;
+  },
+  ignite:function(i){ return ignite(i); },
+  bombLand:function(){ var r=bombPath(); return {x:+r.at.x.toFixed(2),y:+r.at.y.toFixed(2),z:+r.at.z.toFixed(2)}; },
+  jetLand:function(){ var r=jetLandsAt(); return r?{x:+r.x.toFixed(2),y:+r.y.toFixed(2),z:+r.z.toFixed(2)}:null; },
+  gadgetState:function(){
+    return {left:gadgetLeft, aiming:aiming, id:save.gadget,
+            net:+(netUntil-elapsed).toFixed(1), netLeft:netLeft, cold:+(coldUntil-elapsed).toFixed(1),
+            triple:+(tripleUntil-elapsed).toFixed(1),
+            sprinkler:sprinkler?sprinkler.win:null, bombs:bombs.length};
+  },
+  boss:function(){
+    if(!boss) return null;
+    return {hp:+boss.hp.toFixed(3), alive:boss.alive, dying:+boss.dying.toFixed(2),
+            x:+boss.g.position.x.toFixed(2), z:boss.z, balls:boss.balls.length,
+            killed:bossKilled, chestY:+(boss.g.position.y+4.7).toFixed(2)};
   },
   markBox:function(){
 
@@ -4877,6 +5610,7 @@ buildEnv(LEVELS[0].env);
 buildMap();
 paintChip();
 applyKit();
+paintGadget();
 paintNewsDot();
 renderNews();
 fetchNews();
