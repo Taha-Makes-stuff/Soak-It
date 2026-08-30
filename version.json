@@ -1,6 +1,6 @@
 {
-  "version": 24,
+  "version": 25,
   "name": "Soak It",
   "file": "index.html",
-  "notes": "Stars now pay 4, 7 and 10 jits. Gadgets cost jits, with two new ones: Hydrant Boost and Nuke Splash. Splash Bomb ring now sits flat on the surface. Every light in the game rebuilt - soft glows, lamp cones and light pools on the road."
+  "notes": "New app icon on the web app too"
 }
