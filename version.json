@@ -1,6 +1,6 @@
 {
-  "version": 28,
+  "version": 29,
   "name": "Soak It",
   "file": "index.html",
-  "notes": "Season 4 Through the Ages with the Furnace boss, Ironpaw and Emberwing, your own health bar with bosses that fight back, back buttons fixed, no more pressure warning - the hose kicks instead, 200 second limit, shorter levels"
+  "notes": "Bosses stand further back, the screen shake is calmed right down, and the hose now has a hard barrier at 50 percent while it is aimed low instead of shaking"
 }

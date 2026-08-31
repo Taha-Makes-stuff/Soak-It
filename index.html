@@ -237,6 +237,15 @@
     width:11px;height:11px;border-radius:50%;
     background:var(--ember);border:2px solid #0D1520;
   }
+  /* the ceiling the hose refuses to go past while it is aimed low down */
+  #gaugeCap{
+    position:absolute;left:-4px;right:-4px;bottom:50%;height:3px;
+    background:repeating-linear-gradient(90deg,#FF7A2E 0 5px,transparent 5px 10px);
+    opacity:0;transition:opacity .16s ease;pointer-events:none;
+  }
+  #gauge.capped #gaugeCap{opacity:1;}
+  #gauge.capped #gaugeFill{filter:saturate(.55) brightness(.85);}
+
   /* ============ your own health ============ */
   #hpWrap{
     position:absolute;left:50%;transform:translateX(-50%);
@@ -908,6 +917,8 @@
         <div id="gaugeFill"></div>
         <div id="gaugeTicks"></div>
         <div id="gaugeMarker"></div>
+      <!-- shown only while the hose is pointed low: it will not go past here -->
+      <div id="gaugeCap"></div>
       </div>
       <div class="gcap">POWER</div>
     </div>
@@ -1288,7 +1299,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 28;
+var GAME_VERSION = 29;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -1381,9 +1392,9 @@ var LAYOUTS=[
     {ax:"z", v:-15, lo:-8,  hi:8, top:11, cols:[-6,-3,0,3,6],   rows:[2.8,5.4,8.0]},
     {ax:"x", v:-8,  lo:-15, hi:1, top:17, cols:[-2,-6,-10,-13.5], rows:[2.8,5.4,8.0,10.6,13.2]}
   ]},
-  { name:"Long Facade", env:"airport", style:"concrete", fires:15, lives:4, faces:[
-    {ax:"z", v:-17, lo:-12, hi:12, top:14,
-     cols:[-11,-8.25,-5.5,-2.75,0,2.75,5.5,8.25,11], rows:[3,5.9,8.8,11.7]}
+  { name:"Long Facade", env:"airport", style:"concrete", fires:14, lives:4, faces:[
+    {ax:"z", v:-14, lo:-10, hi:10, top:14,
+     cols:[-9,-6.75,-4.5,-2.25,0,2.25,4.5,6.75,9], rows:[3,5.9,8.8,11.7]}
   ]},
   { name:"Horseshoe", env:"jungle", style:"mudbrick", fires:17, lives:5, faces:[
     {ax:"z", v:-11, lo:-7,  hi:7, top:14, cols:[-5.2,-2.6,0,2.6,5.2], rows:[2.8,5.4,8.0,10.6]},
@@ -1399,7 +1410,7 @@ var LAYOUTS=[
      someone who has just finished the first ten, not to break them. ---- */
   { name:"The Blaze", env:"refinery", style:"refinery",
     fires:0, lives:3, loseAt:22, spreadEvery:26, rescueTime:44,
-    boss:{name:"The Blaze", x:0, z:-13, sway:5, throwEvery:6.8, burst:5},
+    boss:{name:"The Blaze", x:0, z:-17, sway:5, throwEvery:6.8, burst:5},
     faces:[
     /* One flat panel across the front of each tank, standing where the shell
        comes closest to you. Bending it into an arc of three was the obvious
@@ -1486,8 +1497,8 @@ var LAYOUTS2=[
      swing open you have four seconds. */
   { name:"The Mech", env:"bridge", style:"greyStone",
     fires:0, lives:3, loseAt:22, spreadEvery:24, rescueTime:40,
-    boss:{kind:"mech", name:"Ironpaw", x:0, z:-15, sway:4.0,
-          throwEvery:5.4, burst:6, openFor:4.0, shutFor:9.0},
+    boss:{kind:"mech", name:"Ironpaw", x:0, z:-19, sway:4.0,
+          throwEvery:7.0, burst:4, openFor:4.2, shutFor:8.5},
     faces:[
     /* the two bridge towers, one either side of it */
     {cx:-11, cz:-17, rot:0, len:7.0, top:15, cols:[-2.2,0,2.2], rows:[3.5,7,11]},
@@ -1560,7 +1571,7 @@ var LAYOUTS3=[
      of wall on the way past. */
   { name:"The Dragon", env:"castle", style:"greyStone",
     fires:0, lives:4, loseAt:24, spreadEvery:22, rescueTime:38,
-    boss:{kind:"dragon", name:"Emberwing", x:0, y:14, z:-13,
+    boss:{kind:"dragon", name:"Emberwing", x:0, y:15, z:-17,
           throwEvery:6, burst:7, perchFor:6.5, flyFor:2.6,
           perches:[-12,0,12]},
     faces:[
@@ -1662,7 +1673,7 @@ var LAYOUTS4=[
      down together. */
   { name:"The Furnace", env:"foundry", style:"warehouse",
     fires:0, lives:4, loseAt:24, spreadEvery:20, rescueTime:42,
-    boss:{kind:"furnace", name:"Old Smokelung", x:0, z:-12,
+    boss:{kind:"furnace", name:"Old Smokelung", x:0, z:-17,
           throwEvery:6.4, burst:6, relight:24},
     faces:[
     {cx:-12, cz:-16, rot:8,  len:9, top:13, cols:[-2.8,0,2.8], rows:[3.5,7,10.5]},
@@ -4624,6 +4635,39 @@ var lowKickUntil=0, ranOutOfTime=false;
 var level=1, seasonNow=1, mapSeason=1;
 var cfg=LEVELS[0], fireTotal=0, screenNow="start", settingsFrom="start";
 
+/* ============================================================
+   THE BARRIER
+   Aim at the bottom of a building and the hose will not open past
+   halfway. Not a warning, not a fight with the shake — the gauge stops
+   there and says so. Checked ten times a second rather than every frame,
+   because walking the whole arc is not free.
+   ============================================================ */
+var cappedNow=false, capCheck=0, wantPressure=0.40;
+function lowAimCap(dt){
+  capCheck-=dt;
+  if(capCheck<=0){
+    capCheck=0.1;
+    /* Work out where the jet would land at the power you ASKED for, not at
+       the power the cap is currently allowing. Testing the capped jet feeds
+       back on itself — holding it down makes it land lower, which keeps it
+       held down, and the hose can never be opened up again. */
+    var keep=pressure; pressure=wantPressure;
+    var land=jetLandsAt();
+    pressure=keep;
+    var low=false;
+    if(land&&land.fi>=0){
+      var f=faces[land.fi];
+      if(f && land.y < f.top*TUNE.lowFrac) low=true;   // the same line isLowWindow uses
+    }
+    if(low!==cappedNow){
+      cappedNow=low;
+      gaugeEl.classList.toggle("capped",low);
+    }
+  }
+  var want=(cappedNow&&elapsed>=tripleUntil)?Math.min(wantPressure,TUNE.lowMaxPressure):wantPressure;
+  if(Math.abs(pressure-want)>0.0005){ pressure=want; paintGauge(); }
+}
+
 function paintGauge(){
   var pct=(pressure*100).toFixed(1)+"%";
   gFill.style.height=pct; gMark.style.bottom=pct;
@@ -4693,7 +4737,8 @@ gaugeEl.addEventListener("pointerup",endGauge);
 gaugeEl.addEventListener("pointercancel",endGauge);
 function moveGauge(e){
   var r=gBody.getBoundingClientRect();
-  pressure=Math.max(0,Math.min(1,1-(e.clientY-r.top)/r.height));
+  wantPressure=Math.max(0,Math.min(1,1-(e.clientY-r.top)/r.height));
+  pressure=wantPressure;
   paintGauge();
 }
 
@@ -4803,15 +4848,15 @@ function step(dt,noDraw){
       yaw=Math.max(-TUNE.yawLimit,Math.min(TUNE.yawLimit,yaw));
       pitch=Math.max(TUNE.pitchMin,Math.min(TUNE.pitchMax,pitch));
     }
-    if(keys.q){ pressure=Math.max(0,pressure-dt*0.7); paintGauge(); }
-    if(keys.e){ pressure=Math.min(1,pressure+dt*0.7); paintGauge(); }
+    if(keys.q){ wantPressure=Math.max(0,wantPressure-dt*0.7); pressure=wantPressure; paintGauge(); }
+    if(keys.e){ wantPressure=Math.min(1,wantPressure+dt*0.7); pressure=wantPressure; paintGauge(); }
   }
 
   /* the hose kicks: open it right up and holding a line gets harder.
      Squared, so low pressure is rock steady and only the top end fights you. */
   var amp = (live&&elapsed>=boostUntil) ? pressure*pressure*TUNE.shake : 0;
-  if(live&&elapsed<lowKickUntil) amp*=7;      // fighting a low fire wide open
-  var fast = (live&&elapsed<lowKickUntil) ? 3.2 : 1;
+  if(live&&elapsed<lowKickUntil) amp*=1.6;    // a nudge, not a wrestle
+  var fast = (live&&elapsed<lowKickUntil) ? 1.35 : 1;
   var shx = (Math.sin(now*21.3*fast)*0.6+Math.sin(now*34.7*fast)*0.4)*amp;
   var shy = (Math.sin(now*17.9*fast)*0.6+Math.sin(now*29.3*fast)*0.4)*amp;
   camera.rotation.y=-yaw+shx;
@@ -4852,7 +4897,7 @@ function step(dt,noDraw){
     B.s.material.opacity=(((now/B.rate+B.phase)%1)<0.42)?0.95:0.06;
   }
   if(bossOn&&live) updateBoss(dt,now);
-  if(live){ updateGadgets(dt); updateNuke(dt); if(bossOn) updateAttacks(dt); }
+  if(live){ lowAimCap(dt); updateGadgets(dt); updateNuke(dt); if(bossOn) updateAttacks(dt); }
   if(bigWheel) bigWheel.rotation.z=now*0.12;
   if(lightBeam){ lightBeam.m.rotation.y=now*0.55; }
   for(var sw=0;sw<swayers.length;sw++){
@@ -5151,9 +5196,9 @@ function startLevel(n,season){
   buildBoss(cfg);
   setWeather(WEATHER[cfg.env]||"clear");
   saved=0; burning=0; finished=false; paused=false; ranOutOfTime=false;
-  lowKickUntil=0;
+  lowKickUntil=0; cappedNow=false; capCheck=0; gaugeEl.classList.remove("capped");
   elapsed=0; spreadClock=cfg.spreadEvery;
-  yaw=0; pitch=TUNE.pitchStart; pressure=0.40; paintGauge();
+  yaw=0; pitch=TUNE.pitchStart; pressure=0.40; wantPressure=0.40; paintGauge();
   for(var i=0;i<MAX_DROPS;i++){ wlife[i]=0; water.alpha[i]=0; water.pos[i*3+1]=-999; }
   for(var f=0;f<MAX_FLAME;f++){ flLife[f]=0; flLifeA[f]=0; flSize[f]=0; flPos[f*3+1]=-999; }
   for(var s2=0;s2<MAX_SMOKE;s2++){ smLife[s2]=0; smoke.alpha[s2]=0; smoke.pos[s2*3+1]=-999; }
@@ -5946,7 +5991,7 @@ function mechTick(b,dt,now){
   p.core.emissive.setHex(b.open?0x30D8FF:0x0E4658);
 
   b.vulnerable=b.open;
-  b.dmgMult=2.4;
+  b.dmgMult=3.4;
   b.hitLumps=[[g.position.x, g.position.y+10.8*MECH_K, b.z+1.4*MECH_K, 2.4*MECH_K]];
 
   if(b.open&&frame%3===0) flameAt(g.position.x,10.8*MECH_K,b.z+1.6*MECH_K,1,0.5);
@@ -7057,7 +7102,7 @@ window.__soak={
   set:function(o){
     if(o.yaw!==undefined) yaw=o.yaw;
     if(o.pitch!==undefined) pitch=o.pitch;
-    if(o.pressure!==undefined){ pressure=o.pressure; paintGauge(); }
+    if(o.pressure!==undefined){ wantPressure=o.pressure; pressure=o.pressure; paintGauge(); }
     if(o.paused!==undefined) paused=o.paused;
   },
   level:startLevel,
