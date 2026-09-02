@@ -49,6 +49,11 @@
   }
 
   #stage{position:fixed;inset:0;touch-action:none;}
+  /* a little fall-off at the corners, so the picture has a middle */
+  #stage::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(120% 100% at 50% 45%, transparent 55%, rgba(0,0,0,.42) 100%);
+  }
   #stage canvas{display:block;width:100%;height:100%;}
 
   /* ============ shared bits ============ */
@@ -253,6 +258,45 @@
     opacity:0;transition:opacity .16s ease;pointer-events:none;
   }
   #gauge.capped #gaugeCap{opacity:1;}
+
+  /* ============ hose heads ============ */
+  #headBtn{
+    pointer-events:auto;display:grid;place-items:center;gap:1px;
+    padding:8px 12px 7px;border-radius:4px;cursor:pointer;
+    background:var(--glass);border:1px solid rgba(140,200,255,.55);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    box-shadow:0 0 14px rgba(90,170,255,.25);
+  }
+  #headBtn:active{transform:scale(.95);}
+  #headIcon{font-size:17px;line-height:1;color:#8FD0FF;}
+  #headName{
+    font-family:var(--cond);font-weight:800;font-size:10px;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--paper);
+  }
+  #headWheel{
+    position:absolute;inset:0;display:none;place-items:center;
+    background:rgba(4,8,14,.55);backdrop-filter:blur(3px);
+    -webkit-backdrop-filter:blur(3px);z-index:5;
+  }
+  #headWheel.on{display:grid;}
+  #headRing{position:relative;width:min(78vw,330px);height:min(78vw,330px);}
+  .headPick{
+    position:absolute;width:96px;margin:-48px 0 0 -48px;
+    display:grid;place-items:center;gap:3px;padding:10px 4px;
+    border-radius:6px;cursor:pointer;text-align:center;
+    background:rgba(10,16,24,.82);border:1px solid var(--glass-line);
+  }
+  .headPick .g{font-size:24px;line-height:1;color:#8FD0FF;}
+  .headPick .n{
+    font-family:var(--cond);font-weight:800;font-size:10.5px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--paper);
+  }
+  .headPick .d{
+    font-family:var(--body);font-size:9.5px;line-height:1.3;
+    color:rgba(233,241,246,.55);
+  }
+  .headPick.on{border-color:#8FD0FF;background:rgba(20,44,66,.9);
+    box-shadow:0 0 16px rgba(90,170,255,.4);}
 
   /* Fires you cannot see. On a wide building it is far too easy to be
      working one end while the other end gets away from you. */
@@ -927,6 +971,8 @@
   <div id="hurt"></div>
   <!-- points at fires that are burning off the side of the screen -->
   <div id="fireArrows"></div>
+  <!-- the head wheel, only up while you are holding it open -->
+  <div id="headWheel"><div id="headRing"></div></div>
 
   <div id="arc"><div id="arcMark"></div></div>
 
@@ -934,6 +980,11 @@
     <div class="leftDeck">
       <button id="pauseBtn" aria-label="Pause">
         <svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      </button>
+      <!-- which head is on the hose; tap to swing the wheel out -->
+      <button id="headBtn" aria-label="Change hose head">
+        <span id="headIcon">∣</span>
+        <span id="headName">Jet</span>
       </button>
       <!-- the one gadget you brought with you -->
       <button id="gadgetBtn" aria-label="Use gadget">
@@ -1332,7 +1383,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 31;
+var GAME_VERSION = 32;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -1348,6 +1399,8 @@ var burningEl=$("burning"), burnPlate=$("burnPlate"), timeEl=$("time");
 var bossBar=$("bossBar"), bossName=$("bossName"), bossFill=$("bossFill");
 var hpWrap=$("hpWrap"), hpFill=$("hpFill"), hurtEl=$("hurt");
 var gadgetBtn=$("gadgetBtn"), gadgetIcon=$("gadgetIcon"), gadgetName=$("gadgetName");
+var headBtn=$("headBtn"), headIcon=$("headIcon"), headName=$("headName");
+var headWheel=$("headWheel"), headRing=$("headRing");
 var psiEl=$("psi"), arcMark=$("arcMark");
 var gaugeEl=$("gauge"), gBody=$("gaugeBody"), gFill=$("gaugeFill"), gMark=$("gaugeMarker"), gTicks=$("gaugeTicks");
 
@@ -1380,6 +1433,8 @@ var TUNE = {
   lowMaxPressure: 0.50,
   // an ordinary level is a sprint, not a siege
   timeLimit: 200,
+  // eleven fires in one building and it goes up
+  blowAt: 11,
   /* one door takes about six seconds of clean hosing; three of them has to
      fit inside how long the first one stays shut, or it can never be won */
   furnaceDouse: 0.0055,
@@ -1627,7 +1682,7 @@ function makeSeason(layouts, season, pars){
       name:L.name, env:L.env, style:L.style, faces:L.faces,
       // Taha asked for shorter levels, so every place lights a fifth less.
       // A boss arena starts clean: the boss is what sets it alight.
-      fires:L.fires?Math.max(4,Math.round(L.fires*0.8)):0,
+      fires:L.fires?Math.min(9,Math.max(4,Math.round(L.fires*0.8))):0,
       lives:L.lives,
       boss:L.boss||null,
       loseAt:L.loseAt||(L.fires+12),
@@ -1849,7 +1904,7 @@ function shopItem(kind,id){
 }
 
 /* Progress is per season. Best times are keyed "1-4" (season 1, level 4). */
-var save={unlocked:{1:1,2:1,3:1,4:1,5:1},daily:null,best:{},stars:{},vol:0.7,seenHint:false,gadget:"bomb",gadgetsOwned:["bomb"],
+var save={unlocked:{1:1,2:1,3:1,4:1,5:1},head:"jet",daily:null,best:{},stars:{},vol:0.7,seenHint:false,gadget:"bomb",gadgetsOwned:["bomb"],
           jits:0, owned:{nozzle:["brass"],hose:["black"],water:["clear"]},
           kit:{nozzle:"brass",hose:"black",water:"clear"}};
 try{
@@ -2182,8 +2237,11 @@ var Snd=(function(){
    RENDERER
    ============================================================ */
 var renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+// sharper edges on a good phone; this is most of what reads as "quality"
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75));
 renderer.outputEncoding=THREE.sRGBEncoding;
+/* No tone mapping. A filmic curve was tried and it drained the colour out
+   of everything: this art depends on saturated additive glow. */
 renderer.shadowMap.enabled=false;
 stage.appendChild(renderer.domElement);
 
@@ -5097,7 +5155,7 @@ var haze=[];
 var yaw=0, pitch=TUNE.pitchStart, pressure=0.40;
 var running=false, paused=false, finished=false;
 var saved=0, burning=0, emitCarry=0, frame=0, elapsed=0, spreadClock=8;
-var lowKickUntil=0, ranOutOfTime=false;
+var lowKickUntil=0, ranOutOfTime=false, blewUp=false, hitTally=0;
 var level=1, seasonNow=1, mapSeason=1;
 var cfg=LEVELS[0], fireTotal=0, screenNow="start", settingsFrom="start";
 
@@ -5315,10 +5373,143 @@ function warnPressure(){
    has to come down or the water does nothing. */
 function isLowWindow(w){ return w.y < w.face.top*TUNE.lowFrac; }
 
+/* ============================================================
+   HOSE HEADS
+   Not the shop's nozzle skins — those are only a look. These change
+   what comes out of it: how far it throws, how tight it holds, how
+   hard it bites, and whether it catches more than one window at once.
+   ============================================================ */
+var HEADS=[
+  {id:"jet",  name:"Jet",    icon:"∣", blurb:"The one you know. Tight and long.",
+   speed:1,    spread:1,    douse:1,   reach:1},
+  {id:"show", name:"Shower", icon:"░", blurb:"Softer and wider, but bites twice as fast.",
+   /* its slower arc lands less than half the Jet.s hits, so the bite per
+      drop has to carry the whole 2x on its own */
+   speed:0.86, spread:0.50, douse:4.4, reach:0.8},
+  {id:"vert", name:"Vertical", icon:"‖", blurb:"Catches the window above or below as well.",
+   speed:0.94, spread:1.4,  douse:1,   reach:0.95, also:"vert"},
+  {id:"horz", name:"Horizontal", icon:"═", blurb:"Catches the window beside it as well.",
+   speed:0.94, spread:1.4,  douse:1,   reach:0.95, also:"horz"},
+  {id:"lance",name:"Lance",  icon:"↑", blurb:"Needle thin and throws furthest. For the top floors.",
+   speed:1.22, spread:0.35, douse:0.8, reach:1.25}
+];
+var headNow=HEADS[0];
+function headById(id){
+  for(var i=0;i<HEADS.length;i++) if(HEADS[i].id===id) return HEADS[i];
+  return HEADS[0];
+}
+function paintHead(){
+  headIcon.textContent=headNow.icon;
+  headName.textContent=headNow.name;
+}
+function setHead(id){
+  headNow=headById(id);
+  save.head=headNow.id;
+  persist();
+  paintHead();
+  Snd.tap();
+}
+/* the wheel: five tiles thrown round a circle, GTA fashion */
+function buildWheel(){
+  headRing.innerHTML="";
+  HEADS.forEach(function(H,i){
+    var a=-Math.PI/2 + (i/HEADS.length)*Math.PI*2;
+    var d=document.createElement("button");
+    d.className="headPick"+(H.id===headNow.id?" on":"");
+    d.style.left=(50+Math.cos(a)*38)+"%";
+    d.style.top =(50+Math.sin(a)*38)+"%";
+    d.innerHTML='<span class="g">'+H.icon+'</span><span class="n">'+H.name+
+                '</span><span class="d">'+H.blurb+'</span>';
+    d.addEventListener("click",function(e){
+      e.stopPropagation();
+      setHead(H.id);
+      showWheel(false);
+    });
+    headRing.appendChild(d);
+  });
+}
+function showWheel(on){
+  if(on) buildWheel();
+  headWheel.classList.toggle("on",!!on);
+}
+
+/* the window directly above/below, or beside, the one you just hit */
+function sameFaceNeighbour(i,how){
+  var w=wins[i], best=-1, bestD=1e9;
+  for(var j=0;j<wins.length;j++){
+    if(j===i) continue;
+    var o=wins[j];
+    if(o.fi!==w.fi||o.fire<=0) continue;
+    var da=Math.abs(o.along-w.along), dy=Math.abs(o.y-w.y);
+    if(how==="vert"){ if(da>0.6) continue; if(dy<0.2||dy>4.6) continue; if(dy<bestD){bestD=dy;best=j;} }
+    else            { if(dy>0.6) continue; if(da<0.2||da>5.2) continue; if(da<bestD){bestD=da;best=j;} }
+  }
+  return best;
+}
+
+/* ============================================================
+   LETTING A BUILDING GO
+   Eleven fires in one building and it is gone. Not a quiet loss — a
+   flash, a bang, and the whole thing goes dark. Counted per building
+   (walls that touch each other), so a house with two wings is one thing.
+   ============================================================ */
+var blownAlready=false;
+function checkBlowUp(){
+  if(blownAlready||!running||finished) return;
+  if(bossOn) return;
+  var count=[];
+  for(var i=0;i<wins.length;i++){
+    if(wins[i].fire<TUNE.spreadAt) continue;   // a fire that has taken hold
+    var b=bldOf[wins[i].fi];
+    if(b===undefined||b<0) continue;
+    count[b]=(count[b]||0)+1;
+  }
+  for(var b2=0;b2<count.length;b2++){
+    if((count[b2]||0)<TUNE.blowAt) continue;
+    blowUp(b2);
+    return;
+  }
+}
+function blowUp(b){
+  blownAlready=true;
+  var sx=0,sz=0,top=0,n=0;
+  for(var i=0;i<faces.length;i++){
+    if(bldOf[i]!==b) continue;
+    sx+=faces[i].cx; sz+=faces[i].cz; n++;
+    if(faces[i].top>top) top=faces[i].top;
+  }
+  var cx=n?sx/n:0, cz=n?sz/n:-14, cy=top*0.6;
+
+  Snd.boom(); Snd.lost();
+  hurtEl.classList.remove("hit"); void hurtEl.offsetWidth; hurtEl.classList.add("hit");
+
+  // the blast itself
+  var flash=glowSprite(0xFFE9B8,60,0.95);
+  flash.position.set(cx,cy,cz); bossGroup.add(flash);
+  setTimeout(function(){ bossGroup.remove(flash); },500);
+  for(var k=0;k<40;k++){
+    var a=Math.random()*Math.PI*2, r=Math.random()*top;
+    flameAt(cx+Math.cos(a)*r, cy+(Math.random()-0.3)*top, cz+Math.sin(a)*r*0.5, 3, 2.2);
+  }
+  puffSteam(cx,cy,cz,40);
+  splashDrops(cx,cy,cz,20);
+
+  // everything in it is gone
+  for(var w2=0;w2<wins.length;w2++){
+    if(bldOf[wins[w2].fi]!==b) continue;
+    wins[w2].fire=0; wins[w2].out=false; wins[w2].dead=true;
+    if(wins[w2].life&&wins[w2].life.state==="waiting") wins[w2].life.state="lost";
+  }
+  livesEl.textContent=rescuedCount();
+  blewUp=true;
+  toast("The building went up");
+  finish(false);
+}
+
 function hitWindow(i,x,y,z){
   var w=wins[i];
   if(w.fire<=0) return;
-  if(isLowWindow(w) && pressure>TUNE.lowMaxPressure && elapsed>=tripleUntil){
+  if(!hitWindow.spreading && isLowWindow(w) && pressure>TUNE.lowMaxPressure && elapsed>=tripleUntil){
     /* No message. The hose itself tells you: open this far and aimed this
        low it kicks so hard you cannot hold a line on anything. */
     lowKickUntil=elapsed+0.30;
@@ -5326,7 +5517,16 @@ function hitWindow(i,x,y,z){
     return;
   }
   var rateNow=TUNE.emitMin+(TUNE.emitMax-TUNE.emitMin)*pressure;
-  w.fire-=TUNE.douse*(elapsed<boostUntil?2:1)/rateNow;
+  hitTally++;
+  w.fire-=TUNE.douse*headNow.douse*(elapsed<boostUntil?2:1)/rateNow;
+  if(headNow.also&&!hitWindow.spreading){
+    var nb=sameFaceNeighbour(i,headNow.also);
+    if(nb>=0){
+      hitWindow.spreading=true;
+      hitWindow(nb,wins[nb].x,wins[nb].y,wins[nb].z);
+      hitWindow.spreading=false;
+    }
+  }
   if(Math.random()<0.30) puffSteam(x,y,z,1);
   if(Math.random()<0.04) Snd.steam();
   if(w.fire<=0){
@@ -5460,9 +5660,9 @@ function step(dt,noDraw){
 
   /* ---- water ---- */
   if(live){
-    var speed=TUNE.speedMin+(TUNE.speedMax-TUNE.speedMin)*pressure;
-    var spread=(elapsed<boostUntil)?TUNE.spreadTight
-              :TUNE.spreadLoose+(TUNE.spreadTight-TUNE.spreadLoose)*pressure;
+    var speed=(TUNE.speedMin+(TUNE.speedMax-TUNE.speedMin)*pressure)*headNow.speed;
+    var spread=((elapsed<boostUntil)?TUNE.spreadTight
+              :TUNE.spreadLoose+(TUNE.spreadTight-TUNE.spreadLoose)*pressure)*headNow.spread;
     var rate=TUNE.emitMin+(TUNE.emitMax-TUNE.emitMin)*pressure;
     emitCarry+=rate*dt*60;
     var n=emitCarry|0; emitCarry-=n; if(n>70) n=70;
@@ -5716,6 +5916,7 @@ function step(dt,noDraw){
   if(live&&!bossOn&&elapsed>=TUNE.timeLimit&&!finished){
     ranOutOfTime=true; Snd.timeUp(); finish(false); return;
   }
+  if(live) checkBlowUp();
   if(live){
     var stillFighting = bossOn && boss && (boss.alive||boss.dying>0);
     if(!stillFighting && burning===0 && (saved>0||bossKilled)) finish(true);
@@ -5858,6 +6059,7 @@ function startDaily(){
   setWeather(WEATHER[cfg.env]||"clear");
   saved=0; burning=0; finished=false; paused=false; ranOutOfTime=false;
   lowKickUntil=0; cappedNow=false; capCheck=0; pitchFloor=-99;
+  blewUp=false; blownAlready=false;
   gaugeEl.classList.remove("capped");
   elapsed=0; spreadClock=cfg.spreadEvery;
   yaw=0; pitch=TUNE.pitchStart; pressure=0.40; wantPressure=0.40; paintGauge();
@@ -5887,6 +6089,7 @@ function startLevel(n,season){
   setWeather(WEATHER[cfg.env]||"clear");
   saved=0; burning=0; finished=false; paused=false; ranOutOfTime=false;
   lowKickUntil=0; cappedNow=false; capCheck=0; pitchFloor=-99;
+  blewUp=false; blownAlready=false;
   gaugeEl.classList.remove("capped");
   elapsed=0; spreadClock=cfg.spreadEvery;
   yaw=0; pitch=TUNE.pitchStart; pressure=0.40; wantPressure=0.40; paintGauge();
@@ -5967,7 +6170,8 @@ function finish(won){
     : "";
   $("endSub").innerHTML=(won
       ? (level<10?"Every window clear.":"You cleared all ten places.")
-      : (playerHp<=0?"It got through your line."
+      : (blewUp?"Eleven fires in one building. It went up."
+        :playerHp<=0?"It got through your line."
         :ranOutOfTime?"Two hundred seconds. The fire won on time."
                     :"The fire got away from you."))
     + (rescueLine?"<br><b>"+rescueLine+"</b>":"");
@@ -6164,6 +6368,10 @@ $("gadgetsBtn").addEventListener("click",function(){
 });
 $("gadgetsBack").addEventListener("click",function(){ Snd.tap(); show("start"); });
 gadgetBtn.addEventListener("click",function(e){ e.stopPropagation(); useGadget(); });
+headBtn.addEventListener("click",function(e){
+  e.stopPropagation(); Snd.tap(); showWheel(!headWheel.classList.contains("on"));
+});
+headWheel.addEventListener("click",function(){ showWheel(false); });
 Array.prototype.slice.call(document.querySelectorAll(".kindTab")).forEach(function(t){
   t.addEventListener("click",function(){
     Snd.tap(); shopKind=t.getAttribute("data-kind"); renderShop();
@@ -6576,12 +6784,38 @@ function buildWolf(B){
   g.scale.setScalar(WOLF_K);
 
   // legs and a heavy body, hunched forward
+  /* Four legs on their own hinges. They were fixed cylinders before and the
+     whole animal read as a balloon: nothing below the shoulders ever moved. */
+  var legs=[];
   [[-1.5,-1.0],[1.5,-1.0],[-1.3,1.6],[1.3,1.6]].forEach(function(L,i){
-    var leg=new THREE.Mesh(new THREE.CylinderGeometry(0.62,0.78,4.4,7),i<2?fur:dark);
-    leg.position.set(L[0],2.2,L[1]); g.add(leg);
+    var hip=new THREE.Group();
+    hip.position.set(L[0],4.4,L[1]);
+    var thigh=new THREE.Mesh(new THREE.CylinderGeometry(0.72,0.60,2.4,7),i<2?fur:dark);
+    thigh.position.y=-1.2; hip.add(thigh);
+    var knee=new THREE.Group(); knee.position.y=-2.4; hip.add(knee);
+    var shin=new THREE.Mesh(new THREE.CylinderGeometry(0.52,0.44,2.2,7),i<2?fur:dark);
+    shin.position.y=-1.1; knee.add(shin);
     var paw=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.7,2.0),dark);
-    paw.position.set(L[0],0.35,L[1]+0.4); g.add(paw);
+    paw.position.set(0,-2.3,0.4); knee.add(paw);
+    g.add(hip);
+    legs.push({hip:hip, knee:knee, phase:(i===0||i===3)?0:Math.PI});
   });
+  // a ruff round the shoulders and a tail, so the silhouette is not one curve
+  for(var r=0;r<9;r++){
+    var a=(r/9)*Math.PI*2;
+    var tuft=new THREE.Mesh(new THREE.ConeGeometry(0.55,1.9,4),fur);
+    tuft.position.set(Math.cos(a)*2.7,6.9+Math.sin(a)*0.9,1.0);
+    tuft.rotation.set(1.3,0,-a);
+    g.add(tuft);
+  }
+  var tail=[], tprev=g;
+  for(var t2=0;t2<5;t2++){
+    var seg=new THREE.Group();
+    seg.position.set(0, t2?0:4.6, t2?-1.25:-2.6);
+    var tm=new THREE.Mesh(new THREE.ConeGeometry(0.85-t2*0.13,1.5,6),t2>3?pale:fur);
+    tm.rotation.x=Math.PI/2; seg.add(tm);
+    tprev.add(seg); tprev=seg; tail.push(seg);
+  }
   var body=new THREE.Mesh(new THREE.SphereGeometry(2.9,12,9),fur);
   body.position.set(0,5.6,0.2); body.scale.set(1.15,1.0,1.45); g.add(body);
   var hump=new THREE.Mesh(new THREE.SphereGeometry(1.9,10,8),fur);
@@ -6638,7 +6872,8 @@ function buildWolf(B){
   bladeGlow.position.y=5.4; blade.add(bladeGlow);
 
   bossGroup.add(g);
-  return {g:g, head:head, ears:ears, arm:arm, blade:blade, bladeGlow:bladeGlow, cape:cape};
+  return {g:g, head:head, ears:ears, arm:arm, blade:blade, bladeGlow:bladeGlow,
+          cape:cape, legs:legs, tail:tail};
 }
 
 function wolfTick(b,dt,now){
@@ -6653,6 +6888,18 @@ function wolfTick(b,dt,now){
   p.head.rotation.x=0.34+Math.sin(b.t*0.9)*0.07;   // muzzle down, eyes on you
   p.ears.forEach(function(e,i){ e.rotation.z=(i?1:-1)*(0.35+Math.sin(b.t*2.1+i)*0.12); });
   p.cape.rotation.z=Math.sin(b.t*1.1)*0.05;
+  /* a prowling stride: diagonal pairs together, knees folding on the
+     way through, and the body dipping as the weight lands */
+  var step=b.t*1.9;
+  p.legs.forEach(function(L){
+    var sw=Math.sin(step+L.phase);
+    L.hip.rotation.x=sw*0.42;
+    L.knee.rotation.x=Math.max(0,-sw)*0.55;
+  });
+  p.tail.forEach(function(sg,i){
+    sg.rotation.y=Math.sin(b.t*1.3-i*0.55)*0.22;
+    sg.rotation.x=(i?0:-0.5)+Math.sin(b.t*1.7-i*0.4)*0.10;
+  });
 
   /* Guard, swing, then a moment wide open. That window is the only way in,
      and it is the reason this one is the hardest. */
@@ -7550,7 +7797,7 @@ function douseFully(i){
 /* You aim a hose *above* what you want to hit, so "what you are pointing at"
    is not where the camera points â it is where the water comes down. */
 function jetLandsAt(){
-  var sp=TUNE.speedMin+(TUNE.speedMax-TUNE.speedMin)*pressure;
+  var sp=(TUNE.speedMin+(TUNE.speedMax-TUNE.speedMin)*pressure)*headNow.speed;
   var x=TIP.x,y=TIP.y,z=TIP.z;
   var vx=DIR.x*sp,vy=DIR.y*sp,vz=DIR.z*sp,h=1/180;
   for(var i=0;i<1400;i++){
@@ -8050,6 +8297,8 @@ window.__soak={
     return out;
   },
   ignite:function(i){ return ignite(i); },
+  hits:function(reset){ var v=hitTally; if(reset) hitTally=0; return v; },
+  head:function(){ return {id:headNow.id, douse:headNow.douse, speed:headNow.speed, spread:headNow.spread}; },
   setDay:function(n){ dayOverride=n|0; },
   daily:function(){ startDaily(); return {name:cfg.name, env:cfg.env, style:cfg.style,
                      fires:cfg.fires, windows:wins.length, par:cfg.parTime}; },
@@ -8132,7 +8381,7 @@ window.__soak={
   }; },
   /* where does a shot land, for balance checks */
   probe:function(pressureVal,pitchVal,yawVal){
-    var sp=TUNE.speedMin+(TUNE.speedMax-TUNE.speedMin)*pressureVal;
+    var sp=(TUNE.speedMin+(TUNE.speedMax-TUNE.speedMin)*pressureVal)*headNow.speed;
     var q=new THREE.Quaternion().setFromEuler(new THREE.Euler(pitchVal,-(yawVal||0),0,"YXZ"));
     var dir=new THREE.Vector3(0,0,-1).applyQuaternion(q);
     var tip=new THREE.Vector3(0.06,-0.30,-1.00).applyQuaternion(q);
@@ -8186,6 +8435,8 @@ buildEnv(LEVELS[0].env);
 buildMap();
 paintChip();
 applyKit();
+headNow=headById(save.head||"jet");
+paintHead();
 paintGadget();
 paintDaily();
 setInterval(paintDaily,30000);
