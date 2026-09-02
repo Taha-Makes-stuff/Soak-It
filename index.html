@@ -1385,7 +1385,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 33;
+var GAME_VERSION = 34;
 
 (function meta(){
   var m=document.createElement("meta");
@@ -4995,6 +4995,8 @@ function applyKit(){
   var w=shopItem("water",save.kit.water);
   if(typeof water!=="undefined"&&water.pts&&water.pts.material.uniforms)
     water.pts.material.uniforms.uColor.value.setHex(w.col);
+  if(typeof streaks!=="undefined"&&streaks)
+    streaks.material.uniforms.uColor.value.setHex(w.col);
 }
 
 /* ============================================================
@@ -5035,6 +5037,30 @@ function pool(count,color,sizeLo,sizeHi,additive){
 var water=pool(MAX_DROPS,0xCFE9FF,0.045,0.095,false);
 var wvx=new Float32Array(MAX_DROPS),wvy=new Float32Array(MAX_DROPS),wvz=new Float32Array(MAX_DROPS);
 var wlife=new Float32Array(MAX_DROPS); var wHead=0;
+
+/* Water is not a swarm of beads. Every drop also drags a short tail behind
+   it along the way it is going, so the fast water leaving the nozzle reads
+   as a rope of streaks and the slow water at the far end breaks up into
+   separate drops all on its own. */
+var streakGeo=new THREE.BufferGeometry();
+var stPos=new Float32Array(MAX_DROPS*6), stA=new Float32Array(MAX_DROPS*2);
+for(var sq=0;sq<MAX_DROPS*2;sq++) stPos[sq*3+1]=-999;
+streakGeo.setAttribute("position",new THREE.BufferAttribute(stPos,3));
+streakGeo.setAttribute("aAlpha",new THREE.BufferAttribute(stA,1));
+var streaks=new THREE.LineSegments(streakGeo,new THREE.ShaderMaterial({
+  transparent:true,depthWrite:false,
+  uniforms:{uColor:{value:new THREE.Color(0xCFE9FF)}},
+  vertexShader:[
+    "attribute float aAlpha; varying float vA;",
+    "void main(){ vA=aAlpha;",
+    " gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }"
+  ].join("\n"),
+  fragmentShader:[
+    "uniform vec3 uColor; varying float vA;",
+    "void main(){ gl_FragColor=vec4(uColor,vA); }"
+  ].join("\n")
+}));
+streaks.frustumCulled=false; scene.add(streaks);
 
 var steam=pool(MAX_STEAM,0xDCE9F0,0.10,0.26,false);
 var svx=new Float32Array(MAX_STEAM),svy=new Float32Array(MAX_STEAM),svz=new Float32Array(MAX_STEAM);
@@ -5383,17 +5409,22 @@ function isLowWindow(w){ return w.y < w.face.top*TUNE.lowFrac; }
    ============================================================ */
 var HEADS=[
   {id:"jet",  name:"Jet",    icon:"∣", blurb:"The one you know. Tight and long.",
-   speed:1,    spread:1,    douse:1,   reach:1},
+   speed:1,    spread:1,    douse:1,   reach:1,
+   fanX:1.00, fanY:1.00, drop:1.00},
   {id:"show", name:"Shower", icon:"░", blurb:"Softer and wider, but bites twice as fast.",
    /* its slower arc lands less than half the Jet.s hits, so the bite per
       drop has to carry the whole 2x on its own */
-   speed:0.86, spread:0.50, douse:4.4, reach:0.8},
+   speed:0.86, spread:0.50, douse:3.4, reach:0.8,
+   fanX:2.10, fanY:2.10, drop:0.65},
   {id:"vert", name:"Vertical", icon:"‖", blurb:"Catches the window above or below as well.",
-   speed:0.94, spread:1.4,  douse:1,   reach:0.95, also:"vert"},
+   speed:0.94, spread:1.4,  douse:1.25,reach:0.95, also:"vert",
+   fanX:0.45, fanY:2.20, drop:0.95},
   {id:"horz", name:"Horizontal", icon:"═", blurb:"Catches the window beside it as well.",
-   speed:0.94, spread:1.4,  douse:1,   reach:0.95, also:"horz"},
+   speed:0.94, spread:1.4,  douse:1.28,reach:0.95, also:"horz",
+   fanX:2.20, fanY:0.45, drop:0.95},
   {id:"lance",name:"Lance",  icon:"↑", blurb:"Needle thin and throws furthest. For the top floors.",
-   speed:1.22, spread:0.35, douse:0.8, reach:1.25}
+   speed:1.22, spread:0.35, douse:0.8, reach:1.25,
+   fanX:0.55, fanY:0.55, drop:1.35}
 ];
 var headNow=HEADS[0];
 function headById(id){
@@ -5671,19 +5702,28 @@ function step(dt,noDraw){
     for(var i=0;i<n;i++){
       var k=wHead; wHead=(wHead+1)%MAX_DROPS;
       var frac=i/Math.max(1,n)*dt;
-      var rx=(Math.random()+Math.random()-1)*spread,ry=(Math.random()+Math.random()-1)*spread;
-      var jv=speed*(0.92+Math.random()*0.16);
+      /* A hose is a solid rope of water that frays as it flies, not an even
+         cloud of beads. Two fifths of the drops go almost straight out as a
+         tight bright core; the rest fan out round it in the shape of the head
+         that is on - a standing blade, a lying blade, a mist, a needle. */
+      var core=Math.random()<0.42;
+      var sc=core?0.20:1.0;
+      var rx=(Math.random()+Math.random()-1)*spread*headNow.fanX*sc;
+      var ry=(Math.random()+Math.random()-1)*spread*headNow.fanY*sc;
+      var jv=speed*(core?(0.985+Math.random()*0.03):(0.90+Math.random()*0.20));
       var vx=DIR.x*jv+RIGHT.x*rx*jv+UPV.x*ry*jv;
       var vy=DIR.y*jv+RIGHT.y*rx*jv+UPV.y*ry*jv;
       var vz=DIR.z*jv+RIGHT.z*rx*jv+UPV.z*ry*jv;
       water.pos[k*3]=TIP.x+vx*frac; water.pos[k*3+1]=TIP.y+vy*frac; water.pos[k*3+2]=TIP.z+vz*frac;
       wvx[k]=vx; wvy[k]=vy; wvz[k]=vz;
-      wlife[k]=3.0; water.alpha[k]=0.55+Math.random()*0.4;
+      water.size[k]=(core?0.105:0.050+Math.random()*0.040)*headNow.drop;
+      wlife[k]=3.0; water.alpha[k]=core?(0.80+Math.random()*0.20)
+                                       :(0.40+Math.random()*0.34);
     }
 
     var dk=1-TUNE.drag*dt;
     for(var d=0;d<MAX_DROPS;d++){
-      if(wlife[d]<=0) continue;
+      if(wlife[d]<=0){ stA[d*2]=0; stA[d*2+1]=0; continue; }
       wlife[d]-=dt;
       wvy[d]-=TUNE.gravity*dt;
       wvx[d]*=dk; wvy[d]*=dk; wvz[d]*=dk;
@@ -5730,11 +5770,18 @@ function step(dt,noDraw){
         wlife[d]=0; water.alpha[d]=0; water.pos[i3+1]=-999; continue;
       }
       water.pos[i3]=nx; water.pos[i3+1]=ny; water.pos[i3+2]=nz;
+      var t6=d*6, tl=0.030;
+      stPos[t6]=nx; stPos[t6+1]=ny; stPos[t6+2]=nz;
+      stPos[t6+3]=nx-wvx[d]*tl; stPos[t6+4]=ny-wvy[d]*tl; stPos[t6+5]=nz-wvz[d]*tl;
+      stA[d*2]=water.alpha[d]*0.85; stA[d*2+1]=0;
       if(Math.abs(nx)>60||Math.abs(nz)>60||ny>40){ wlife[d]=0; water.alpha[d]=0; water.pos[i3+1]=-999; continue; }
       if(wlife[d]<0.4) water.alpha[d]*=0.94;
     }
     water.geo.attributes.position.needsUpdate=true;
     water.geo.attributes.aAlpha.needsUpdate=true;
+    water.geo.attributes.aSize.needsUpdate=true;
+    streakGeo.attributes.position.needsUpdate=true;
+    streakGeo.attributes.aAlpha.needsUpdate=true;
 
     for(var s=0;s<MAX_STEAM;s++){
       if(slife[s]<=0) continue;
@@ -8300,6 +8347,8 @@ window.__soak={
   },
   ignite:function(i){ return ignite(i); },
   hits:function(reset){ var v=hitTally; if(reset) hitTally=0; return v; },
+  setHead:function(id){ setHead(id); return headNow.id; },
+  tuneHead:function(id,o){ var H=headById(id); for(var k in o) H[k]=o[k]; return H; },
   head:function(){ return {id:headNow.id, douse:headNow.douse, speed:headNow.speed, spread:headNow.spread}; },
   setDay:function(n){ dayOverride=n|0; },
   daily:function(){ startDaily(); return {name:cfg.name, env:cfg.env, style:cfg.style,
