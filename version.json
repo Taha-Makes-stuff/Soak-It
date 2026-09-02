@@ -1,6 +1,6 @@
 {
-  "version": 32,
+  "version": 33,
   "name": "Soak It",
   "file": "index.html",
-  "notes": "Hose head wheel with five heads - Jet, Shower, Vertical, Horizontal and Lance. Eleven fires in one building and it blows up. The Wolf now has legs that stride, a tail and a ruff. Sharper picture."
+  "notes": "Fixed the hose head wheel - it opened but ignored every tap"
 }

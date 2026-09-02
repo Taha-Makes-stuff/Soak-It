@@ -275,12 +275,14 @@
   }
   #headWheel{
     position:absolute;inset:0;display:none;place-items:center;
+    pointer-events:auto;
     background:rgba(4,8,14,.55);backdrop-filter:blur(3px);
     -webkit-backdrop-filter:blur(3px);z-index:5;
   }
   #headWheel.on{display:grid;}
   #headRing{position:relative;width:min(78vw,330px);height:min(78vw,330px);}
   .headPick{
+    pointer-events:auto;
     position:absolute;width:96px;margin:-48px 0 0 -48px;
     display:grid;place-items:center;gap:3px;padding:10px 4px;
     border-radius:6px;cursor:pointer;text-align:center;
@@ -1383,7 +1385,7 @@
 "use strict";
 
 /* Rewritten by publish-update.ps1 on every release. */
-var GAME_VERSION = 32;
+var GAME_VERSION = 33;
 
 (function meta(){
   var m=document.createElement("meta");
